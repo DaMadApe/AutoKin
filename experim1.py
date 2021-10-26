@@ -34,12 +34,10 @@ class Regressor(pl.LightningModule):
                                      self.hparams.out_size))
 
         # Se necesita definir para save_graph
-        self.example_input_array = torch.zeros(in_size, 1)
-        # Nombre específico para LR finder
-        self.lr = lr 
+        self.example_input_array = torch.zeros(self.hparams.in_size, 1)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         return optimizer
 
     def forward(self, x):
@@ -66,7 +64,7 @@ if __name__ == '__main__':
     n_samples = 24
     batch_size = 4
     epochs = 100
-    lr = 3e-4
+    lr = 6e-4
 
     """
     Conjunto de datos
@@ -87,6 +85,7 @@ if __name__ == '__main__':
                                log_graph=True)
 
     model = Regressor(mid_size=nn_mid_size, lr=lr)
+    #model.log
     #trainer = pl.Trainer(fast_dev_run=True)
     trainer = pl.Trainer(max_epochs=epochs,
                          logger=logger)
