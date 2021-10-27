@@ -1,9 +1,6 @@
-from pytorch_lightning.core import lightning
 import torch
 from torch import nn
 from torch.nn import functional as F
-#from torchvision.datasets import MNIST
-#from torchvision import transforms
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -14,9 +11,9 @@ Regresor para funciones multivariables con salida real
 """
 class Regressor(pl.LightningModule):
 
-    def __init__(self, in_size=1, out_size=1,
-                 mid_size=30, depth=1,
-                 lr=1e-3, activation=F.relu):
+    def __init__(self, in_size=1, out_size=1, mid_size=30,
+                 depth=1, lr=1e-3, activation=F.relu,
+                 *args, **kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -50,11 +47,13 @@ class Regressor(pl.LightningModule):
         pred = self(point)
         criterion = nn.MSELoss()
         loss = criterion(pred, target)
-        self.log('train_loss', loss)#, prog_bar=True)
-        return loss
+        return {'loss': loss}
 
-    #def training_epoch_end(self, outputs):
-        
+    def training_epoch_end(self, outputs):
+        # Guardar la pérdida del último paso
+        self.log('train_loss', outputs[-1]['loss'])#, on_step=False)
+        # hp_metric es la variable default para los hparams
+        self.log("hp_metric", outputs[-1]['loss'])
 
 if __name__ == '__main__':
 
@@ -81,7 +80,6 @@ if __name__ == '__main__':
     Entrenamiento
     """
     logger = TensorBoardLogger('lightning_logs', 'Exp1',
-                               #default_hp_metric=False,
                                log_graph=True)
 
     model = Regressor(mid_size=nn_mid_size, lr=lr)
