@@ -1,68 +1,90 @@
 from typing import OrderedDict
 import torch
 from torch import nn
-from torch import functional as F
+from torch.nn import functional as F
 from torch.utils.data import TensorDataset, DataLoader
-from tqdm import tqdm
+import logging
 import matplotlib.pyplot as plt
 
+"""
+TODO
+- Hacer variable número de capas
+- Meter tensorboard con guild
+"""
 # args
+lr = 1e-3
+depth = 3
+mid_layer_size = 10
 n_samples = 10
 batch_size = 10
-epochs = 10000
-learn_rate = 3e-4
-n_mid_layers = 3
-mid_layer_size = 10
-bias = True
-crack_norm = True
+epochs = 1000
+
+input_dim = 1
+output_dim = 1
+x_min = 0
+x_max = 1
 view_plot = True
+
+def f(x): return 3*x**3 - 5*x**2 + 2*x
+
 
 class Regressor(nn.Module):
 
     def __init__(self, input_dim=1, output_dim=1,
-                 n_mid_layers=1, mid_layer_size=10):
+                 depth=1, mid_layer_size=10, activation=F.relu):
         super().__init__()
-        #layers = OrderedDict()
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, mid_layer_size, bias=bias),
-            nn.Tanh(),
-            nn.Linear(mid_layer_size, mid_layer_size, bias=bias),
-            nn.Tanh(),
-            nn.Linear(mid_layer_size, output_dim, bias=bias)
-        )
+
+        # Armar modelo
+        self.layers = nn.ModuleList()
+        
+        self.layers.append(nn.Linear(input_dim,
+                                     mid_layer_size))
+        for _ in range(depth):
+            self.layers.append(nn.Linear(mid_layer_size,
+                                         mid_layer_size))
+        self.layers.append(nn.Linear(mid_layer_size,
+                                     output_dim))
+
+        self.activation = activation
 
     def forward(self, x):
-        if crack_norm:
-            out = (x+10)/20
-        out = self.model(out)
-        return out
+        for layer in self.layers:
+            x = self.activation(layer(x))
+        return x
 
-
-model = Regressor(1, 1, 3, 10)
-
-x = torch.linspace(-1, 1, n_samples).view(-1, 1)
-
-def f(x): return 3*x**3
+"""
+Conjunto de datos
+"""
+x = torch.linspace(x_min, x_max, n_samples).view(-1, 1)
 y = f(x)
 
-train_set = TensorDataset(x, y)#(x.view(-1,1), y.view(-1,1))
+train_set = TensorDataset(x, y)
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
-criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
-progress = tqdm(range(epochs), desc='Training')
 
-for _ in progress:
+"""
+Entrenamiento
+"""
+model = Regressor(input_dim, 1, 3, 10)
+
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+for t in range(epochs):
     for X, Y in train_loader:
         pred = model(X)
         loss = criterion(pred, Y)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    progress.set_postfix(Loss=loss.item())
+    if t%(epochs//10) == 0:
+        print(f'Epoch {t}: Loss={loss.item()}')
 
+"""
+Visualización de datos en una dimensión
+"""
 if view_plot:
-    x_plot = torch.linspace(-1, 1, n_samples).view(-1,1)
+    x_plot = torch.linspace(x_min, x_max, n_samples).view(-1,1)
 
     with torch.no_grad():
         pred = model(x_plot)
@@ -73,5 +95,4 @@ if view_plot:
     ax.legend(['Target F',
                'Model',
                'Trainset'])
-
     plt.show()
