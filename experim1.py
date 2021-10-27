@@ -4,6 +4,7 @@ from torch.nn import functional as F
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
+import matplotlib.pyplot as plt
 
 """
 Módulo del modelo
@@ -64,11 +65,12 @@ if __name__ == '__main__':
     batch_size = 4
     epochs = 100
     lr = 6e-4
+    view_plot = True
 
     """
     Conjunto de datos
     """
-    def f(x): return 0.4*x**3 - 0.8*x**2 + 2*x + 10
+    def f(x): return torch.sin(10*x**2)
     #x = torch.linspace(0, 1, n_samples).view(-1,1)
     x = torch.rand(n_samples, 1)
     y = f(x)
@@ -83,8 +85,25 @@ if __name__ == '__main__':
                                log_graph=True)
 
     model = Regressor(mid_size=nn_mid_size, depth=depth, lr=lr)
-    #model.log
-    #trainer = pl.Trainer(fast_dev_run=True)
+
+    # trainer = pl.Trainer(fast_dev_run=True)
     trainer = pl.Trainer(max_epochs=epochs,
                          logger=logger)
     trainer.fit(model, train_loader)
+
+    """
+    Visualización de datos en una dimensión
+    """
+    if view_plot:
+        x_plot = torch.linspace(0, 1, n_samples).view(-1,1)
+
+        with torch.no_grad():
+            pred = model(x_plot)
+        fig, ax = plt.subplots()
+        ax.plot(x_plot, f(x_plot))
+        ax.plot(x_plot, pred)
+        ax.scatter(x, y)
+        ax.legend(['Target F',
+                   'Model',
+                   'Trainset'])
+        plt.show()
