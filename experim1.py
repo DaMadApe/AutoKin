@@ -47,18 +47,18 @@ class Regressor(pl.LightningModule):
         pred = self(point)
         criterion = nn.MSELoss()
         loss = criterion(pred, target)
-        return {'loss': loss}
+        self.log('train_loss', loss)
+        self.log('hp_metric', loss)
+        return loss
 
-    def training_epoch_end(self, outputs):
-        # Guardar la pérdida del último paso
-        self.log('train_loss', outputs[-1]['loss'])#, on_step=False)
-        # hp_metric es la variable default para los hparams
-        self.log("hp_metric", outputs[-1]['loss'])
 
 if __name__ == '__main__':
 
+    pl.seed_everything(36)
+
     # Hyperparams
     cpu_cores = 8 # Núcleos usados por el programa
+    depth = 3
     nn_mid_size = 30 # Tamaño de capas intermedias
     n_samples = 24
     batch_size = 4
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     logger = TensorBoardLogger('lightning_logs', 'Exp1',
                                log_graph=True)
 
-    model = Regressor(mid_size=nn_mid_size, lr=lr)
+    model = Regressor(mid_size=nn_mid_size, depth=depth, lr=lr)
     #model.log
     #trainer = pl.Trainer(fast_dev_run=True)
     trainer = pl.Trainer(max_epochs=epochs,
