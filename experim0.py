@@ -37,10 +37,11 @@ if __name__ == '__main__':
 
     # args
     lr = 5e-3
-    depth = 10
+    depth = 3
     mid_layer_size = 10
+    activation = torch.tanh
     n_samples = 32
-    batch_size = 8
+    batch_size = 32
     epochs = 2000
 
     input_dim = 1
@@ -50,12 +51,12 @@ if __name__ == '__main__':
     view_plot = True
 
     #def f(x): return 3*x**3 - 3*x**2 + 2*x
-    def f(x): return torch.sin(6*x**2 - 6*x)
+    def f(x): return torch.sin(10*x**2 - 10*x)
 
     """
     Conjunto de datos
     """
-    x = torch.linspace(x_min, x_max, n_samples).view(-1, 1)
+    x = torch.linspace(x_min, x_max, n_samples).view(-1, input_dim)
     y = f(x)
 
     train_set = TensorDataset(x, y)
@@ -65,7 +66,9 @@ if __name__ == '__main__':
     """
     Entrenamiento
     """
-    model = Regressor(input_dim, 1, 3, 10)
+    model = Regressor(input_dim, output_dim,
+                      depth, mid_layer_size,
+                      activation)
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
