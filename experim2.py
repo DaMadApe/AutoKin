@@ -23,24 +23,27 @@ if __name__ == '__main__':
     depth = 3
     mid_layer_size = 10
     activation = torch.tanh
-    n_samples = 256
-    batch_size = 32
-    epochs = 2000
+    n_samples = 512
+    batch_size = 512
+    epochs = 500
 
     input_dim = 2
-    output_dim = 2
+    output_dim = 1
     x_min = -1
     x_max = 1
     view_plot = True
 
-    def f(x): return torch.sin(6*x**2)
+    #def f(x): return torch.sin(x[0]**2 + x[1]**2)
+    def f(x):
+        r = torch.linalg.norm(4*x**2, dim=1)
+        return torch.sin(r).view(-1,1)
 
     """
     Conjunto de datos
     """
     x = (x_max - x_min)*torch.rand(n_samples, input_dim) + x_min
     y = f(x)
-
+ 
     train_set = TensorDataset(x, y)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
@@ -69,22 +72,37 @@ if __name__ == '__main__':
     Visualización de datos en una dimensión
     """
     if view_plot:
-        x1_plot = torch.linspace(x_min, x_max, 256).view(-1,1)
-        x2_plot = torch.linspace(x_min, x_max, 256).view(-1,1)
+        res = 256
 
-        #grid_x1, grid_x2 = torch.meshgrid(x1_plot, x2_plot)
+        x1_plot = torch.linspace(x_min, x_max, res)
+        x2_plot = torch.linspace(x_min, x_max, res)
 
-        # with torch.no_grad():
-        #     pred = model(x_plot)
+        x1_grid, x2_grid = torch.meshgrid(x1_plot, x2_plot)
 
-        fig, axes = plt.subplots(1, output_dim,
+        # Magia negra para que las dimensiones ajusten con la fun
+        y_plot = f(torch.stack([x1_grid, x2_grid], dim=1))
+        # Más magia negra para que la forma sea graficable
+        y_plot = y_plot.view(res,res)
+
+        with torch.no_grad():
+            pred = model(torch.stack([x1_grid, x2_grid], dim=-1).view(-1, 2))
+            pred = pred.view(res, res)
+
+        fig, axes = plt.subplots(output_dim, 2,
                                  subplot_kw={'projection': '3d'})
+        if output_dim==1:
+            axes = [axes]
         for i, ax in enumerate(axes):
-            # ax.plot(x_plot, f(x_plot))
-            # ax.plot(x_plot, pred)
-            ax.scatter(x[:,0], x[:,1], y[:,i])
+            ax[0].plot_surface(x1_grid.numpy(), x2_grid.numpy(),
+                               y_plot.numpy(), color='red')
+            ax[0].plot_wireframe(x1_grid.numpy(), x2_grid.numpy(),
+                                 pred.numpy(), color='blue')
+            # ax[0].legend(['Target',
+            #               'Modelo'])
+            ax[1].plot_wireframe(x1_grid.numpy(), x2_grid.numpy(),
+                                 pred.numpy(), color='red')
+            ax[1].scatter(x[:,0], x[:,1], y[:,i])
 
-            # ax.legend(['Target F',
-            #            'Model',
-            #            'Trainset'])
+            ax[1].legend(['Model',
+                          'Trainset'])
         plt.show()
