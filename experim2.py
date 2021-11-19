@@ -1,7 +1,6 @@
 """
 - Pytorch puro
 - Regresión con validación
-- Conjunto de datos 2D->2D
 - Normalización de entradas y etiquetas
 - tqdm
 """
@@ -22,7 +21,7 @@ if __name__ == '__main__':
     lr = 5e-3
     depth = 3
     mid_layer_size = 10
-    activation = torch.tanh
+    activation = torch.relu
     n_samples = 512
     batch_size = 512
     epochs = 500
@@ -94,15 +93,12 @@ if __name__ == '__main__':
             axes = [axes]
         for i, ax in enumerate(axes):
             ax[0].plot_surface(x1_grid.numpy(), x2_grid.numpy(),
-                               y_plot.numpy(), color='red')
+                               y_plot.numpy(), label='Target', color='r')
             ax[0].plot_wireframe(x1_grid.numpy(), x2_grid.numpy(),
-                                 pred.numpy(), color='blue')
+                                 pred.numpy(), label='Trainset', color='b')
             # ax[0].legend(['Target',
             #               'Modelo'])
             ax[1].plot_wireframe(x1_grid.numpy(), x2_grid.numpy(),
                                  pred.numpy(), color='red')
             ax[1].scatter(x[:,0], x[:,1], y[:,i])
-
-            ax[1].legend(['Model',
-                          'Trainset'])
         plt.show()

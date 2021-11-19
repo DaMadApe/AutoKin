@@ -39,8 +39,9 @@ class Regressor(pl.LightningModule):
         return optimizer
 
     def forward(self, x):
-        for layer in self.layers:
+        for layer in self.layers[:-1]:
             x = self.hparams.activation(layer(x))
+        x = self.layers[-1](x)
         return x
 
     def training_step(self, batch, batch_idx):
@@ -62,17 +63,16 @@ if __name__ == '__main__':
     depth = 3
     nn_mid_size = 30 # Tamaño de capas intermedias
     n_samples = 24
-    batch_size = 4
-    epochs = 100
-    lr = 6e-4
+    batch_size = 8
+    epochs = 300
+    lr = 1e-2
     view_plot = True
-
     """
     Conjunto de datos
     """
     def f(x): return torch.sin(10*x**2)
-    #x = torch.linspace(0, 1, n_samples).view(-1,1)
-    x = torch.rand(n_samples, 1)
+    x = torch.linspace(-1, 1, n_samples).view(-1,1)
+    #x = torch.rand(n_samples, 1)
     y = f(x)
     dataset = TensorDataset(x, y)
     train_loader = DataLoader(dataset, batch_size=batch_size,
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     Visualización de datos en una dimensión
     """
     if view_plot:
-        x_plot = torch.linspace(0, 1, n_samples).view(-1,1)
+        x_plot = torch.linspace(-1, 1, n_samples).view(-1,1)
 
         with torch.no_grad():
             pred = model(x_plot)
