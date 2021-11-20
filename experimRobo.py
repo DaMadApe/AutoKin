@@ -2,10 +2,11 @@
 Regresión de cinemática de un robot
 [q1 q2...qn] -> [x,y,z,*R]
 """
-import roboticstoolbox as rtb
 import numpy as np
+import roboticstoolbox as rtb
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.dataset import TensorDataset
 
 from experim0 import Regressor
 
@@ -37,12 +38,25 @@ class RoboKinSet(Dataset):
 
         # Producir las etiquetas correspondientes a cada vec de paráms
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
-        self.poses = np.array(self.poses)
+        self.poses = torch.tensor(self.poses, dtype=torch.float)
+        self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
 
 if __name__ == '__main__':
+
+    # args
+    lr = 3e-3
+    depth = 3
+    mid_layer_size = 10
+    activation = torch.relu
+    n_samples = 512
+    batch_size = 512
+    epochs = 500
+
     robot = rtb.models.DH.Panda()
-    #print(robot.fkine(np.zeros(robot.n)).t)
+
+    input_dim = robot.n
+    output_dim = 3
 
     dataset = RoboKinSet(robot, [(0, 1, 3),
                                  (0, 1, 3),
@@ -53,3 +67,30 @@ if __name__ == '__main__':
                                  (0, 1, 3)])
     print(dataset.q_vecs.shape)
     print(dataset.poses.shape)
+
+    train_set = TensorDataset(dataset.q_vecs, dataset.poses)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+
+    #from tqdm import tqdm
+
+
+    model = Regressor(input_dim, output_dim,
+                      depth, mid_layer_size,
+                      activation)
+
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+
+    for t in range(epochs):
+        for X, Y in train_loader:
+            pred = model(X)
+            loss = criterion(pred, Y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        if t%(epochs//10) == 0:
+            print(f'Epoch {t}: Loss={loss.item()}')
+
+
+#    criterion(dataset.poses)
