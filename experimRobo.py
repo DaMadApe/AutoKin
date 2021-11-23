@@ -3,13 +3,8 @@ Regresión de cinemática de un robot
 [q1 q2...qn] -> [x,y,z,*R]
 """
 import numpy as np
-import roboticstoolbox as rtb
 import torch
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.dataset import TensorDataset
-
-from experim0 import Regressor
-
+from torch.utils.data import Dataset
 
 class RoboKinSet(Dataset):
     # Es permisible tener todo el dataset en un tensor porque no es
@@ -18,8 +13,6 @@ class RoboKinSet(Dataset):
                  norm=True):
         """
         q_samples = [(q_i_min, q_i_max, n_i_samples), (...), (...)]
-        
-        self.qs = [[0, 0, 0], [0, 0, 0]]
         """
         self.robot = robot
         self.n = self.robot.n # Número de ejes
@@ -42,36 +35,44 @@ class RoboKinSet(Dataset):
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
 
+    def __len__(self):
+        return self.q_vecs.shape[0]
+
+    def __getitem__(self, idx):
+        q_vec = self.q_vecs[idx]
+        pos = self.poses[idx]
+        return q_vec, pos
+
+
 if __name__ == '__main__':
+
+    import roboticstoolbox as rtb
+    from torch.utils.data import DataLoader
+    from tqdm import tqdm
+
+    from experim0 import Regressor
 
     # args
     lr = 3e-3
     depth = 3
     mid_layer_size = 10
     activation = torch.relu
-    n_samples = 512
     batch_size = 512
     epochs = 500
 
-    robot = rtb.models.DH.Panda()
+    robot = rtb.models.DH.Puma560()
 
     input_dim = robot.n
     output_dim = 3
 
-    dataset = RoboKinSet(robot, [(0, 1, 3),
-                                 (0, 1, 3),
-                                 (0, 1, 3),
-                                 (0, 1, 3),
-                                 (0, 1, 3),
-                                 (0, 1, 3),
-                                 (0, 1, 3)])
-    print(dataset.q_vecs.shape)
-    print(dataset.poses.shape)
+    train_set = RoboKinSet(robot, [(0, 2*np.pi, 4),
+                                   (0, 2*np.pi, 4),
+                                   (0, 2*np.pi, 4),
+                                   (0, 2*np.pi, 4),
+                                   (0, 2*np.pi, 4),
+                                   (0, 2*np.pi, 4)])
 
-    train_set = TensorDataset(dataset.q_vecs, dataset.poses)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-
-    #from tqdm import tqdm
 
 
     model = Regressor(input_dim, output_dim,
@@ -82,15 +83,13 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 
-    for t in range(epochs):
+    progress = tqdm(range(epochs), desc='Training')
+
+    for _ in progress:
         for X, Y in train_loader:
             pred = model(X)
             loss = criterion(pred, Y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        if t%(epochs//10) == 0:
-            print(f'Epoch {t}: Loss={loss.item()}')
-
-
-#    criterion(dataset.poses)
+        progress.set_postfix(Loss=loss.item())
