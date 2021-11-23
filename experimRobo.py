@@ -9,28 +9,13 @@ from torch.utils.data import Dataset
 class RoboKinSet(Dataset):
     # Es permisible tener todo el dataset en un tensor porque no es
     # particularmente grande
-    def __init__(self, robot, q_samples:list, random_sampling=False,
-                 norm=True):
+    def __init__(self, robot, q_samples, norm=True):
         """
         q_samples = [(q_i_min, q_i_max, n_i_samples), (...), (...)]
         """
         self.robot = robot
         self.n = self.robot.n # Número de ejes
-
-        are_enough = len(q_samples) == self.n
-        assert are_enough, f'Expected 3 int tuple list of len {self.n}'
-
-        # Lista de puntos para cada parámetro
-        self.qs = []
-        for q_min, q_max, n_samples in q_samples:
-            if random_sampling:
-                self.qs.append(np.random.uniform(q_min, q_max, n_samples))
-            else:
-                self.qs.append(np.linspace(q_min, q_max, n_samples))
-        
-        # Magia negra para producir todas las combinaciones de puntos
-        self.q_vecs = np.meshgrid(*self.qs)
-        self.q_vecs = np.stack(self.q_vecs, -1).reshape(-1, self.n)
+        self.q_vecs = q_samples
 
         # Producir las etiquetas correspondientes a cada vec de paráms
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
@@ -39,7 +24,6 @@ class RoboKinSet(Dataset):
         self.poses = torch.tensor(self.poses, dtype=torch.float)
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
-
     def __len__(self):
         return self.q_vecs.shape[0]
 
@@ -47,6 +31,18 @@ class RoboKinSet(Dataset):
         q_vec = self.q_vecs[idx]
         pos = self.poses[idx]
         return q_vec, pos
+
+
+def q_grid(*q_samples): #q_samples: tuple[int, int, int])
+    # Lista de puntos para cada parámetro
+    qs = []
+    for q_min, q_max, n_samples in q_samples:
+        qs.append(np.linspace(q_min, q_max, n_samples))
+    
+    # Magia negra para producir todas las combinaciones de puntos
+    q_vecs = np.meshgrid(*qs) # Probar np->torch
+    q_vecs = np.stack(q_vecs, -1).reshape(-1, len(q_samples))
+    return q_vecs
 
 
 if __name__ == '__main__':
@@ -70,19 +66,17 @@ if __name__ == '__main__':
     input_dim = robot.n
     output_dim = 3
 
-    train_set = RoboKinSet(robot, [(0, 2*np.pi, 3),
-                                   (0, 2*np.pi, 3),
-                                   (0, 2*np.pi, 3),
-                                   (0, 2*np.pi, 3),
-                                   (0, 2*np.pi, 3),
-                                   (0, 2*np.pi, 3)])
+    # Muestras
+    q_min = 0
+    q_max = 2*np.pi
+    train_set = RoboKinSet(robot, q_grid((q_min, q_max, 3),
+                                         (q_min, q_max, 3),
+                                         (q_min, q_max, 3),
+                                         (q_min, q_max, 3),
+                                         (q_min, q_max, 3),
+                                         (q_min, q_max, 3)))
 
-    val_set = RoboKinSet(robot, [(0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2)], random_sampling=True)
+    val_set = RoboKinSet(robot, np.random.uniform(q_min, q_max, (1000, robot.n)))
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
@@ -92,12 +86,11 @@ if __name__ == '__main__':
                       depth, mid_layer_size,
                       activation)
 
+    # Entrenamiento
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-
     progress = tqdm(range(epochs), desc='Training')
-
     for _ in progress:
         # Train step
         for X, Y in train_loader:
