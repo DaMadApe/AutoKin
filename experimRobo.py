@@ -31,6 +31,8 @@ class RoboKinSet(Dataset):
 
         # Producir las etiquetas correspondientes a cada vec de paráms
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
+
+        # Acomodar en tensores con tipo float
         self.poses = torch.tensor(self.poses, dtype=torch.float)
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
@@ -65,14 +67,22 @@ if __name__ == '__main__':
     input_dim = robot.n
     output_dim = 3
 
-    train_set = RoboKinSet(robot, [(0, 2*np.pi, 4),
-                                   (0, 2*np.pi, 4),
-                                   (0, 2*np.pi, 4),
-                                   (0, 2*np.pi, 4),
-                                   (0, 2*np.pi, 4),
-                                   (0, 2*np.pi, 4)])
+    train_set = RoboKinSet(robot, [(0, 2*np.pi, 3),
+                                   (0, 2*np.pi, 3),
+                                   (0, 2*np.pi, 3),
+                                   (0, 2*np.pi, 3),
+                                   (0, 2*np.pi, 3),
+                                   (0, 2*np.pi, 3)])
+
+    val_set = RoboKinSet(robot, [(0, 2*np.pi, 2),
+                                 (0, 2*np.pi, 2),
+                                 (0, 2*np.pi, 2),
+                                 (0, 2*np.pi, 2),
+                                 (0, 2*np.pi, 2),
+                                 (0, 2*np.pi, 2)])
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
 
     model = Regressor(input_dim, output_dim,
@@ -86,10 +96,19 @@ if __name__ == '__main__':
     progress = tqdm(range(epochs), desc='Training')
 
     for _ in progress:
+        # Train step
         for X, Y in train_loader:
+            model.train()
             pred = model(X)
             loss = criterion(pred, Y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        progress.set_postfix(Loss=loss.item())
+        # Val step
+        with torch.no_grad():
+            for X, Y in val_loader:
+                model.eval()
+                pred = model(X)
+                val_loss = criterion(pred, Y)
+
+        progress.set_postfix(Loss=loss.item(), Val=val_loss.item())
