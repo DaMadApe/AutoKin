@@ -53,7 +53,9 @@ if __name__ == '__main__':
 
     from experim0 import Regressor
 
-    # args
+    """
+    args
+    """
     lr = 3e-3
     depth = 3
     mid_layer_size = 10
@@ -66,27 +68,32 @@ if __name__ == '__main__':
     input_dim = robot.n
     output_dim = 3
 
-    # Muestras
+    """
+    Muestras
+    """
     q_min = 0
     q_max = 2*np.pi
-    train_set = RoboKinSet(robot, q_grid((q_min, q_max, 3),
-                                         (q_min, q_max, 3),
-                                         (q_min, q_max, 3),
-                                         (q_min, q_max, 3),
-                                         (q_min, q_max, 3),
-                                         (q_min, q_max, 3)))
+    train_qs = q_grid((q_min, q_max, 5),
+                      (q_min, q_max, 5),
+                      (q_min, q_max, 5),
+                      (q_min, q_max, 5),
+                      (q_min, q_max, 5),
+                      (q_min, q_max, 5))
+    train_set = RoboKinSet(robot, train_qs)
 
-    val_set = RoboKinSet(robot, np.random.uniform(q_min, q_max, (1000, robot.n)))
+    val_qs = np.random.uniform(q_min, q_max, (1000, robot.n))
+    val_set = RoboKinSet(robot, val_qs)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
 
-
+    """
+    Entrenamiento
+    """
     model = Regressor(input_dim, output_dim,
                       depth, mid_layer_size,
                       activation)
 
-    # Entrenamiento
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -108,3 +115,14 @@ if __name__ == '__main__':
                 val_loss = criterion(pred, Y)
 
         progress.set_postfix(Loss=loss.item(), Val=val_loss.item())
+
+    """
+    Guardar modelo
+    """
+    path = 'models/experimRobo'
+    torch.save(model.state_dict(), path)
+
+    """
+    model = Regressor(*args, **kwargs)
+    model.load_state_dict(torch.load(path))
+    """
