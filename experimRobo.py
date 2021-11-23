@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 class RoboKinSet(Dataset):
     # Es permisible tener todo el dataset en un tensor porque no es
     # particularmente grande
-    def __init__(self, robot, q_samples:list,
+    def __init__(self, robot, q_samples:list, random_sampling=False,
                  norm=True):
         """
         q_samples = [(q_i_min, q_i_max, n_i_samples), (...), (...)]
@@ -23,7 +23,10 @@ class RoboKinSet(Dataset):
         # Lista de puntos para cada parámetro
         self.qs = []
         for q_min, q_max, n_samples in q_samples:
-            self.qs.append(np.linspace(q_min, q_max, n_samples))
+            if random_sampling:
+                self.qs.append(np.random.uniform(q_min, q_max, n_samples))
+            else:
+                self.qs.append(np.linspace(q_min, q_max, n_samples))
         
         # Magia negra para producir todas las combinaciones de puntos
         self.q_vecs = np.meshgrid(*self.qs)
@@ -79,7 +82,7 @@ if __name__ == '__main__':
                                  (0, 2*np.pi, 2),
                                  (0, 2*np.pi, 2),
                                  (0, 2*np.pi, 2),
-                                 (0, 2*np.pi, 2)])
+                                 (0, 2*np.pi, 2)], random_sampling=True)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
