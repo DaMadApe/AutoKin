@@ -7,55 +7,60 @@ import torch
 from torch.utils.data import Dataset
 
 class RoboKinSet(Dataset):
-    # TODO: Normalización en __getitem__
-    def __init__(self, robot, q_samples, input_transform=None,
+    def __init__(self, robot, n_samples: int, normed_q=True,
                  output_transform=None):
         self.robot = robot
         self.n = self.robot.n # Número de ejes
-        self.q_vecs = q_samples
-        self.input_transform = input_transform
-        self.output_transform = output_transform
+        self.normed_q_vecs = np.random.rand(n_samples, robot.n)
 
-        # Producir las etiquetas correspondientes a cada vec de paráms
+        self.output_transform = output_transform
+        self.normed_q = normed_q
+        self.generate_labels()
+
+    @classmethod
+    def grid_sampling(cls, robot, n_samples: list, normed_q=True):
+        dataset = cls(robot, 0, normed_q)
+
+        # Magia negra para producir todas las combinaciones de puntos
+        q_vecs = np.meshgrid(*[np.linspace(0,1, int(n)) for n in n_samples])
+        q_vecs = np.stack(q_vecs, -1).reshape(-1, robot.n)
+
+        dataset.normed_q_vecs = q_vecs
+        dataset.generate_labels()
+        return dataset
+
+    def generate_labels(self):
+        q_min, q_max = self.robot.qlim # Límites de las juntas
+        self.q_vecs = self.normed_q_vecs * (q_max-q_min) + q_min
+        # Hacer cinemática directa
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
 
         # Acomodar en tensores con tipo float
         self.poses = torch.tensor(self.poses, dtype=torch.float)
+        self.normed_q_vecs = torch.tensor(self.normed_q_vecs, dtype=torch.float)
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
     def __len__(self):
         return self.q_vecs.shape[0]
 
     def __getitem__(self, idx):
-        q_vec = self.q_vecs[idx]
-        if self.input_transform is not None:
-            q_vec = self.input_transform(q_vec)
+        if self.normed_q:
+            q_vec = self.normed_q_vecs[idx]
+        else:
+            q_vec = self.q_vecs[idx]
         pos = self.poses[idx]
         if self.output_transform is not None:
             q_vec = self.output_transform(pos)
         return q_vec, pos
 
 
-def q_grid(*q_samples): 
-    #q_samples = [(q_i_min, q_i_max, n_i_samples), (...), (...)]
-    qs = [] # Lista de puntos para cada parámetro
-    for q_min, q_max, n_samples in q_samples:
-        qs.append(np.linspace(q_min, q_max, int(n_samples)))
-    
-    # Magia negra para producir todas las combinaciones de puntos
-    q_vecs = np.meshgrid(*qs) # Probar np->torch
-    q_vecs = np.stack(q_vecs, -1).reshape(-1, len(q_samples))
-    return q_vecs
+def norm_q(robot, q_vec):
+    q_min, q_max = robot.qlim # Límites de las juntas
+    return (q_vec - q_min) / (q_max-q_min)
 
-def robot_q_grid(robot, samples_per_q):
-    n_samples = samples_per_q*np.ones((robot.n,1))
-    q_samples = np.concatenate((robot.qlim.T, n_samples), axis=1)
-    return q_grid(*q_samples)
-
-def robot_rand_sampling(robot, n_samples):
-    samples = np.random.rand(n_samples, robot.n)
-    q_min, q_max = robot.qlim
-    return samples * (q_max-q_min) + q_min
+def denorm_q(robot, q_vec):
+    q_min, q_max = robot.qlim # Límites de las juntas
+    return q_vec * (q_max-q_min) + q_min
 
 
 if __name__ == '__main__':
@@ -87,11 +92,10 @@ if __name__ == '__main__':
     n_per_q = 10
     n_samples = n_per_q ** robot.n
 
-    train_qs = robot_q_grid(robot, n_per_q)
-    train_set = RoboKinSet(robot, train_qs)
+    ns_samples = [n_per_q] * robot.n
+    train_set = RoboKinSet.grid_sampling(robot, ns_samples)
 
-    val_qs = robot_rand_sampling(robot, n_samples//5)
-    val_set = RoboKinSet(robot, val_qs)
+    val_set = RoboKinSet(robot, n_samples//5)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
@@ -132,6 +136,8 @@ if __name__ == '__main__':
     torch.save(model.state_dict(), path)
 
     """
+    Cargar modelo
+    """"""
     model = Regressor(*args, **kwargs)
     model.load_state_dict(torch.load(path))
     """
