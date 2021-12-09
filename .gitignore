@@ -1,4 +1,8 @@
-tb_runs1
-lightning_logs
-datasets
+__pycache__
+.ipynb_checkpoints
 .vscode
+datasets
+intro
+lightning_logs
+models
+sandbox.ipynb
