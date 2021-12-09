@@ -1,4 +1,6 @@
 """
+
+
 Regresión de cinemática de un robot
 [q1 q2...qn] -> [x,y,z,*R]
 """
@@ -6,6 +8,9 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+"""
+Producir un conjunto de puntos (configuración,posición) de un cierto robot
+"""
 class RoboKinSet(Dataset):
     def __init__(self, robot, n_samples: int, normed_q=True,
                  output_transform=None):
@@ -19,6 +24,11 @@ class RoboKinSet(Dataset):
 
     @classmethod
     def grid_sampling(cls, robot, n_samples: list, normed_q=True):
+        """
+        Tomar  divisiones uniformes en el rango de cada junta,
+        devolver las configuraciones resultantes de
+        combinar estos parámetros
+        """
         dataset = cls(robot, 0, normed_q)
 
         # Magia negra para producir todas las combinaciones de puntos
@@ -74,10 +84,10 @@ if __name__ == '__main__':
     """
     args
     """
-    lr = 1e-3
     depth = 10
     mid_layer_size = 10
     activation = torch.relu
+    lr = 1e-3
     batch_size = 512
     epochs = 500
 
@@ -87,7 +97,7 @@ if __name__ == '__main__':
     output_dim = 3
 
     """
-    Muestras
+    Conjunto de datos
     """
     n_per_q = 10
     n_samples = n_per_q ** robot.n
@@ -97,8 +107,10 @@ if __name__ == '__main__':
 
     val_set = RoboKinSet(robot, n_samples//5)
 
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_set,
+                              batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set,
+                            batch_size=batch_size, shuffle=True)
 
     """
     Entrenamiento
