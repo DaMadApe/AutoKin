@@ -1,10 +1,16 @@
+"""
+Pruebas de regresión  con pytorch puros
+"""
+
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 
-
+"""
+MLP configurable de ancho constante
+"""
 class Regressor(nn.Module):
 
     def __init__(self, input_dim=1, output_dim=1,

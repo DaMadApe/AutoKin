@@ -1,3 +1,8 @@
+"""
+Cargar el modelo entrenado por experimRobo.py para
+comparar con el robot original y evaluar
+"""
+
 import roboticstoolbox as rtb
 import numpy as np
 import torch
@@ -8,12 +13,9 @@ from experimRobo import denorm_q
 """
 args
 """
-lr = 1e-3
 depth = 10
 mid_layer_size = 10
 activation = torch.relu
-batch_size = 512
-epochs = 500
 
 robot = rtb.models.DH.Cobra600()
 

@@ -1,3 +1,7 @@
+"""
+Adaptación de experim0.py con pytorch lightning
+"""
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -47,8 +51,7 @@ class Regressor(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         point, target = batch
         pred = self(point)
-        criterion = nn.MSELoss()
-        loss = criterion(pred, target)
+        loss = F.mse_loss(pred, target)
         self.log('train_loss', loss)
         self.log('hp_metric', loss)
         return loss

@@ -1,8 +1,5 @@
 """
-- Pytorch puro
-- Regresión con validación
-- Normalización de entradas y etiquetas
-- tqdm
+Aproximación de funciones f : R^2 -> R^n
 """
 
 import torch
@@ -68,7 +65,7 @@ if __name__ == '__main__':
             print(f'Epoch {t}: Loss={loss.item()}')
 
     """
-    Visualización de datos en una dimensión
+    Visualización de datos 3D
     """
     if view_plot:
         res = 256

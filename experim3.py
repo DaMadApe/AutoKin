@@ -1,8 +1,7 @@
 """
-Pruebas adicionales de experimRobo
-    Robots paralelos
-Usar Lightning sólo para entrenamiento (?)
-
+Aproximar la cinemática directa de posición de un robot con
+el modelo de experim0, usando Lightning para empaquetar y
+entrenar el modelo.
 """
 
 import roboticstoolbox as rtb
