@@ -28,9 +28,14 @@ model = Regressor(input_dim, output_dim,
 load(model, path, name)
 model.eval()
 
-# Jacobiano de la red neuronal
-def j_model(x):
-    return jacobian(model, x, vectorize=True)
+# Función para calcular el jacobiano para cada muestra de un batch
+def batch_jacobian(func, x, create_graph=False, vectorize=False):
+    # x in shape (Batch, Length)
+    def _func_sum(x):
+        return func(x).sum(dim=0)
+    return jacobian(_func_sum, x,
+                    create_graph=create_graph,
+                    vectorize=vectorize).permute(1,0,2)
 
 """
 Comparar modelo y jacobiano con funciones originales
@@ -44,14 +49,7 @@ x_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
 
 with torch.no_grad():
     pred = model(x_plot)
-    pred_j = j_model(x_plot)
-    # La forma del vector de entrada introduce dimensiones
-    # adicionales en el resultado [N, 1, N, 1]
-    pred_j = pred_j.squeeze()
-    # Pasar el batch entero al jacobiano saca las derivadas
-    # de cada salida respecto a todas las entradas del batch
-    # Sólo es relevante la diagonal, lo demás son ceros.
-    pred_j = torch.diagonal(pred_j)
+    pred_j = batch_jacobian(model, x_plot, vectorize=True).squeeze()
 
 fig, ax = plt.subplots()
 ax.plot(x_plot, f(x_plot))
