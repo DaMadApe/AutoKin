@@ -49,7 +49,7 @@ x_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
 
 with torch.no_grad():
     pred = model(x_plot)
-    pred_j = batch_jacobian(model, x_plot, vectorize=True).squeeze()
+    pred_j = batch_jacobian(model, x_plot).squeeze()
 
 fig, ax = plt.subplots()
 ax.plot(x_plot, f(x_plot))
