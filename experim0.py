@@ -1,7 +1,7 @@
 """
 Pruebas de regresión  con pytorch puros
 """
-
+import os
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -35,6 +35,19 @@ class Regressor(nn.Module):
             x = self.activation(layer(x))
         x = self.layers[-1](x)
         return x
+
+def save(model, path, name):
+    name += ".pt"
+    if not os.path.exists(path):
+        print("Path doesn't exist, creating folder...")
+        os.makedirs(path)
+    save_path = os.path.join(path, name)
+    torch.save(model.state_dict(), save_path)
+
+def load(model, path, name):
+    name += ".pt"
+    load_path = os.path.join(path, name)
+    model.load_state_dict(torch.load(load_path))
 
 
 if __name__ == '__main__':
@@ -105,3 +118,15 @@ if __name__ == '__main__':
                 'Model',
                 'Trainset'])
         plt.show()
+
+    """
+    Guardar modelo
+    """
+    path = 'models/experim0'
+    save(model, path, 'v1')
+
+    """
+    Cargar modelo
+    """
+    # model = Regressor(*args, **kwargs)
+    # cargar(model, path, 'v1')
