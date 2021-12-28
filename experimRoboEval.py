@@ -30,7 +30,7 @@ model = Regressor(input_dim, output_dim,
 model.load_state_dict(torch.load(path))
 model.eval()
 
-q_test = np.array([0.5, 0.6, 0.2, 0.9])
+q_test = [0.1, 0.9, 0.1, 0.2]
 real = robot.fkine(denorm_q(robot, q_test)).t
 pred = model(torch.tensor(q_test).float()).detach()
 

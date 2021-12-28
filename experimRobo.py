@@ -1,15 +1,13 @@
 """
-
-
 Regresión de cinemática de un robot
-[q1 q2...qn] -> [x,y,z,*R]
+[q1 q2...qn] -> [x,y,z]
 """
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 
 """
-Producir un conjunto de puntos (configuración,posición) de un cierto robot
+Producir un conjunto de puntos (configuración,posición) de un robot
 """
 class RoboKinSet(Dataset):
     def __init__(self, robot, n_samples: int, normed_q=True,
@@ -79,7 +77,7 @@ if __name__ == '__main__':
     from torch.utils.data import DataLoader
     from tqdm import tqdm
 
-    from experim0 import Regressor
+    from experim0 import Regressor, save
 
     """
     args
@@ -144,12 +142,8 @@ if __name__ == '__main__':
     """
     Guardar modelo
     """
-    path = 'models/experimRobo/v1.pt'
-    torch.save(model.state_dict(), path)
+    path = 'models/experimRobo'
+    name = 'v1'
+    save(model, path, name)
 
-    """
-    Cargar modelo
-    """"""
-    model = Regressor(*args, **kwargs)
-    model.load_state_dict(torch.load(path))
-    """
+    #load(model, path, name)
