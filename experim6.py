@@ -16,8 +16,9 @@ def pi_jacobian(q_start, x_target, fkine, jacob,
                 eta=0.01, min_error=0.01, max_iters=1000):
     q = q_start
     for i in range(max_iters):
-        delta_x = fkine(q) - x_target
-        if np.linalg.norm(delta_x) < min_error:
+        delta_x = x_target - fkine(q)
+        error = np.linalg.norm(delta_x)
+        if error < min_error:
             break
         #error = dif**2
         #d_error = 2*dif * jacob(q_start)
