@@ -97,7 +97,7 @@ if __name__ == '__main__':
     """
     Conjunto de datos
     """
-    n_per_q = 10
+    n_per_q = 20
     n_samples = n_per_q ** robot.n
 
     ns_samples = [n_per_q] * robot.n
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     Guardar modelo
     """
     path = 'models/experimRobo'
-    name = 'v1'
+    name = 'Cobra600v1'
     save(model, path, name)
 
     #load(model, path, name)

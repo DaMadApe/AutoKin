@@ -35,6 +35,6 @@ real = robot.fkine(denorm_q(robot, q_test)).t
 pred = model(torch.tensor(q_test).float()).detach()
 
 
-print(robot.qlim)
-print(real)
-print(pred)
+# print(robot.qlim)
+# print(real)
+# print(pred)
