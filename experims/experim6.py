@@ -9,7 +9,7 @@ configuración más cercana en el espacio de parámetros.
 import roboticstoolbox as rtb
 import numpy as np
 
-from experimRobo import denorm_q
+from experimR import denorm_q
 
 # Método de pseudoinverso de jacobiano
 def ikine_pi_jacob(q_start, x_target, fkine, jacob,

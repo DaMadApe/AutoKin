@@ -8,7 +8,7 @@ import torch
 from torch.autograd.functional import jacobian
 
 from experim0 import Regressor, load
-from experimRobo import denorm_q
+from experimR import denorm_q
 from experim6 import ikine_pi_jacob
 
 """
@@ -23,7 +23,7 @@ robot = rtb.models.DH.Cobra600()
 input_dim = robot.n
 output_dim = 3
 
-path = 'models/experimRobo'
+path = 'models/experimR'
 name = 'v1'
 model = Regressor(input_dim, output_dim,
                     depth, mid_layer_size,

@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import TensorDataset
 import pytorch_lightning as pl
 
-from experimRobo import RoboKinSet
+from experimR import RoboKinSet
 from experim0 import Regressor
 
 
@@ -59,7 +59,6 @@ if __name__ == '__main__':
     pl.seed_everything(36)
 
     # Hyperparams
-    cpu_cores = 8 # Núcleos usados por el programa
     depth = 10
     mid_layer_size = 10
     activation = torch.relu

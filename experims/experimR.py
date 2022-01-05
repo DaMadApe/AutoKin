@@ -142,7 +142,7 @@ if __name__ == '__main__':
     """
     Guardar modelo
     """
-    path = 'models/experimRobo'
+    path = 'models/experimR'
     name = 'Cobra600v1'
     save(model, path, name)
 

@@ -1,5 +1,5 @@
 """
-Cargar el modelo entrenado por experimRobo.py para
+Cargar el modelo entrenado por experimR.py para
 comparar con el robot original y evaluar
 """
 
@@ -7,7 +7,7 @@ import roboticstoolbox as rtb
 import torch
 
 from experim0 import Regressor, load
-from experimRobo import denorm_q
+from experimR import denorm_q
 
 """
 args
@@ -22,7 +22,7 @@ input_dim = robot.n
 output_dim = 3
 """"""
 
-path = 'models/experimRobo'
+path = 'models/experimR'
 name = 'v1'
 model = Regressor(input_dim, output_dim,
                     depth, mid_layer_size,

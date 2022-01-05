@@ -8,7 +8,7 @@ import roboticstoolbox as rtb
 from tqdm import tqdm
 
 from experim0 import Regressor, save
-from experimRobo import RoboKinSet
+from experimR import RoboKinSet
 
 """
 args
