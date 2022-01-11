@@ -77,7 +77,7 @@ if __name__ == '__main__':
     from torch.utils.data import DataLoader
     from tqdm import tqdm
 
-    from experim0 import Regressor, save
+    from experim0 import MLP, save
 
     """
     args
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     """
     Entrenamiento
     """
-    model = Regressor(input_dim, output_dim,
+    model = MLP(input_dim, output_dim,
                       depth, mid_layer_size,
                       activation)
 

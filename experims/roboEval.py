@@ -6,7 +6,7 @@ comparar con el robot original y evaluar
 import roboticstoolbox as rtb
 import torch
 
-from experim0 import Regressor, load
+from experim0 import MLP, load
 from experimR import denorm_q
 
 """
@@ -24,7 +24,7 @@ output_dim = 3
 
 path = 'models/experimR'
 name = 'v1'
-model = Regressor(input_dim, output_dim,
+model = MLP(input_dim, output_dim,
                     depth, mid_layer_size,
                     activation)
 load(model, path, name)

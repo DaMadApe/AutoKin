@@ -7,7 +7,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
-from experim0 import Regressor
+from experim0 import MLP
 
 
 if __name__ == '__main__':
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     """
     Entrenamiento
     """
-    model = Regressor(input_dim, output_dim,
+    model = MLP(input_dim, output_dim,
                       depth, mid_layer_size,
                       activation)
 

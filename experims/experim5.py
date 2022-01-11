@@ -7,7 +7,7 @@ import torch
 from torch.autograd.functional import jacobian
 import matplotlib.pyplot as plt
 
-from experim0 import Regressor, load
+from experim0 import MLP, load
 
 """
 Cargar modelo
@@ -22,7 +22,7 @@ activation = torch.tanh
 input_dim = 1
 output_dim = 1
 
-model = Regressor(input_dim, output_dim,
+model = MLP(input_dim, output_dim,
                     depth, mid_layer_size,
                     activation)
 load(model, path, name)

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 """
 MLP configurable de ancho constante
 """
-class Regressor(nn.Module):
+class MLP(nn.Module):
 
     def __init__(self, input_dim=1, output_dim=1,
                  depth=1, mid_layer_size=10, activation=torch.tanh):
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     """
     Entrenamiento
     """
-    model = Regressor(input_dim, output_dim,
+    model = MLP(input_dim, output_dim,
                       depth, mid_layer_size,
                       activation)
 
@@ -128,5 +128,5 @@ if __name__ == '__main__':
     """
     Cargar modelo
     """
-    # model = Regressor(*args, **kwargs)
+    # model = MLP(*args, **kwargs)
     # cargar(model, path, 'v1')

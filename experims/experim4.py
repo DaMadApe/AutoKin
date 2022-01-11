@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import roboticstoolbox as rtb
 from tqdm import tqdm
 
-from experim0 import Regressor, save
+from experim0 import MLP, save
 from experimR import RoboKinSet
 
 """
@@ -44,7 +44,7 @@ val_loader = DataLoader(val_set,
 """
 Entrenamiento
 """
-model = Regressor(input_dim, output_dim,
+model = MLP(input_dim, output_dim,
                     depth, mid_layer_size,
                     activation)
 

@@ -13,23 +13,24 @@ from torch.utils.data.dataset import TensorDataset
 import pytorch_lightning as pl
 
 from experimR import RoboKinSet
-from experim0 import Regressor
+from experim0 import MLP
 
 
-class RegressorPL(pl.LightningModule):
+class MLP_PL(pl.LightningModule):
 
     def __init__(self, input_dim=1, output_dim=1,
-                 depth=1, mid_layer_size=10, activation=torch.tanh, lr=1e-3,):
+                 depth=1, mid_layer_size=10, activation=torch.tanh,
+                 optim=torch.optim.Adam, lr=1e-3):
         super().__init__()
         self.save_hyperparameters()
-        self.model = Regressor(input_dim, output_dim, depth,
+        self.model = MLP(input_dim, output_dim, depth,
                                mid_layer_size, activation)
 
         # Se necesita definir para save_graph
         self.example_input_array = torch.zeros(1, self.hparams.input_dim)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
+        optimizer = self.hparams.optim(self.parameters(), lr=self.hparams.lr)
         return optimizer
 
     def forward(self, x):
@@ -89,12 +90,12 @@ if __name__ == '__main__':
     """
     Entrenamiento
     """
-    logger = TensorBoardLogger('lightning_logs', 'Exp3',
+    logger = TensorBoardLogger('lightning_logs', 'exp3',
                                log_graph=True)
 
-    model = RegressorPL(input_dim, output_dim,
+    model = MLP_PL(input_dim, output_dim,
                         depth, mid_layer_size,
-                        activation, lr)
+                        activation, lr=lr)
 
     # trainer = pl.Trainer(fast_dev_run=True)
     trainer = pl.Trainer(max_epochs=epochs,
