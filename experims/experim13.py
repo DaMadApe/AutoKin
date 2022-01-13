@@ -50,6 +50,7 @@ class ResNet(nn.Module):
 if __name__ == "__main__":
 
     from torch.utils.data import DataLoader, TensorDataset
+    from tqdm import tqdm
 
     torch.manual_seed(42)
 
@@ -96,15 +97,19 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    for t in range(epochs):
+    progress = tqdm(range(epochs), desc='Training')
+    for _ in progress:
+        # Train step
+        # Invertir muestras para fines de exp
         for X, Y in train_loader:
+            model.train()
             pred = model(X)
             loss = criterion(pred, Y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        if t%(epochs//10) == 0:
-            print(f'Epoch {t}: Loss={loss.item()}')
+
+        progress.set_postfix(Loss=loss.item())
 
     """
     Visualización de datos en una dimensión

@@ -7,6 +7,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 """
 MLP configurable de ancho constante
@@ -86,21 +87,25 @@ if __name__ == '__main__':
     Entrenamiento
     """
     model = MLP(input_dim, output_dim,
-                      depth, mid_layer_size,
-                      activation)
+                depth, mid_layer_size,
+                activation)
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    for t in range(epochs):
+    progress = tqdm(range(epochs), desc='Training')
+    for _ in progress:
+        # Train step
+        # Invertir muestras para fines de exp
         for X, Y in train_loader:
+            model.train()
             pred = model(X)
             loss = criterion(pred, Y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        if t%(epochs//10) == 0:
-            print(f'Epoch {t}: Loss={loss.item()}')
+
+        progress.set_postfix(Loss=loss.item())
 
     """
     Visualización de datos en una dimensión
@@ -123,7 +128,7 @@ if __name__ == '__main__':
     Guardar modelo
     """
     path = 'models/experim0'
-    save(model, path, 'v1')
+    #save(model, path, 'v1')
 
     """
     Cargar modelo
