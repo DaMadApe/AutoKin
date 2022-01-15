@@ -70,7 +70,7 @@ if __name__ == '__main__':
     from pytorch_lightning.callbacks import ModelCheckpoint
     from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
-    from experim9 import FKRegressor
+    from experim9 import FKRegressionTask
 
     # pl.seed_everything(36)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     # regressor = MLP(input_dim=input_dim, output_dim=output_dim,
     #                 depth=depth, mid_layer_size=mid_layer_size,
     #                 activation=activation)
-    # model = FKRegressor(regressor, robot, n_per_q, batch_size, lr)
+    # model = FKRegressionTask(regressor, robot, n_per_q, batch_size, lr)
 
     model = MLP_Regressor(robot, n_per_q,
                           input_dim=input_dim, output_dim=output_dim,
