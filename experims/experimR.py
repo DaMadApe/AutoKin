@@ -73,10 +73,10 @@ def denorm_q(robot, q_vec):
     return q_vec * (q_max-q_min) + q_min
 
 
-def random_robot(min_DH, max_DH, p_P):
+def random_robot(min_DH, max_DH, p_P=0.5, min_n=2, max_n=9):
     # rtb.DHLink([d, alpha, theta, a, joint_type])  rev=0, prism=1
     links = []
-    for n_joint in range(np.random.randint(2, 10)):
+    for n_joint in range(np.random.randint(min_n, max_n+1)):
         DH_vals = (np.random.rand(4) - min_DH) / (max_DH - min_DH)
         d, alpha, theta, a = DH_vals
         is_prism = np.random.rand() < p_P

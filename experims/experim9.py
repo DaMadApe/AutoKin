@@ -68,9 +68,11 @@ if __name__ == "__main__":
 
     min_DH = np.array([0, 0, 0, 0] )
     max_DH = np.array([2*np.pi, 2, 2*np.pi, 2])
-    prob_prism = 0.8
+    prob_prism = 0.5
+    min_n, max_n = (2, 4)
 
-    robot = random_robot(min_DH, max_DH, prob_prism)
+    robot = random_robot(min_DH, max_DH, prob_prism, min_n, max_n)
+    # TODO: Registrar params DH del robot
 
     """
     fkine_all devuelve la transformación para cada junta, por lo que
