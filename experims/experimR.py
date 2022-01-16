@@ -5,6 +5,7 @@ Regresión de cinemática de un robot
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+import roboticstoolbox as rtb
 
 """
 Producir un conjunto de puntos (configuración,posición) de un robot
@@ -66,14 +67,31 @@ def norm_q(robot, q_vec):
     q_min, q_max = robot.qlim # Límites de las juntas
     return (q_vec - q_min) / (q_max-q_min)
 
+
 def denorm_q(robot, q_vec):
     q_min, q_max = robot.qlim # Límites de las juntas
     return q_vec * (q_max-q_min) + q_min
 
 
+def random_robot(min_DH, max_DH, p_P):
+    # rtb.DHLink([d, alpha, theta, a, joint_type])  rev=0, prism=1
+    links = []
+    for n_joint in range(np.random.randint(2, 10)):
+        DH_vals = (np.random.rand(4) - min_DH) / (max_DH - min_DH)
+        d, alpha, theta, a = DH_vals
+        is_prism = np.random.rand() < p_P
+
+        if is_prism:
+            links.append(rtb.DHLink(alpha=alpha,theta=theta, a=a, sigma=1,
+                                    qlim=[0, 1.5*max_DH[0]]))
+        else:
+            links.append(rtb.DHLink(d=d, alpha=alpha, a=a, sigma=0))
+                         #qlim=np.array([0, 1.5*max_DH[0]])))
+    return rtb.DHRobot(links)
+
+
 if __name__ == '__main__':
 
-    import roboticstoolbox as rtb
     from torch.utils.data import DataLoader
     from tqdm import tqdm
 
@@ -87,9 +105,9 @@ if __name__ == '__main__':
     activation = torch.relu
     lr = 1e-3
     batch_size = 512
-    epochs = 500
+    epochs = 100
 
-    robot = rtb.models.DH.Cobra600()
+    robot = rtb.models.DH.Puma560()
 
     input_dim = robot.n
     output_dim = 3
@@ -97,7 +115,7 @@ if __name__ == '__main__':
     """
     Conjunto de datos
     """
-    n_per_q = 20
+    n_per_q = 3
     n_samples = n_per_q ** robot.n
 
     ns_samples = [n_per_q] * robot.n
@@ -105,10 +123,8 @@ if __name__ == '__main__':
 
     val_set = RoboKinSet(robot, n_samples//5)
 
-    train_loader = DataLoader(train_set,
-                              batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set,
-                            batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_set, shuffle=True)
+    val_loader = DataLoader(val_set)
 
     """
     Entrenamiento
@@ -143,7 +159,7 @@ if __name__ == '__main__':
     Guardar modelo
     """
     path = 'models/experimR'
-    name = 'Cobra600v1'
+    name = 'Puma590v1'
     save(model, path, name)
 
     #load(model, path, name)

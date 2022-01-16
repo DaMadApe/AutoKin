@@ -4,12 +4,10 @@ robots para comparar el efecto de distintas
 arquitecturas de la red neuronal.
 """
 import numpy as np
-import roboticstoolbox as rtb
 import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
 
 from experimR import RoboKinSet
 
@@ -19,6 +17,7 @@ class FKRegressionTask(pl.LightningModule):
     def __init__(self, model, robot, n_per_q,
                  batch_size=64, lr=1e-3, optim=torch.optim.Adam):
         super().__init__()
+        self.save_hyperparameters()
         self.model = model
         # Para save_graph
         self.example_input_array = torch.zeros(1, self.model.input_dim)
@@ -58,36 +57,18 @@ class FKRegressionTask(pl.LightningModule):
         return loader
 
 
-def random_robot(min_DH, max_DH, p_P):
-    # rtb.DHLink([d, alpha, theta, a, joint_type])
-    # rev=0, prism=1
-    links = []
-
-    for n_joint in range(np.random.randint(2, 10)):
-
-        DH_vals = (np.random.rand(4) - min_DH) / (max_DH - min_DH)
-        d, alpha, theta, a = DH_vals
-        is_prism = np.random.rand() < p_P
-
-        if is_prism:
-            links.append(rtb.DHLink(alpha=alpha,theta=theta, a=a, sigma=1))
-        else:
-            links.append(rtb.DHLink(d=d, alpha=alpha, a=a, sigma=0))
-
-
-    return rtb.DHRobot(links)
-
-
-
-
 if __name__ == "__main__":
+
+    from pytorch_lightning.loggers import TensorBoardLogger
+    from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
     from experim0 import MLP
     from experim13 import ResNet
+    from experimR import random_robot
 
     min_DH = np.array([0, 0, 0, 0] )
     max_DH = np.array([2*np.pi, 2, 2*np.pi, 2])
-    prob_prism = 0.5
+    prob_prism = 0.8
 
     robot = random_robot(min_DH, max_DH, prob_prism)
 
@@ -100,18 +81,36 @@ if __name__ == "__main__":
     # robot.fkine_all(q).t
     # robot.plot(q)
 
+    # Learnign params
+    max_epochs = 100
+    n_per_q = 8
 
     input_dim = robot.n
     output_dim = 3
+    
+    base_params = {'input_dim': input_dim, 
+                   'output_dim': output_dim}
 
-    mlp_params_0 = {"input_dim": input_dim, 
-                    "output_dim": output_dim,
-                    "depth": 3,
-                    "mid_layer_size": 10,
-                    "activation": torch.tanh}
+    mlp_p0 = {**base_params,
+              'depth': 3,
+              'mid_layer_size': 10,
+              'activation': torch.tanh}
+    mlp_p1 = {**base_params,
+              'depth': 6,
+              'mid_layer_size': 10,
+              'activation': torch.tanh}
 
-    for model in [MLP(**mlp_params_0), ResNet()]:
-        task = FKRegressionTask(model)
+    logger = TensorBoardLogger('lightning_logs', 'exp9',
+                               log_graph=True)
 
-        trainer = pl.Trainer()
+    early_stop_cb = EarlyStopping(monitor="val_loss")
+
+    for model in [MLP(**mlp_p0), MLP(**mlp_p1), ResNet(**base_params)]:
+        task = FKRegressionTask(model, robot, n_per_q)
+        trainer = pl.Trainer(max_epochs=max_epochs,
+                             logger=logger,
+                             auto_lr_find=True,
+                             auto_scale_batch_size=True,
+                             callbacks=[early_stop_cb])
+        trainer.tune(task)
         trainer.fit(task)
