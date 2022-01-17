@@ -14,11 +14,13 @@ from experimR import RoboKinSet
 
 class FKRegressionTask(pl.LightningModule):
 
-    def __init__(self, model, robot, n_per_q,
+    def __init__(self, model, train_set, val_set,
                  batch_size=64, lr=1e-3, optim=torch.optim.Adam):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['train_set', 'val_set'])
         self.model = model
+        self.train_set = train_set
+        self.val_set = val_set
         # Para save_graph
         self.example_input_array = torch.zeros(1, self.model.input_dim)
 
@@ -45,16 +47,10 @@ class FKRegressionTask(pl.LightningModule):
         return val_loss
 
     def train_dataloader(self):
-        ns_samples = [self.hparams.n_per_q] * self.hparams.robot.n
-        train_set = RoboKinSet.grid_sampling(self.hparams.robot, ns_samples)
-        loader = DataLoader(train_set, batch_size=self.hparams.batch_size, shuffle=True)
-        return loader
+        return DataLoader(self.train_set, batch_size=self.hparams.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        n_samples = self.hparams.n_per_q ** self.hparams.robot.n // 5
-        val_set = RoboKinSet(self.hparams.robot, n_samples)
-        loader = DataLoader(val_set, batch_size=self.hparams.batch_size)
-        return loader
+        return DataLoader(self.val_set, batch_size=self.hparams.batch_size)
 
 
 if __name__ == "__main__":
@@ -83,9 +79,17 @@ if __name__ == "__main__":
     # robot.fkine_all(q).t
     # robot.plot(q)
 
+
+    # Data
+    n_per_q = 12
+    ns_samples = [n_per_q] * robot.n
+    n_samples = n_per_q ** robot.n // 5
+    train_set = RoboKinSet.grid_sampling(robot, ns_samples)
+    val_set = RoboKinSet(robot, n_samples)
+
+
     # Learnign params
-    max_epochs = 100
-    n_per_q = 8
+    max_epochs = 50
 
     input_dim = robot.n
     output_dim = 3
@@ -107,12 +111,13 @@ if __name__ == "__main__":
 
     early_stop_cb = EarlyStopping(monitor="val_loss")
 
+    # Training
     for model in [MLP(**mlp_p0), MLP(**mlp_p1), ResNet(**base_params)]:
-        task = FKRegressionTask(model, robot, n_per_q)
+        task = FKRegressionTask(model, train_set, val_set)
         trainer = pl.Trainer(max_epochs=max_epochs,
                              logger=logger,
-                             auto_lr_find=True,
-                             auto_scale_batch_size=True,
+                             #auto_lr_find=True,
+                             #auto_scale_batch_size=True,
                              callbacks=[early_stop_cb])
-        trainer.tune(task)
+        # trainer.tune(task)
         trainer.fit(task)
