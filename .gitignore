@@ -1,8 +1,6 @@
 __pycache__
 .ipynb_checkpoints
 .vscode
-datasets
-intro
 lightning_logs
 models
 experims/sandbox.ipynb
