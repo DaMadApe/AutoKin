@@ -17,7 +17,8 @@ class MLP(nn.Module):
     def __init__(self, input_dim=1, output_dim=1,
                  depth=1, mid_layer_size=10, activation=torch.tanh):
         super().__init__()
-
+                
+        self.input_dim = input_dim
         # Armar modelo
         self.layers = nn.ModuleList()
         
@@ -37,6 +38,15 @@ class MLP(nn.Module):
         x = self.layers[-1](x)
         return x
 
+"""
+Save:
+torch.save(model, PATH)
+
+Load:
+# Model class must be defined somewhere
+model = torch.load(PATH)
+model.eval()
+"""
 def save(model, path, name):
     name += ".pt"
     if not os.path.exists(path):
@@ -53,11 +63,11 @@ def load(model, path, name):
 
 if __name__ == '__main__':
 
-    torch.manual_seed(42)
+    #torch.manual_seed(42)
 
     # args
     lr = 5e-3
-    depth = 3
+    depth = 6
     mid_layer_size = 10
     activation = torch.tanh
     n_samples = 32
@@ -96,7 +106,6 @@ if __name__ == '__main__':
     progress = tqdm(range(epochs), desc='Training')
     for _ in progress:
         # Train step
-        # Invertir muestras para fines de exp
         for X, Y in train_loader:
             model.train()
             pred = model(X)
@@ -120,16 +129,17 @@ if __name__ == '__main__':
         ax.plot(x_plot, pred)
         ax.scatter(x, y)
         ax.legend(['Target F',
-                'Model',
-                'Trainset'])
+                   'Model',
+                   'Trainset'])
         plt.show()
 
     """
     Guardar modelo
     """
-    path = 'models/experim0'
-    #save(model, path, 'v1')
-
+    # path = 'models/experim0'
+    # save(model, path, 'v1')
+    path = 'models/experim0/v1'
+    torch.save(model, path)
     """
     Cargar modelo
     """
