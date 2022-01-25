@@ -71,9 +71,5 @@ for _ in progress:
 
     progress.set_postfix(Loss=loss.item(), Val=val_loss.item())
 
-"""
-Guardar modelo
-"""
-path = 'models/experim4'
-name = 'v1'
-save(model, path, name)
+# Guardar modelo
+torch.save(model, 'models/experim4_v1.pt')

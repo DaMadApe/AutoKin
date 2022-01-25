@@ -12,20 +12,7 @@ from experim0 import MLP, load
 """
 Cargar modelo
 """
-path = 'models/experim0'
-name = 'v1'
-
-# args
-depth = 3
-mid_layer_size = 10
-activation = torch.tanh
-input_dim = 1
-output_dim = 1
-
-model = MLP(input_dim, output_dim,
-                    depth, mid_layer_size,
-                    activation)
-load(model, path, name)
+model = torch.load('models/experim0_v1.pt')
 model.eval()
 
 # Función para calcular el jacobiano para cada muestra de un batch

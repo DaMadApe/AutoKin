@@ -143,5 +143,5 @@ if __name__ == '__main__':
     """
     Cargar modelo
     """
-    # model = MLP(*args, **kwargs)
-    # cargar(model, path, 'v1')
+    # model = torch.load(PATH)
+    # model.eval()

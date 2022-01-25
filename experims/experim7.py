@@ -14,21 +14,9 @@ from experim6 import ikine_pi_jacob
 """
 Cargar modelo con args originales de entrenamiento
 """
-depth = 10
-mid_layer_size = 10
-activation = torch.relu
-
 robot = rtb.models.DH.Cobra600()
 
-input_dim = robot.n
-output_dim = 3
-
-path = 'models/experimR'
-name = 'v1'
-model = MLP(input_dim, output_dim,
-                    depth, mid_layer_size,
-                    activation)
-load(model, path, name)
+model = torch.load('models/experimR_v1.pt')
 model.eval()
 
 # q_test = [0.1, 0.9, 0.1, 0.2]
