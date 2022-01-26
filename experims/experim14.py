@@ -11,11 +11,15 @@ from tqdm import tqdm
 
 def train(model, train_loader, val_loader=None, epochs=10,
           lr=1e-3, criterion=nn.MSELoss(), optim=torch.optim.Adam,
-          lr_scheduler=False):
+          lr_scheduler=False, silent=False):
     optimizer = optim(model.parameters(), lr=lr)
-    progress = tqdm(range(epochs), desc='Training')
     scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
-    for _ in progress:
+    
+    if silent:
+        epoch_iter = range(epochs)
+    else:
+        epoch_iter = tqdm(range(epochs), desc='Training')
+    for _ in epoch_iter:
         # Train step
         # Invertir muestras para fines de exp
         for X, Y in train_loader:
@@ -35,9 +39,11 @@ def train(model, train_loader, val_loader=None, epochs=10,
 
                     if lr_scheduler:
                         scheduler.step(val_loss)
-            progress.set_postfix(Loss=loss.item(), Val=val_loss.item())
+            if not silent:
+                epoch_iter.set_postfix(Loss=loss.item(), Val=val_loss.item())
         else:
-            progress.set_postfix(Loss=loss.item())
+            if not silent:
+                epoch_iter.set_postfix(Loss=loss.item())
 
 
 if __name__ == "__main__":
