@@ -14,6 +14,7 @@ def train(model, train_loader, val_loader=None, epochs=10,
           lr_scheduler=False, silent=False):
     optimizer = optim(model.parameters(), lr=lr)
     scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
+    model.train()
     
     if silent:
         epoch_iter = range(epochs)
@@ -23,7 +24,6 @@ def train(model, train_loader, val_loader=None, epochs=10,
         # Train step
         # Invertir muestras para fines de exp
         for X, Y in train_loader:
-            model.train()
             pred = model(X)
             loss = criterion(pred, Y)
             optimizer.zero_grad()
