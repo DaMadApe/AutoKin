@@ -39,8 +39,7 @@ class RoboKinSet(Dataset):
         return dataset
 
     def generate_labels(self):
-        q_min, q_max = self.robot.qlim # Límites de las juntas
-        self.q_vecs = self.normed_q_vecs * (q_max-q_min) + q_min
+        self.q_vecs = denorm_q(self.robot, self.normed_q_vecs)
         # Hacer cinemática directa
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
 
@@ -59,7 +58,7 @@ class RoboKinSet(Dataset):
             q_vec = self.q_vecs[idx]
         pos = self.poses[idx]
         if self.output_transform is not None:
-            q_vec = self.output_transform(pos)
+            pos = self.output_transform(pos)
         return q_vec, pos
 
 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
     activation = torch.relu
     lr = 1e-3
     batch_size = 512
-    epochs = 100
+    epochs = 10
 
     robot = rtb.models.DH.Puma560()
 
@@ -155,11 +154,6 @@ if __name__ == '__main__':
 
         progress.set_postfix(Loss=loss.item(), Val=val_loss.item())
 
-    """
-    Guardar modelo
-    """
-    path = 'models/experimR'
-    name = 'Puma590v1'
-    save(model, path, name)
 
-    #load(model, path, name)
+    # Guardar modelo
+    torch.save(model, 'models/experimR_v1.pt')
