@@ -133,15 +133,9 @@ if __name__ == '__main__':
                    'Trainset'])
         plt.show()
 
-    """
-    Guardar modelo
-    """
-    # path = 'models/experim0'
-    # save(model, path, 'v1')
-    path = 'models/experim0/v1'
-    torch.save(model, path)
-    """
-    Cargar modelo
-    """
+    # Guardar modelo
+    torch.save(model, 'models/experim0_v1.pt')
+    
+    # Cargar modelo
     # model = torch.load(PATH)
     # model.eval()
