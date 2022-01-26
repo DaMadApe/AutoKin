@@ -20,7 +20,7 @@ class ResBlock(nn.Module):
                                          block_width))
 
     def forward(self, x):
-        identity = x #.copy?
+        identity = x.clone()
         for layer in self.layers:
             x = layer(x)
         return x + identity
@@ -31,7 +31,8 @@ class ResNet(nn.Module):
     def __init__(self, input_dim=1, output_dim=1, depth=3, block_depth=3,
                  block_width=10, activation=torch.tanh):
         super().__init__()
-
+        
+        self.input_dim = input_dim
         self.blocks = nn.ModuleList()
         self.blocks.append(nn.Linear(input_dim,
                                      block_width))
@@ -62,11 +63,11 @@ if __name__ == "__main__":
     lr = 5e-3
     depth = 3
     block_depth = 3
-    block_width = 10
+    block_width = 8
     activation = torch.tanh
     n_samples = 32
     batch_size = 32
-    epochs = 500
+    epochs = 2000
 
     input_dim = 1
     output_dim = 1
@@ -128,8 +129,5 @@ if __name__ == "__main__":
                    'Trainset'])
         plt.show()
 
-    """
-    Guardar modelo
-    """
-    path = 'models/experim13'
-    save(model, path, 'v1')
+    # Guardar modelo
+    torch.save(model, 'models/experim13_v1.pt')
