@@ -2,12 +2,9 @@
 Aprendizaje activo: Selección dinámica de puntos para
 mejorar la convergencia de la regresión de experim0
 """
-
-import modAL
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-from experim0 import MLP
 from experim14 import train
 
 
@@ -23,8 +20,8 @@ class FKEstimator():
             y: array-like of shape (n_samples,)
         """
         # Acondicionar datos
-        X_tensor = torch.tensor(X)
-        y_tensor = torch.tensor(y)
+        X_tensor = torch.tensor(X, dtype=torch.float)
+        y_tensor = torch.tensor(y, dtype=torch.float)
         train_set = TensorDataset(X_tensor, y_tensor)
         train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
@@ -38,18 +35,26 @@ class FKEstimator():
         return pred
 
 
+class EnsembleTrainer(): # nn.Module?
+
+    def __init__(self):
+        # self.ensemble = 
+        pass
+
+
 if __name__ == "__main__":
     import numpy as np
     from modAL.models import ActiveLearner, CommitteeRegressor
     from modAL.disagreement import max_std_sampling
     import matplotlib.pyplot as plt
 
+    from experim0 import MLP
+
     x_min = -1
     x_max = 1
     n_samples = 30
     n_models = 5
     n_queries = 10
-
 
     #def f(x): return 3*x**3 - 3*x**2 + 2*x
     def f(x): return np.sin(10*x**2 - 10*x)
@@ -81,8 +86,8 @@ if __name__ == "__main__":
     """
     Graficar conjunto de datos
     """
-
     x_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
+    queries = np.array(queries)
 
     # with torch.no_grad():
     #     pred = model(x_plot)
@@ -92,6 +97,6 @@ if __name__ == "__main__":
     ax.scatter(X, y)
     ax.scatter(queries, f(queries))
     ax.legend(['Target F',
-            'Trainset',
-            'Queries'])
+               'Trainset',
+               'Queries'])
     plt.show()
