@@ -13,7 +13,12 @@ def n_hilbert(n_dim, n_points, res=1):
 
 def coprime_sines(n_dim, n_points):
     #https://www.desmos.com/calculator/m4pjhqjgz6
-    return np.zeros(n_points, n_dim)
+    coefs = [11, 13, 17, 19, 23, 29, 31]
+    coefs = np.array(coefs) * 2*np.pi
+    points = np.stack([np.linspace(0, 1, n_points)] * n_dim)
+    for i in range(n_dim):
+        points[i] = np.sin(coefs[i]*points[i])
+    return points
 
 
 if __name__ == "__main__":
@@ -37,6 +42,6 @@ if __name__ == "__main__":
         dp = ps[i] - ps[i+1]
         j_samples.append(dp/dq) """
 
-    curve = coprime_sines(2, 100)
-    plt.plot(curve)
+    curve = coprime_sines(2, 300)
+    plt.scatter(*curve)
     plt.show()
