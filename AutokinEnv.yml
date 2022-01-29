@@ -1,0 +1,18 @@
+name: AutokinEnv
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - numpy
+  - matplotlib
+  - pytorch
+  - pytorch-lightning
+  - tensorboard
+  - roboticstoolbox-python
+  - tqdm
+  - pytest
+
+# Nuevo env
+# conda env create -f AutokinEnv.yml
+# Actualizar env
+# conda env update -f AutokinEnv.yml --prune
