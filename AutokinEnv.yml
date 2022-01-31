@@ -7,12 +7,15 @@ dependencies:
   - numpy
   - matplotlib
   - pytorch
-  - pytorch-lightning
+  - pytorch-lightning # *
   - tensorboard
   - roboticstoolbox-python
   - tqdm
+  - modAL # * 
   - pytest
   - hypothesis
+
+# * : Dependencias posiblemente prescindibles
 
 # Nuevo env
 # conda env create -f AutokinEnv.yml
