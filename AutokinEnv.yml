@@ -1,6 +1,7 @@
 name: AutokinEnv
 channels:
-  - default
+  - pytorch
+  - defaults
   - conda-forge
 dependencies:
   - numpy
@@ -11,6 +12,7 @@ dependencies:
   - roboticstoolbox-python
   - tqdm
   - pytest
+  - hypothesis
 
 # Nuevo env
 # conda env create -f AutokinEnv.yml
