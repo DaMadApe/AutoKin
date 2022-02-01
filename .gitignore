@@ -3,5 +3,6 @@ __pycache__
 .pytest_cache
 .vscode
 lightning_logs
+tb_logs
 models
 experims/sandbox.ipynb
