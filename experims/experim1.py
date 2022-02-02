@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 Módulo del modelo
 Regresor para funciones multivariables con salida real
 """
-class MLP(pl.LightningModule):
+class MLP_PL(pl.LightningModule):
 
     def __init__(self, in_size=1, out_size=1, mid_size=30,
                  depth=1, lr=1e-3, activation=F.relu,
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     logger = TensorBoardLogger('lightning_logs', 'Exp1',
                                log_graph=True)
 
-    model = MLP(mid_size=nn_mid_size, depth=depth, lr=lr)
+    model = MLP_PL(mid_size=nn_mid_size, depth=depth, lr=lr)
 
     # trainer = pl.Trainer(fast_dev_run=True)
     trainer = pl.Trainer(max_epochs=epochs,
