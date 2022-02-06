@@ -3,8 +3,6 @@ Probar una arquitectura residual.
 """
 import torch
 from torch import nn
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
 
 class ResBlock(nn.Module):
 
@@ -18,7 +16,7 @@ class ResBlock(nn.Module):
                                          block_width))
 
     def forward(self, x):
-        identity = x.clone()
+        identity = x #.clone()
         for layer in self.layers:
             x = layer(x)
         return x + identity
@@ -48,27 +46,15 @@ class ResNet(nn.Module):
 
 if __name__ == "__main__":
 
-    from torch.utils.data import DataLoader, TensorDataset
-    from tqdm import tqdm
+    from torch.utils.data import TensorDataset
+    import matplotlib.pyplot as plt
+
+    from experim14 import train
 
     torch.manual_seed(42)
 
-    block = ResBlock()
-    model = ResNet()
-
-
     # args
-    lr = 5e-3
-    depth = 3
-    block_depth = 3
-    block_width = 8
-    activation = torch.tanh
     n_samples = 32
-    batch_size = 32
-    epochs = 2000
-
-    input_dim = 1
-    output_dim = 1
     x_min = -1
     x_max = 1
     view_plot = True
@@ -79,36 +65,25 @@ if __name__ == "__main__":
     """
     Conjunto de datos
     """
-    x = torch.linspace(x_min, x_max, n_samples).view(-1, input_dim)
+    x = torch.linspace(x_min, x_max, n_samples).view(-1, 1)
     y = f(x)
 
     train_set = TensorDataset(x, y)
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-
 
     """
     Entrenamiento
     """
-    model = ResNet(input_dim=input_dim, output_dim=output_dim,
-                   depth=depth, block_depth=block_depth, block_width=block_width,
-                   activation=activation)
+    model = ResNet(input_dim=1, output_dim=1,
+                   depth = 3,
+                   block_depth = 3,
+                   block_width = 8,
+                   activation = torch.tanh)
 
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
-    progress = tqdm(range(epochs), desc='Training')
-    for _ in progress:
-        # Train step
-        # Invertir muestras para fines de exp
-        for X, Y in train_loader:
-            model.train()
-            pred = model(X)
-            loss = criterion(pred, Y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        progress.set_postfix(Loss=loss.item())
+    train(model, train_set,
+          epochs=2000,
+          lr=5e-3,
+          batch_size=32,
+          log_dir='tb_logs/exp13')
 
     """
     Visualización de datos en una dimensión
