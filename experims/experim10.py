@@ -4,12 +4,12 @@ L-BFGS, Adam, SGD, etc.
 """
 import roboticstoolbox as rtb
 import torch
-from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from experimR import RoboKinSet
-from experim3 import MLP_PL
+from experim0 import MLP
+from experim9 import FKRegressionTask
 
 
 pl.seed_everything(42)
@@ -23,24 +23,18 @@ lr = 1e-3
 batch_size = 512
 epochs = 500
 
-robot = rtb.models.DH.Cobra600()
-
-input_dim = robot.n
-output_dim = 3
-
 """
 Conjunto de datos
 """
+robot = rtb.models.DH.Cobra600()
+
 n_per_q = 10
 n_samples = n_per_q ** robot.n
-
 ns_samples = [n_per_q] * robot.n
-train_set = RoboKinSet.grid_sampling(robot, ns_samples)
 
+train_set = RoboKinSet.grid_sampling(robot, ns_samples)
 val_set = RoboKinSet(robot, n_samples//5)
 
-train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_set, batch_size=batch_size)
 # Tiempo de entrenamiento aumenta si declaro num_workers
 
 """
@@ -49,11 +43,16 @@ Entrenamiento
 logger = TensorBoardLogger('lightning_logs', 'exp10',
                             log_graph=True)
 
-model = MLP_PL(input_dim, output_dim,
-                    depth, mid_layer_size,
-                    activation, optim, lr)
+model = MLP(input_dim=robot.n, output_dim=3,
+            depth=depth, mid_layer_size=mid_layer_size,
+            activation=activation)
 
-# trainer = pl.Trainer(fast_dev_run=True)
+task = FKRegressionTask(model, train_set, val_set,
+                         batch_size=batch_size,
+                         lr=lr)
+
+
+# trainer = pl.Trainer(fast_dev_run=True, logger=logger)
 trainer = pl.Trainer(max_epochs=epochs,
-                        logger=logger)
-trainer.fit(model, train_loader, val_loader)
+                    logger=logger)
+trainer.fit(task)
