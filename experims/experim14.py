@@ -3,14 +3,16 @@ Métodos de entrenamiento múltiple con pytorch puro.
 """
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 
 from tqdm import tqdm
 
 
-def train(model, train_loader, val_loader=None, epochs=10,
-          lr=1e-3, criterion=nn.MSELoss(), optim=torch.optim.Adam,
+def train(model, train_set, val_set=None,
+          epochs=10, lr=1e-3, batch_size=32,
+          criterion=nn.MSELoss(), optim=torch.optim.Adam,
           lr_scheduler=False, silent=False, log_dir=None):
 
     if log_dir is not None:
@@ -18,6 +20,10 @@ def train(model, train_loader, val_loader=None, epochs=10,
     optimizer = optim(model.parameters(), lr=lr)
     scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
     model.train()
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    if val_set is not None:
+        val_loader = DataLoader(val_set, batch_size=batch_size)
     
     if silent:
         epoch_iter = range(epochs)
@@ -36,7 +42,7 @@ def train(model, train_loader, val_loader=None, epochs=10,
                 writer.add_scalar('Loss/train', loss.item(), epoch)
                 #writer.flush()
         # Val step
-        if val_loader is not None:
+        if val_set is not None:
             with torch.no_grad():
                 for X, Y in val_loader:
                     model.eval()
@@ -60,7 +66,6 @@ def train(model, train_loader, val_loader=None, epochs=10,
 if __name__ == "__main__":
 
     import roboticstoolbox as rtb
-    from torch.utils.data import DataLoader
 
     from experimR import RoboKinSet
     from experim0 import MLP
@@ -73,15 +78,10 @@ if __name__ == "__main__":
 
     n_per_q = 4
     n_samples = n_per_q ** robot.n
-
     ns_samples = [n_per_q] * robot.n
+
     train_set = RoboKinSet.grid_sampling(robot, ns_samples)
-
     val_set = RoboKinSet(robot, n_samples//5)
-
-    train_loader = DataLoader(train_set, batch_size=1024, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=1024)
-    # Tiempo de entrenamiento aumenta si declaro num_workers
 
     """
     Entrenamiento
@@ -102,7 +102,10 @@ if __name__ == "__main__":
 
 
     for i, model in enumerate(models):
-        train(model, train_loader, val_loader, epochs=100,
-              lr=1e-3, lr_scheduler=False,
+        train(model, train_set, val_set,
+              epochs=10,
+              lr=1e-3,
+              lr_scheduler=False,
               log_dir='tb_logs/exp14')
+
         torch.save(model, f'models/experim14_v1_m{i}.pt')

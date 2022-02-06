@@ -41,6 +41,12 @@ class EnsembleRegressor(torch.nn.Module):
         query = candidate_batch[candidate_idx]
 
         return candidate_idx, query
+        # return torch.topk(deviation, n_queries)
+
+    def fit(self, train_set, **train_kwargs):
+        for model in self.ensemble:
+            model.train()
+            train(model, train_set, **train_kwargs)
 
 
 class MockModule(torch.nn.Module):
