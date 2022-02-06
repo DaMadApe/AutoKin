@@ -6,9 +6,10 @@ from torch import nn
 
 class ResBlock(nn.Module):
 
-    def __init__(self, depth=3, block_width=10):
+    def __init__(self, depth, block_width, activation):
         super().__init__()
-
+        
+        self.activation = activation
         self.layers = nn.ModuleList()
 
         for _ in range(depth):
@@ -16,16 +17,17 @@ class ResBlock(nn.Module):
                                          block_width))
 
     def forward(self, x):
-        identity = x #.clone()
+        identity = x.clone() # TODO: Confirmar si clone es necesario
         for layer in self.layers:
-            x = layer(x)
+            x = self.activation(layer(x))
         return x + identity
 
 
 class ResNet(nn.Module):
 
-    def __init__(self, input_dim=1, output_dim=1, depth=3, block_depth=3,
-                 block_width=10, activation=torch.tanh):
+    def __init__(self, input_dim=1, output_dim=1,
+                 depth=3, block_depth=3, block_width=10,
+                 activation=torch.tanh):
         super().__init__()
         
         self.input_dim = input_dim
@@ -33,7 +35,7 @@ class ResNet(nn.Module):
         self.blocks.append(nn.Linear(input_dim,
                                      block_width))
         for _ in range(depth):
-            self.blocks.append(ResBlock(block_depth, block_width))
+            self.blocks.append(ResBlock(block_depth, block_width, activation))
         
         self.blocks.append(nn.Linear(block_width,
                                      output_dim))
