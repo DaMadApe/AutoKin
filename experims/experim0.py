@@ -73,7 +73,7 @@ if __name__ == '__main__':
           epochs=2000,
           lr=5e-3,
           batch_size=32,
-          log_dir='tb_logs/')
+          log_dir='tb_logs/exp0')
 
     """
     Visualización de datos en una dimensión

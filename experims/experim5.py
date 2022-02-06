@@ -7,7 +7,7 @@ import torch
 from torch.autograd.functional import jacobian
 import matplotlib.pyplot as plt
 
-from experim0 import MLP, load
+from experim0 import MLP
 
 """
 Cargar modelo

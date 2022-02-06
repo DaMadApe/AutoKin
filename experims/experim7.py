@@ -7,7 +7,7 @@ import roboticstoolbox as rtb
 import torch
 from torch.autograd.functional import jacobian
 
-from experim0 import MLP, load
+from experim0 import MLP
 from experimR import denorm_q
 from experim6 import ikine_pi_jacob
 

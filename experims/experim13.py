@@ -6,8 +6,6 @@ from torch import nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from experim0 import save
-
 class ResBlock(nn.Module):
 
     def __init__(self, depth=3, block_width=10):

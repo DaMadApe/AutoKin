@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import roboticstoolbox as rtb
 from tqdm import tqdm
 
-from experim0 import MLP, save
+from experim0 import MLP
 from experimR import RoboKinSet
 
 """
