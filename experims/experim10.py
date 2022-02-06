@@ -7,7 +7,7 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from experimR import RoboKinSet
+from experim1 import RoboKinSet
 from experim0 import MLP
 from experim9 import FKRegressionTask
 

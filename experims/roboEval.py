@@ -1,12 +1,12 @@
 """
-Cargar el modelo entrenado por experimR.py para
+Cargar el modelo entrenado por experim1.py para
 comparar con el robot original y evaluar
 """
 
 import roboticstoolbox as rtb
 import torch
 
-from experimR import denorm_q
+from experim1 import denorm_q
 
 
 robot = rtb.models.DH.Cobra600()

@@ -8,7 +8,7 @@ import torch
 from torch.autograd.functional import jacobian
 
 from experim0 import MLP
-from experimR import denorm_q
+from experim1 import denorm_q
 from experim6 import ikine_pi_jacob
 
 """
@@ -16,7 +16,7 @@ Cargar modelo con args originales de entrenamiento
 """
 robot = rtb.models.DH.Cobra600()
 
-model = torch.load('models/experimR_v1.pt')
+model = torch.load('models/experim1_v1.pt')
 model.eval()
 
 # q_test = [0.1, 0.9, 0.1, 0.2]

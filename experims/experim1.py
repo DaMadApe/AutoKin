@@ -44,7 +44,7 @@ class RoboKinSet(Dataset):
         self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
 
         # Acomodar en tensores con tipo float
-        self.poses = torch.tensor(self.poses, dtype=torch.float)
+        self.poses = torch.tensor(np.array(self.poses), dtype=torch.float)
         self.normed_q_vecs = torch.tensor(self.normed_q_vecs, dtype=torch.float)
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     from torch.utils.data import DataLoader
     from tqdm import tqdm
 
-    from experim0 import MLP, save
+    from experim0 import MLP
 
     """
     args
@@ -156,4 +156,4 @@ if __name__ == '__main__':
 
 
     # Guardar modelo
-    torch.save(model, 'models/experimR_v1.pt')
+    torch.save(model, 'models/experim1_v1.pt')

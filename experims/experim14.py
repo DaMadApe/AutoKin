@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     import roboticstoolbox as rtb
 
-    from experimR import RoboKinSet
+    from experim1 import RoboKinSet
     from experim0 import MLP
     from experim13 import ResNet
 

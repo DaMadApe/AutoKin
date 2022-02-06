@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
-from experimR import RoboKinSet
+from experim1 import RoboKinSet
 from experim0 import MLP
 from experim9 import FKRegressionTask
 

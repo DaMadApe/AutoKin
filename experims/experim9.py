@@ -9,7 +9,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
-from experimR import RoboKinSet
+from experim1 import RoboKinSet
 
 
 class FKRegressionTask(pl.LightningModule):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     from experim0 import MLP
     from experim13 import ResNet
-    from experimR import random_robot
+    from experim1 import random_robot
 
     min_DH = np.array([0, 0, 0, 0] )
     max_DH = np.array([2*np.pi, 2, 2*np.pi, 2])

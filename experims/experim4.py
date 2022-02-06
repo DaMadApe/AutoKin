@@ -8,7 +8,7 @@ import roboticstoolbox as rtb
 from tqdm import tqdm
 
 from experim0 import MLP
-from experimR import RoboKinSet
+from experim1 import RoboKinSet
 
 """
 args
