@@ -13,7 +13,10 @@ from tqdm import tqdm
 def train(model, train_set, val_set=None,
           epochs=10, lr=1e-3, batch_size=32,
           criterion=nn.MSELoss(), optim=torch.optim.Adam,
-          lr_scheduler=False, silent=False, log_dir=None):
+          lr_scheduler=False, silent=False, log_dir=None, model_hparams=None):
+
+    if model_hparams is None:
+        model_hparams = {}
 
     if log_dir is not None:
         writer = SummaryWriter(log_dir=log_dir)
@@ -60,11 +63,7 @@ def train(model, train_set, val_set=None,
                 epoch_iter.set_postfix(Loss=loss.item())
         
     if log_dir is not None:
-        """
-        Esto requiere que el modelo tenga el atributo hparams
-        Podría ser mejor recibir el dict como argumento
-        """
-        writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
+        writer.add_hparams({**model_hparams, 'lr':lr, 'batch_size':batch_size},
                            {'Val/loss': val_loss.item()},)
         writer.close()
 
@@ -112,18 +111,24 @@ if __name__ == "__main__":
                       'activation': torch.tanh}]
 
 
-    models = []
-    for params in mlp_params:
-        models.append(MLP(**base_params, **params))
-    for params in resnet_params:
-        models.append(ResNet(**base_params, **params))
-
-
-    for i, model in enumerate(models):
+    for i, params in enumerate(mlp_params):
+        model = MLP(**base_params, **params)
         train(model, train_set, val_set,
               epochs=10,
               lr=1e-3,
               lr_scheduler=False,
-              log_dir='tb_logs/exp14')
+              log_dir='tb_logs/exp14_mlp',
+              model_hparams=params)
 
-        torch.save(model, f'models/experim14/v1_m{i}.pt')
+        torch.save(model, f'models/experim14/v1_mlp_{i}.pt')
+
+    for i, params in enumerate(resnet_params):
+        model = ResNet(**base_params, **params)
+        train(model, train_set, val_set,
+              epochs=10,
+              lr=1e-3,
+              lr_scheduler=False,
+              log_dir='tb_logs/exp14_resn',
+              model_hparams=params)
+
+        torch.save(model, f'models/experim14/v1_resn_{i}.pt')
