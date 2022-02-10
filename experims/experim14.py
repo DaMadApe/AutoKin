@@ -60,6 +60,12 @@ def train(model, train_set, val_set=None,
                 epoch_iter.set_postfix(Loss=loss.item())
         
     if log_dir is not None:
+        """
+        Esto requiere que el modelo tenga el atributo hparams
+        Podría ser mejor recibir el dict como argumento
+        """
+        writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
+                           {'Val/loss': val_loss.item()},)
         writer.close()
 
 
@@ -89,16 +95,28 @@ if __name__ == "__main__":
     base_params = {'input_dim': robot.n, 
                    'output_dim': 3}
 
-    mlp_p0 = {**base_params,
-              'depth': 3,
-              'mid_layer_size': 10,
-              'activation': torch.tanh}
-    mlp_p1 = {**base_params,
-              'depth': 6,
-              'mid_layer_size': 10,
-              'activation': torch.tanh}
+    mlp_params = [{'depth': 3,
+                   'mid_layer_size': 10,
+                   'activation': torch.tanh},
+                  {'depth': 6,
+                   'mid_layer_size': 10,
+                   'activation': torch.tanh}]
 
-    models = [MLP(**mlp_p0), MLP(**mlp_p1), ResNet(**base_params)]
+    resnet_params = [{'depth': 3,
+                      'block_depth': 3,
+                      'block_width': 6,
+                      'activation': torch.tanh},
+                     {'depth': 6,
+                      'block_depth': 3,
+                      'block_width': 6,
+                      'activation': torch.tanh}]
+
+
+    models = []
+    for params in mlp_params:
+        models.append(MLP(**base_params, **params))
+    for params in resnet_params:
+        models.append(ResNet(**base_params, **params))
 
 
     for i, model in enumerate(models):
@@ -108,4 +126,4 @@ if __name__ == "__main__":
               lr_scheduler=False,
               log_dir='tb_logs/exp14')
 
-        torch.save(model, f'models/experim14_v1_m{i}.pt')
+        torch.save(model, f'models/experim14/v1_m{i}.pt')
