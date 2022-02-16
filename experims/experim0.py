@@ -2,18 +2,37 @@
 Pruebas de regresión  con pytorch puros
 """
 import os
+import inspect
+
 import torch
 from torch import nn
+
+
+class HparamsMixin():
+    def __init__(self):
+        super().__init__()
+        frame = inspect.currentframe()
+        frame = frame.f_back
+        hparams = inspect.getargvalues(frame).locals
+        hparams.pop('self')
+
+        # Si el argumento es una función o módulo, usar su nombre
+        primitive_types = (int, float, str, bool)
+        for key, val in hparams.items():
+            if not isinstance(val, primitive_types):
+                hparams[key] = val.__name__
+
+        self.hparams = hparams
 
 """
 MLP configurable de ancho constante
 """
-class MLP(nn.Module):
+class MLP(HparamsMixin, nn.Module):
 
     def __init__(self, input_dim=1, output_dim=1,
                  depth=1, mid_layer_size=10, activation=torch.tanh):
         super().__init__()
-                
+
         self.input_dim = input_dim
         # Armar modelo
         self.layers = nn.ModuleList()
@@ -68,6 +87,8 @@ if __name__ == '__main__':
                 depth=6,
                 mid_layer_size=10,
                 activation=torch.tanh)
+
+    print(model.hparams)
 
     train(model, train_set,
           epochs=2000,

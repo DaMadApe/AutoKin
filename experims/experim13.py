@@ -4,6 +4,9 @@ Probar una arquitectura residual.
 import torch
 from torch import nn
 
+from experim0 import HparamsMixin
+
+
 class ResBlock(nn.Module):
 
     def __init__(self, depth, block_width, activation):
@@ -23,7 +26,7 @@ class ResBlock(nn.Module):
         return x + identity
 
 
-class ResNet(nn.Module):
+class ResNet(HparamsMixin, nn.Module):
 
     def __init__(self, input_dim=1, output_dim=1,
                  depth=3, block_depth=3, block_width=10,

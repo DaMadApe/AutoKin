@@ -13,16 +13,15 @@ from tqdm import tqdm
 def train(model, train_set, val_set=None,
           epochs=10, lr=1e-3, batch_size=32,
           criterion=nn.MSELoss(), optim=torch.optim.Adam,
-          lr_scheduler=False, silent=False, log_dir=None, model_hparams=None):
-
-    if model_hparams is None:
-        model_hparams = {}
+          lr_scheduler=False, silent=False, log_dir=None):
 
     if log_dir is not None:
         writer = SummaryWriter(log_dir=log_dir)
+
     optimizer = optim(model.parameters(), lr=lr)
-    scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
-    model.train()
+
+    if lr_scheduler:
+        scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     if val_set is not None:
@@ -32,39 +31,53 @@ def train(model, train_set, val_set=None,
         epoch_iter = range(epochs)
     else:
         epoch_iter = tqdm(range(epochs), desc='Training')
+
     for epoch in epoch_iter:
         # Train step
         # Invertir muestras para fines de exp
+        model.train()
         for X, Y in train_loader:
             pred = model(X)
-            loss = criterion(pred, Y)
+            train_loss = criterion(pred, Y)
             optimizer.zero_grad()
-            loss.backward()
+            train_loss.backward()
             optimizer.step()
+
             if log_dir is not None:
-                writer.add_scalar('Loss/train', loss.item(), epoch)
+                writer.add_scalar('Loss/train', train_loss.item(), epoch)
                 #writer.flush()
+
+        progress_info = {'Loss': train_loss.item()}
+
         # Val step
         if val_set is not None:
             with torch.no_grad():
+                model.eval()
                 for X, Y in val_loader:
-                    model.eval()
                     pred = model(X)
                     val_loss = criterion(pred, Y)
+
                     if lr_scheduler:
                         scheduler.step(val_loss)
+
                     if log_dir is not None:
                         writer.add_scalar('Loss/val', val_loss.item(), epoch)
                         #writer.flush()
-            if not silent:
-                epoch_iter.set_postfix(Loss=loss.item(), Val=val_loss.item())
-        else:
-            if not silent:
-                epoch_iter.set_postfix(Loss=loss.item())
+            progress_info.update({'Val': val_loss.item()})
+
+        if not silent:
+            epoch_iter.set_postfix(progress_info)
+
+            
         
     if log_dir is not None:
-        writer.add_hparams({**model_hparams, 'lr':lr, 'batch_size':batch_size},
-                           {'Val/loss': val_loss.item()},)
+        if val_set is not None:
+            metrics = {'Last val loss': val_loss.item()}
+        else:
+            metrics = {'Last train loss': train_loss.item()}
+
+        writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
+                           metrics)
         writer.close()
 
 
@@ -97,6 +110,9 @@ if __name__ == "__main__":
     mlp_params = [{'depth': 3,
                    'mid_layer_size': 10,
                    'activation': torch.tanh},
+                   {'depth': 3,
+                   'mid_layer_size': 10,
+                   'activation': torch.relu},
                   {'depth': 6,
                    'mid_layer_size': 10,
                    'activation': torch.tanh}]
@@ -110,25 +126,17 @@ if __name__ == "__main__":
                       'block_width': 6,
                       'activation': torch.tanh}]
 
+    models = []
+    for params in mlp_params:
+        models.append(MLP(**base_params, **params))
+    for params in resnet_params:
+        models.append(ResNet(**base_params, **params))
 
-    for i, params in enumerate(mlp_params):
-        model = MLP(**base_params, **params)
+    for i, model in enumerate(models):
         train(model, train_set, val_set,
               epochs=10,
               lr=1e-3,
               lr_scheduler=False,
-              log_dir='tb_logs/exp14_mlp',
-              model_hparams=params)
+              log_dir='tb_logs/exp14')
 
-        torch.save(model, f'models/experim14/v1_mlp_{i}.pt')
-
-    for i, params in enumerate(resnet_params):
-        model = ResNet(**base_params, **params)
-        train(model, train_set, val_set,
-              epochs=10,
-              lr=1e-3,
-              lr_scheduler=False,
-              log_dir='tb_logs/exp14_resn',
-              model_hparams=params)
-
-        torch.save(model, f'models/experim14/v1_resn_{i}.pt')
+        torch.save(model, f'models/experim14/v1_m{i}.pt')
