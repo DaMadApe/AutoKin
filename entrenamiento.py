@@ -28,6 +28,9 @@ def train(model, train_set, val_set=None,
     log_dir (str) :  Dirección para almacenar registros de Tensorboard
     """
 
+    # TODO: Transferir datos y modelo a GPU si está disponible
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     if log_dir is not None:
         writer = SummaryWriter(log_dir=log_dir)
 
@@ -89,5 +92,5 @@ def train(model, train_set, val_set=None,
             metrics = {'Last train loss': train_loss.item()}
 
         writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
-                           metrics)
+                           metric_dict=metrics, run_name='.')
         writer.close()

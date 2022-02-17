@@ -9,7 +9,8 @@ Conjunto de datos
 """
 # DH = [d, alpha, theta, a]
 robot = random_robot(min_DH = [0, 0, 0, 0],
-                     max_DH = [5, 2*torch.pi, 2*torch.pi, 5])
+                     max_DH = [5, 2*torch.pi, 2*torch.pi, 5],
+                     n=3)
 
 n_per_q = 4
 n_samples = n_per_q ** robot.n
@@ -22,6 +23,7 @@ val_set = RoboKinSet(robot, n_samples//5)
 Definición de modelos
 """
 n_prueba = 1 # Cambiar para tener registros separados
+n_pruebas_modelo = 3 # Veces que se prueba cada set de params
 
 base_params = {'input_dim': robot.n, 
                 'output_dim': 3}
@@ -45,21 +47,22 @@ resnet_params = [{'depth': 3,
                     'block_width': 6,
                     'activation': torch.tanh}]
 
-
 models = []
 for params in mlp_params:
-    models.append(MLP(**base_params, **params))
+    for _ in range(n_pruebas_modelo):
+        models.append(MLP(**base_params, **params))
 for params in resnet_params:
-    models.append(ResNet(**base_params, **params))
+    for _ in range(n_pruebas_modelo):
+        models.append(ResNet(**base_params, **params))
 
 """
 Entrenamiento
 """
 for i, model in enumerate(models):
     train(model, train_set, val_set,
-          epochs=10,
+          epochs=100,
           lr=1e-3,
           lr_scheduler=False,
-          log_dir=f'tb_logs/arq_test{n_prueba}')
+          log_dir=f'tb_logs/arq_test{n_prueba}/modelo{i}')
 
     torch.save(model, f'models/arq_test{n_prueba}_m{i}.pt')
