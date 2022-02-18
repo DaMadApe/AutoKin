@@ -41,7 +41,7 @@ def train(model, train_set, val_set=None,
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     if val_set is not None:
-        val_loader = DataLoader(val_set, batch_size=batch_size)
+        val_loader = DataLoader(val_set, batch_size=len(val_set))
 
     if silent:
         epoch_iter = range(epochs)
@@ -60,7 +60,6 @@ def train(model, train_set, val_set=None,
 
             if log_dir is not None:
                 writer.add_scalar('Loss/train', train_loss.item(), epoch)
-                #writer.flush()
 
         progress_info = {'Loss': train_loss.item()}
 
@@ -77,7 +76,7 @@ def train(model, train_set, val_set=None,
 
                     if log_dir is not None:
                         writer.add_scalar('Loss/val', val_loss.item(), epoch)
-                        #writer.flush()
+
             progress_info.update({'Val': val_loss.item()})
 
         if not silent:
@@ -94,3 +93,14 @@ def train(model, train_set, val_set=None,
         writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
                            metric_dict=metrics, run_name='.')
         writer.close()
+
+
+def test(model, test_set, criterion=nn.MSELoss()):
+    test_loader = DataLoader(test_set, batch_size=len(test_set))
+    with torch.no_grad():
+        model.eval()
+        for X, Y in test_loader:
+            pred = model(X)
+            test_loss = criterion(pred, Y)
+
+    return test_loss
