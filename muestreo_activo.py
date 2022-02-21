@@ -2,7 +2,7 @@ import torch
 
 from entrenamiento import train
 
-
+# Mover a modelos?
 class EnsembleRegressor(torch.nn.Module):
     """
     Agrupa un conjunto de modelos, permite entrenarlos en conjunto,
@@ -46,7 +46,6 @@ class EnsembleRegressor(torch.nn.Module):
                 self.ensemble[self.best_model_idx].eval()
                 pred = self.ensemble[self.best_model_idx](x)
             return pred
-            
 
     def query(self, candidate_batch, n_queries=1):
         """
@@ -97,9 +96,9 @@ if __name__ == "__main__":
 
     x_min = -1
     x_max = 1
-    n_samples = 50
+    n_samples = 20
     n_models = 3
-    n_queries = 10
+    n_queries = 5
 
     # Función de prueba
     def f(x): return torch.sin(10*x**2 - 10*x)
@@ -123,7 +122,7 @@ if __name__ == "__main__":
 
     # Entrenar el model con datos iniciales
     train_set = TensorDataset(X_train, y_train)
-    ensemble.fit(train_set, lr=2e-3, epochs=2000)
+    ensemble.fit(train_set, lr=1e-3, epochs=3000)
 
     # Solicitar recomenación de nuevas muestras
     _, queries = ensemble.query(X_query, n_queries)
@@ -147,3 +146,7 @@ if __name__ == "__main__":
 
     ax.legend(labels)
     plt.show()
+
+
+    # TODO: Mostrar primer aprendizaje, luego mostrar ciclo
+    # de afinación muestra por muestra
