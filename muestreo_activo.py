@@ -82,9 +82,29 @@ class EnsembleRegressor(torch.nn.Module):
         Permite asignar peso adicional a las nuevas muestras.
         """
         augmented_train_set = ConcatDataset([train_set, *relative_weight*[query_set]])
-        for x, y in augmented_train_set:
-            print(x,y)
         self.fit(augmented_train_set, **train_kwargs)
+
+    def online_fit(self, train_set, function, n_queries, relative_weight:int=1, **train_kwargs):
+        """
+        Ciclo para solicitar muestra y reajustar
+        """
+        queries = torch.zeros(n_queries, 1)
+
+        for i in range(n_queries):
+
+            _, query = ensemble.query(X_query, n_queries=1)
+            queries[i] = query
+            print(f'Queried: {query.item()}')
+
+            # Aquí se mandaría la q al robot y luego leer posición
+            result = function(queries)
+            # Agarrar sólo las entradas que han sido asignadas
+            query_set = TensorDataset(queries[:i+1], result[:i+1])
+
+            ensemble.fit_to_query(train_set, query_set, relative_weight,
+                                  **train_kwargs)
+
+        return queries
 
     def rank_models(self, test_set):
         """
@@ -114,7 +134,7 @@ if __name__ == "__main__":
     x_max = 1
     n_samples = 16
     n_models = 3
-    n_queries = 2
+    n_queries = 10
 
     # Función de prueba
     def f(x): return torch.sin(10*x**2 - 10*x)
@@ -130,7 +150,7 @@ if __name__ == "__main__":
     train_set, test_set = random_split(full_set, split)
 
     # Datos disponibles para 'pedir'
-    X_query = torch.rand(100).view(-1, 1)*(x_max-x_min) + x_min
+    X_query = torch.rand(30).view(-1, 1)*(x_max-x_min) + x_min
 
     # Conversión nada elegante para poder graficar ejemplos originales
     # Sólo es relevante para graficar ejemplos en 1D
@@ -164,25 +184,10 @@ if __name__ == "__main__":
     """
     Afinación con muestras nuevas recomendadas
     """
-    queries = torch.zeros(n_queries, 1)
-
-    for i in range(n_queries):
-
-        _, query = ensemble.query(X_query, n_queries=1)
-        queries[i] = query
-        print(f'Queried: {query.item()}')
-
-        # Aquí se mandaría la q al robot y luego leer posición
-        result = f(queries)
-
-        query_set = TensorDataset(queries[:i], result[:i])
-
-        print(queries[:1])
-
-        ensemble.fit_to_query(train_set, query_set, relative_weight=3,
-                              lr=6e-4, epochs=2000)
-
+    queries = ensemble.online_fit(train_set, f, n_queries, relative_weight=1,
+                                  lr=1e-3, epochs=300)
     ensemble.rank_models(test_set)
+
     last_pred = ensemble.best_predict(X_plot).detach()
 
     """
