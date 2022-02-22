@@ -104,3 +104,66 @@ def test(model, test_set, criterion=nn.MSELoss()):
             test_loss = criterion(pred, Y)
 
     return test_loss
+
+
+if __name__ == "__main__":
+
+    import torch
+    from torch.utils.data import random_split
+    import roboticstoolbox as rtb
+
+    from modelos import MLP
+    from muestreo_activo import EnsembleRegressor
+    from utils import RoboKinSet
+
+    """
+    Conjuntos de datos
+    """
+    robot = rtb.models.DH.Puma560()
+    n_samples = 3000
+
+    full_set = RoboKinSet(robot, n_samples)
+
+    # Repartir muestras entre conjuntos
+    split_proportions = [0.6, 0.2, 0.2]
+    # Convertir proporciones al número de muestras correspondiente
+    split = [round(prop*len(full_set)) for prop in split_proportions]
+
+    train_set, val_set, test_set = random_split(full_set, split)
+
+    """
+    Definición de modelos
+    """
+    n_models = 3
+
+    models = [MLP(input_dim=robot.n,
+                  output_dim=3,
+                  depth=3,
+                  mid_layer_size=10,
+                  activation=torch.tanh) for _ in range(n_models)]
+
+    ensemble = EnsembleRegressor(models)
+
+    """
+    Entrenamiento
+    """
+    # Primer entrenamiento
+    ensemble.fit(train_set, lr=1e-3, epochs=50)
+
+    # Ajuste a nuevas muestras
+    def label_fun(X):
+        return torch.tensor(robot.fkine(X.numpy()).t)
+
+    candidate_batch = torch.rand((500, robot.n))
+
+    queries = ensemble.online_fit(train_set,
+                                  candidate_batch=candidate_batch,
+                                  label_fun=label_fun,
+                                  query_steps=4,
+                                  n_queries=5,
+                                  relative_weight=1,
+                                  final_adjust_weight=2,
+                                  lr=1e-3, epochs=30)
+    ensemble.rank_models(test_set)
+
+    torch.save(ensemble[ensemble.best_model_idx], f'models/ensemble_fkine_v1.pt')
