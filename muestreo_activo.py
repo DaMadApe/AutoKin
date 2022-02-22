@@ -88,29 +88,49 @@ class EnsembleRegressor(torch.nn.Module):
 
 if __name__ == "__main__":
     
-    from torch.utils.data import TensorDataset
+    from torch.utils.data import TensorDataset, random_split
     import matplotlib.pyplot as plt
 
     from modelos import MLP, ResNet
     from entrenamiento import test
 
+    """
+    Conjunto de datos
+    """
     x_min = -1
     x_max = 1
-    n_samples = 20
+    n_samples = 24
     n_models = 3
     n_queries = 5
 
     # Función de prueba
     def f(x): return torch.sin(10*x**2 - 10*x)
     # def f(x): return torch.cos(10*x**2)
-    
-    # Datos de entrenamiento
-    X_train = torch.linspace(x_min, x_max, n_samples).reshape(-1, 1)
-    y_train = f(X_train)
+
+    X = torch.linspace(x_min, x_max, n_samples).reshape(-1, 1)
+    Y = f(X)
+    full_set = TensorDataset(X, Y)
+
+    split_proportions = [0.9, 0.1]
+    split = [round(prop*len(X)) for prop in split_proportions]
+
+    train_set, test_set = random_split(full_set, split)
 
     # Datos disponibles para 'pedir'
     X_query = torch.rand(100).view(-1, 1)*(x_max-x_min) + x_min
 
+    # Conversión nada elegante para poder graficar ejemplos originales
+    # Sólo es relevante para graficar ejemplos en 1D
+    X_train = torch.tensor([])
+    Y_train = torch.tensor([])
+    for x, y in train_set:
+        X_train = torch.cat((X_train, x.unsqueeze(dim=0)))
+        Y_train = torch.cat((Y_train, y.unsqueeze(dim=0)))
+
+
+    """
+    Primer entrenamiento
+    """
     # Declarar conjunto de modelos
     models = [MLP(input_dim=1,
                   output_dim=1,
@@ -121,22 +141,31 @@ if __name__ == "__main__":
     ensemble = EnsembleRegressor(models)
 
     # Entrenar el model con datos iniciales
-    train_set = TensorDataset(X_train, y_train)
     ensemble.fit(train_set, lr=1e-3, epochs=3000)
 
-    # Solicitar recomenación de nuevas muestras
-    _, queries = ensemble.query(X_query, n_queries)
 
     """
-    Graficar conjunto de datos
+    Afinación con muestras nuevas recomendadas
+    """
+    queries = torch.zeros(n_queries, 1)
+
+    for i in range(n_queries):
+
+        _, query = ensemble.query(X_query, n_queries=1)
+        queries[i] = query
+
+        # ensemble.fit()
+
+    """
+    Graficar resultados
     """
     X_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
 
     fig, ax = plt.subplots()
     ax.plot(X_plot, f(X_plot))
-    ax.scatter(X_train, y_train)
+    ax.scatter(X_train, Y_train)
     ax.scatter(queries, f(queries))
-    labels = ['Target F', 'Trainset','Queries']
+    labels = ['Target F', 'Trainset', 'Queries']
     for i in range(n_models):
         ax.plot(X_plot, ensemble[i](X_plot).detach())
         labels.append(f'Model {i}')
