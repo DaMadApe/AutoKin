@@ -76,17 +76,32 @@ class EnsembleRegressor(torch.nn.Module):
             train(model, train_set, **train_kwargs)
         print("Fin del entrenamiento")
 
-    def fit_to_query(self, train_set, query_set, relative_weight:int=1, **train_kwargs):
+    def fit_to_query(self, train_set, query_set, relative_weight:int=1,
+                     **train_kwargs):
         """
         Entrenar con el conjunto original aumentado con las nuevas muestras.
         Permite asignar peso adicional a las nuevas muestras.
+
+        args:
+        train_set (Dataset) : Conjunto base de entrenamiento
+        query_set (Dataset) : Conjunto de muestras nuevas para ajustar
+        relative_weight: Ponderación extra de las muestras nuevas (repetir en dataset)
+        **train_kwargs: Argumentos nombrados de la función de entrenamiento
         """
         augmented_train_set = ConcatDataset([train_set, *relative_weight*[query_set]])
         self.fit(augmented_train_set, **train_kwargs)
 
-    def online_fit(self, train_set, function, n_queries, relative_weight:int=1, **train_kwargs):
+    def online_fit(self, train_set, label_fun, n_queries, relative_weight:int=1,
+                   final_adjust_weight=None, **train_kwargs):
         """
-        Ciclo para solicitar muestra y reajustar
+        Ciclo para solicitar muestra y ajustar, una por una.
+
+        args:
+        train_set (Dataset) : Conjunto base de entrenamiento
+        label_fun (Callable) : Método para obtener las etiquetas de nuevas muestras
+        relative_weight : Ponderación extra de las muestras nuevas (repetir en dataset)
+        final_adjust_weight (int) : Asignar para finalizar con un entrenamiento ponderado
+        **train_kwargs: Argumentos de entrenamiento usados para cada ajuste
         """
         queries = torch.zeros(n_queries, 1)
 
@@ -97,11 +112,16 @@ class EnsembleRegressor(torch.nn.Module):
             print(f'Queried: {query.item()}')
 
             # Aquí se mandaría la q al robot y luego leer posición
-            result = function(queries)
+            result = label_fun(queries)
             # Agarrar sólo las entradas que han sido asignadas
             query_set = TensorDataset(queries[:i+1], result[:i+1])
 
             ensemble.fit_to_query(train_set, query_set, relative_weight,
+                                  **train_kwargs)
+
+        if final_adjust_weight is not None:
+            ensemble.fit_to_query(train_set, query_set,
+                                  relative_weight=final_adjust_weight,
                                   **train_kwargs)
 
         return queries
@@ -132,7 +152,7 @@ if __name__ == "__main__":
     """
     x_min = -1
     x_max = 1
-    n_samples = 16
+    n_samples = 20
     n_models = 3
     n_queries = 10
 
@@ -174,7 +194,7 @@ if __name__ == "__main__":
     ensemble = EnsembleRegressor(models)
 
     # Entrenar el modelo con datos iniciales
-    ensemble.fit(train_set, lr=1e-3, epochs=2000)
+    ensemble.fit(train_set, lr=1e-3, epochs=1000)
     ensemble.rank_models(test_set)
 
     # Para graficar después
