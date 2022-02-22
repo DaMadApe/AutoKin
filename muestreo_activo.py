@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import ConcatDataset
 
 from entrenamiento import train
 
@@ -75,9 +76,21 @@ class EnsembleRegressor(torch.nn.Module):
             train(model, train_set, **train_kwargs)
         print("Fin del entrenamiento")
 
+    def fit_to_query(self, train_set, query_set, relative_weight:int=1, **train_kwargs):
+        """
+        Entrenar con el conjunto original aumentado con las nuevas muestras.
+        Permite asignar peso adicional a las nuevas muestras.
+        """
+        augmented_train_set = ConcatDataset([train_set, *relative_weight*[query_set]])
+        for x, y in augmented_train_set:
+            print(x,y)
+        self.fit(augmented_train_set, **train_kwargs)
+
     def rank_models(self, test_set):
         """
         Registrar mejor modelo según precisión en un conjunto de prueba
+        TODO: Guardar rendimiento de todos los modelos, ponderarlo en la
+              selección de nuevas muestras
         """
         best_score = torch.inf
         for i, model in enumerate(self.ensemble):
@@ -99,9 +112,9 @@ if __name__ == "__main__":
     """
     x_min = -1
     x_max = 1
-    n_samples = 24
+    n_samples = 16
     n_models = 3
-    n_queries = 5
+    n_queries = 2
 
     # Función de prueba
     def f(x): return torch.sin(10*x**2 - 10*x)
@@ -111,7 +124,7 @@ if __name__ == "__main__":
     Y = f(X)
     full_set = TensorDataset(X, Y)
 
-    split_proportions = [0.9, 0.1]
+    split_proportions = [0.5, 0.5]
     split = [round(prop*len(X)) for prop in split_proportions]
 
     train_set, test_set = random_split(full_set, split)
@@ -140,9 +153,13 @@ if __name__ == "__main__":
 
     ensemble = EnsembleRegressor(models)
 
-    # Entrenar el model con datos iniciales
-    ensemble.fit(train_set, lr=1e-3, epochs=3000)
+    # Entrenar el modelo con datos iniciales
+    ensemble.fit(train_set, lr=1e-3, epochs=2000)
+    ensemble.rank_models(test_set)
 
+    # Para graficar después
+    X_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
+    first_pred = ensemble.best_predict(X_plot).detach()
 
     """
     Afinación con muestras nuevas recomendadas
@@ -153,29 +170,38 @@ if __name__ == "__main__":
 
         _, query = ensemble.query(X_query, n_queries=1)
         queries[i] = query
+        print(f'Queried: {query.item()}')
 
-        # ensemble.fit()
+        # Aquí se mandaría la q al robot y luego leer posición
+        result = f(queries)
+
+        query_set = TensorDataset(queries[:i], result[:i])
+
+        print(queries[:1])
+
+        ensemble.fit_to_query(train_set, query_set, relative_weight=3,
+                              lr=6e-4, epochs=2000)
+
+    ensemble.rank_models(test_set)
+    last_pred = ensemble.best_predict(X_plot).detach()
 
     """
     Graficar resultados
     """
-    X_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
-
     fig, ax = plt.subplots()
     ax.plot(X_plot, f(X_plot))
     ax.scatter(X_train, Y_train)
     ax.scatter(queries, f(queries))
-    labels = ['Target F', 'Trainset', 'Queries']
-    for i in range(n_models):
-        ax.plot(X_plot, ensemble[i](X_plot).detach())
-        labels.append(f'Model {i}')
+    ax.plot(X_plot, first_pred)
+    ax.plot(X_plot, last_pred)
+    labels = ['Target F', 'Trainset', 'Queries', 'Primer entrenamiento',
+              'Luego de muestreo']
+    # for i in range(n_models):
+    #     ax.plot(X_plot, ensemble[i](X_plot).detach())
+    #     labels.append(f'Model {i}')
 
     # ax.plot(X_plot, ensemble.joint_predict(X_plot))
     # labels.append('Joint predict')
 
     ax.legend(labels)
     plt.show()
-
-
-    # TODO: Mostrar primer aprendizaje, luego mostrar ciclo
-    # de afinación muestra por muestra
