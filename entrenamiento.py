@@ -1,3 +1,4 @@
+from pyexpat import model
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -113,7 +114,6 @@ if __name__ == "__main__":
     import roboticstoolbox as rtb
 
     from modelos import MLP
-    from muestreo_activo import EnsembleRegressor
     from utils import RoboKinSet
 
     """
@@ -132,43 +132,23 @@ if __name__ == "__main__":
     train_set, val_set, test_set = random_split(full_set, split)
 
     """
-    Definición de modelos
+    Definición de modelo
     """
-    n_models = 3
-
-    models = [MLP(input_dim=robot.n,
-                  output_dim=3,
-                  depth=3,
-                  mid_layer_size=12,
-                  activation=torch.tanh) for _ in range(n_models)]
-
-    ensemble = EnsembleRegressor(models)
+    model = MLP(input_dim=robot.n,
+                output_dim=3,
+                depth=3,
+                mid_layer_size=12,
+                activation=torch.tanh)
 
     """
     Entrenamiento
     """
     # Primer entrenamiento
-    ensemble.fit(train_set, val_set=val_set,
-                 lr=8e-4, epochs=50)
+    train(model, train_set, val_set=val_set,
+          epochs=100,
+          lr=1e-3,
+          #batch_size=256
+          #lr_scheduler=True,
+          log_dir='tb_logs/entrenamiento/cobra600')
 
-    # Ajuste a nuevas muestras
-    def label_fun(X):
-        result = robot.fkine(X.numpy()).t
-        return torch.tensor(result, dtype=torch.float)
-
-    candidate_batch = torch.rand((500, robot.n))
-
-    queries, _ = ensemble.online_fit(train_set,
-                                     val_set=val_set,
-                                     candidate_batch=candidate_batch,
-                                     label_fun=label_fun,
-                                     query_steps=6,
-                                     n_queries=10,
-                                     relative_weight=10,
-                                     final_adjust_weight=10,
-                                     lr=8e-4, epochs=32,
-                                     # lr_scheduler=True,
-                                     tb_dir='tb_logs/entrenamiento/cobra600_AL')
-    ensemble.rank_models(test_set)
-
-    torch.save(ensemble[ensemble.best_model_idx], f'models/ensemble_fkine_v1.pt')
+    torch.save(model, 'models/cobra600_v1.pt')
