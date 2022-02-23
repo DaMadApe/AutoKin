@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import random_split
 import roboticstoolbox as rtb
 
 from modelos import MLP, ResNet
@@ -12,15 +13,17 @@ Conjunto de datos
 # robot = random_robot(min_DH = [0, 0, 0, 0],
 #                      max_DH = [1, 2*torch.pi, 2*torch.pi, 1],
 #                      n=3)
-robot = rtb.models.DH.Puma560()
+robot = rtb.models.DH.Cobra600() #Puma560()
+n_samples = 3000
 
-n_per_q = 4
-n_samples = n_per_q ** robot.n
-ns_samples = [n_per_q] * robot.n
+full_set = RoboKinSet(robot, n_samples)
 
-train_set = RoboKinSet.grid_sampling(robot, ns_samples)
-val_set = RoboKinSet(robot, n_samples//5)
-test_set = RoboKinSet(robot, n_samples//5)
+# Repartir muestras entre conjuntos
+split_proportions = [0.6, 0.2, 0.2]
+# Convertir proporciones al número de muestras correspondiente
+split = [round(prop*len(full_set)) for prop in split_proportions]
+
+train_set, val_set, test_set = random_split(full_set, split)
 
 """
 Definición de modelos
