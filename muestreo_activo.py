@@ -118,11 +118,12 @@ class EnsembleRegressor(torch.nn.Module):
             queries[i,] = query
             print(f'Queried: {query}')
 
-            # Aquí se mandaría la q al robot y luego leer posición
-            result = label_fun(queries)
             # Agarrar sólo las entradas que han sido asignadas
-            query_set = TensorDataset(queries[:i+1].flatten(end_dim=-2),
-                                      result[:i+1].flatten(end_dim=-2))
+            flat_current_queries = queries[:i+1].flatten(end_dim=-2)
+            # Aquí se mandaría la q al robot y luego leer posición
+            result = label_fun(flat_current_queries)
+            query_set = TensorDataset(flat_current_queries,
+                                      result)
 
             self.fit_to_query(train_set, query_set, relative_weight,
                               **train_kwargs)
