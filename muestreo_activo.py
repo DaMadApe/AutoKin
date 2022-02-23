@@ -92,7 +92,7 @@ class EnsembleRegressor(torch.nn.Module):
         self.fit(augmented_train_set, **train_kwargs)
 
     def online_fit(self, train_set, candidate_batch, label_fun, query_steps, n_queries=1,
-                   relative_weight:int=1, final_adjust_weight=None, **train_kwargs):
+                   relative_weight:int=1, final_adjust_weight=None, tb_dir=None, **train_kwargs):
         """
         Ciclo para solicitar muestra y ajustar, una por una.
 
@@ -104,6 +104,7 @@ class EnsembleRegressor(torch.nn.Module):
         n_queries (int) : Número de muestras solicitadas en cada paso
         relative_weight (int) : Ponderación extra de las muestras nuevas (repetir en dataset)
         final_adjust_weight (int) : Asignar para finalizar con un entrenamiento ponderado
+        tb_dir (str) : Directorio base para guardar logs de tensorboard de entrenamientos
         **train_kwargs: Argumentos de entrenamiento usados para cada ajuste
 
         TODO: Sacar candidate_batch nuevo para cada query, no requerir como argumento
@@ -112,6 +113,8 @@ class EnsembleRegressor(torch.nn.Module):
         queries = torch.zeros(query_steps, n_queries, *input_dim)
 
         for i in range(query_steps):
+
+            log_dir = tb_dir+f'_s{i}' if tb_dir is not None else None
 
             _, query = self.query(candidate_batch, n_queries=n_queries)
 
@@ -126,12 +129,13 @@ class EnsembleRegressor(torch.nn.Module):
                                       result)
 
             self.fit_to_query(train_set, query_set, relative_weight,
-                              **train_kwargs)
+                              **train_kwargs, log_dir=log_dir)
 
         if final_adjust_weight is not None:
+            log_dir = tb_dir+'_final' if tb_dir is not None else None
             self.fit_to_query(train_set, query_set,
                               relative_weight=final_adjust_weight,
-                              **train_kwargs)
+                              **train_kwargs, log_dir=log_dir)
 
         return queries, result
 

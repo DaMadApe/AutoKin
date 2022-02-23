@@ -119,8 +119,8 @@ if __name__ == "__main__":
     """
     Conjuntos de datos
     """
-    robot = rtb.models.DH.Puma560()
-    n_samples = 3000
+    robot = rtb.models.DH.Cobra600() #Puma560()
+    n_samples = 10000
 
     full_set = RoboKinSet(robot, n_samples)
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     models = [MLP(input_dim=robot.n,
                   output_dim=3,
                   depth=3,
-                  mid_layer_size=10,
+                  mid_layer_size=12,
                   activation=torch.tanh) for _ in range(n_models)]
 
     ensemble = EnsembleRegressor(models)
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     """
     # Primer entrenamiento
     ensemble.fit(train_set, val_set=val_set,
-                 lr=1e-3, epochs=50)
+                 lr=8e-4, epochs=50)
 
     # Ajuste a nuevas muestras
     def label_fun(X):
@@ -162,11 +162,13 @@ if __name__ == "__main__":
                                      val_set=val_set,
                                      candidate_batch=candidate_batch,
                                      label_fun=label_fun,
-                                     query_steps=4,
-                                     n_queries=5,
-                                     relative_weight=1,
-                                     final_adjust_weight=2,
-                                     lr=1e-3, epochs=30)
+                                     query_steps=6,
+                                     n_queries=10,
+                                     relative_weight=10,
+                                     final_adjust_weight=10,
+                                     lr=8e-4, epochs=32,
+                                     # lr_scheduler=True,
+                                     tb_dir='tb_logs/entrenamiento/cobra600_AL')
     ensemble.rank_models(test_set)
 
     torch.save(ensemble[ensemble.best_model_idx], f'models/ensemble_fkine_v1.pt')
