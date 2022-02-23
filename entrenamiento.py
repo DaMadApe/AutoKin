@@ -148,7 +148,8 @@ if __name__ == "__main__":
     Entrenamiento
     """
     # Primer entrenamiento
-    ensemble.fit(train_set, lr=1e-3, epochs=50)
+    ensemble.fit(train_set, val_set=val_set,
+                 lr=1e-3, epochs=50)
 
     # Ajuste a nuevas muestras
     def label_fun(X):
@@ -158,6 +159,7 @@ if __name__ == "__main__":
     candidate_batch = torch.rand((500, robot.n))
 
     queries, _ = ensemble.online_fit(train_set,
+                                     val_set=val_set,
                                      candidate_batch=candidate_batch,
                                      label_fun=label_fun,
                                      query_steps=4,
