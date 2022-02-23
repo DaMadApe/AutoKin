@@ -22,7 +22,7 @@ def train(model, train_set, val_set=None,
     lr (float) : Learning rate para el optimizador
     batch_size (int) : Número de muestras propagadas a la vez
     criterion (callable) : Función para evaluar la pérdida
-    optim () : Método de optimización
+    optim () : Clase de optimizador
     lr_scheduler (bool) : Reducir lr al frenar disminución de val_loss
     silent (bool) : Mostrar barra de progreso del entrenamiento
     log_dir (str) :  Dirección para almacenar registros de Tensorboard
@@ -152,18 +152,19 @@ if __name__ == "__main__":
 
     # Ajuste a nuevas muestras
     def label_fun(X):
-        return torch.tensor(robot.fkine(X.numpy()).t)
+        result = robot.fkine(X.numpy()).t
+        return torch.tensor(result, dtype=torch.float)
 
     candidate_batch = torch.rand((500, robot.n))
 
-    queries = ensemble.online_fit(train_set,
-                                  candidate_batch=candidate_batch,
-                                  label_fun=label_fun,
-                                  query_steps=4,
-                                  n_queries=5,
-                                  relative_weight=1,
-                                  final_adjust_weight=2,
-                                  lr=1e-3, epochs=30)
+    queries, _ = ensemble.online_fit(train_set,
+                                     candidate_batch=candidate_batch,
+                                     label_fun=label_fun,
+                                     query_steps=4,
+                                     n_queries=5,
+                                     relative_weight=1,
+                                     final_adjust_weight=2,
+                                     lr=1e-3, epochs=30)
     ensemble.rank_models(test_set)
 
     torch.save(ensemble[ensemble.best_model_idx], f'models/ensemble_fkine_v1.pt')

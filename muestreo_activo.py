@@ -1,7 +1,7 @@
 import torch
-from torch.utils.data import ConcatDataset
+from torch.utils.data import TensorDataset, ConcatDataset
 
-from entrenamiento import train
+from entrenamiento import train, test
 
 # Mover a modelos?
 class EnsembleRegressor(torch.nn.Module):
@@ -150,11 +150,10 @@ class EnsembleRegressor(torch.nn.Module):
 
 if __name__ == "__main__":
     
-    from torch.utils.data import TensorDataset, random_split
+    from torch.utils.data import random_split
     import matplotlib.pyplot as plt
 
     from modelos import MLP, ResNet
-    from entrenamiento import test
 
     """
     Conjunto de datos
