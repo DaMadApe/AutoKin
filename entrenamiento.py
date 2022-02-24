@@ -1,4 +1,5 @@
-from pyexpat import model
+import sched
+from tabnanny import check
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -11,7 +12,8 @@ from tqdm import tqdm
 def train(model, train_set, val_set=None,
           epochs=10, lr=1e-3, batch_size=32,
           criterion=nn.MSELoss(), optim=torch.optim.Adam,
-          lr_scheduler=False, silent=False, log_dir=None):
+          lr_scheduler=False, silent=False, log_dir=None,
+          checkpoint=None):
     """
     Rutina de entrenamiento para módulo de torch
     
@@ -26,7 +28,12 @@ def train(model, train_set, val_set=None,
     optim () : Clase de optimizador
     lr_scheduler (bool) : Reducir lr al frenar disminución de val_loss
     silent (bool) : Mostrar barra de progreso del entrenamiento
-    log_dir (str) :  Dirección para almacenar registros de Tensorboard
+    log_dir (str) : Dirección para almacenar registros de Tensorboard
+    checkpoint () : Cargar el estado resultante de un entrenaminto previo
+
+    returns:
+    
+    checkpoint : Estado del optimizador y lr_scheduler, para reanudar entrenamiento
     """
 
     # TODO: Transferir datos y modelo a GPU si está disponible
@@ -36,9 +43,13 @@ def train(model, train_set, val_set=None,
         writer = SummaryWriter(log_dir=log_dir)
 
     optimizer = optim(model.parameters(), lr=lr)
+    if checkpoint is not None:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     if lr_scheduler:
         scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
+        if checkpoint is not None:
+            scheduler.load_state_dict(checkpoint['sheduler_state_dict'])
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     if val_set is not None:
@@ -83,8 +94,6 @@ def train(model, train_set, val_set=None,
         if not silent:
             epoch_iter.set_postfix(progress_info)
 
-            
-        
     if log_dir is not None:
         if val_set is not None:
             metrics = {'Last val loss': val_loss.item()}
@@ -94,6 +103,12 @@ def train(model, train_set, val_set=None,
         writer.add_hparams({**model.hparams, 'lr':lr, 'batch_size':batch_size},
                            metric_dict=metrics, run_name='.')
         writer.close()
+
+    checkpoint = {'optimizer_state_dict': optimizer.state_dict()}
+    if lr_scheduler:
+        checkpoint.update({'sheduler_state_dict': scheduler.state_dict()})
+
+    return checkpoint
 
 
 def test(model, test_set, criterion=nn.MSELoss()):
@@ -143,12 +158,11 @@ if __name__ == "__main__":
     """
     Entrenamiento
     """
-    # Primer entrenamiento
     train(model, train_set, val_set=val_set,
           epochs=100,
           lr=1e-3,
-          #batch_size=256
-          #lr_scheduler=True,
+          batch_size=256,
+          lr_scheduler=True,
           log_dir='tb_logs/entrenamiento/cobra600')
 
     torch.save(model, 'models/cobra600_v1.pt')
