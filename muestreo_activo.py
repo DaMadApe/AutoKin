@@ -113,6 +113,7 @@ class EnsembleRegressor(torch.nn.Module):
         relative_weight (int) : Ponderación extra de las muestras nuevas (repetir en dataset)
         final_adjust_weight (int) : Asignar para finalizar con un entrenamiento ponderado
         tb_dir (str) : Directorio base para guardar logs de tensorboard de entrenamientos
+        use_checkpoint (bool) : Si se activa, se guarda el estado del optimizador entre ajustes
         **train_kwargs: Argumentos de entrenamiento usados para cada ajuste
 
         TODO: Sacar candidate_batch nuevo para cada query, no requerir como argumento
@@ -144,7 +145,8 @@ class EnsembleRegressor(torch.nn.Module):
             log_dir = tb_dir+'_final' if tb_dir is not None else None
             self.fit_to_query(train_set, query_set,
                               relative_weight=final_adjust_weight,
-                              **train_kwargs, log_dir=log_dir)
+                              **train_kwargs, log_dir=log_dir,
+                              use_checkpoint=use_checkpoint)
 
         return queries, result
 
