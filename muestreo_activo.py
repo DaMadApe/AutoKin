@@ -13,6 +13,7 @@ class EnsembleRegressor(torch.nn.Module):
         super().__init__()
         self.ensemble = torch.nn.ModuleList(models)
         self.best_model_idx = None
+        self.last_checkpoints = [{}]*len(self.ensemble)
     
     def __getitem__(self, idx):
         """
@@ -67,13 +68,20 @@ class EnsembleRegressor(torch.nn.Module):
         return candidate_idx, query
         # return torch.topk(deviation, n_queries)
 
-    def fit(self, train_set, **train_kwargs):
+    def fit(self, train_set, use_checkpoint=False, **train_kwargs):
         """
         Entrenar cada uno de los modelos individualmente
         """
         print("Ajustando modelos del conjunto")
+
         for i, model in enumerate(self.ensemble):
-            train(model, train_set, **train_kwargs)
+            if use_checkpoint and all(self.last_checkpoints):
+                train_kwargs.update({'checkpoint': self.last_checkpoints[i]})
+
+            checkpoint = train(model, train_set, **train_kwargs)
+
+            if use_checkpoint:
+                self.last_checkpoints[i].update(checkpoint)
         print("Fin del entrenamiento")
 
     def fit_to_query(self, train_set, query_set, relative_weight:int=1,
@@ -92,7 +100,7 @@ class EnsembleRegressor(torch.nn.Module):
         self.fit(augmented_train_set, **train_kwargs)
 
     def online_fit(self, train_set, candidate_batch, label_fun, query_steps, n_queries=1,
-                   relative_weight:int=1, final_adjust_weight=None, tb_dir=None, **train_kwargs):
+                   relative_weight:int=1, final_adjust_weight=None, tb_dir=None, use_checkpoint=True, **train_kwargs):
         """
         Ciclo para solicitar muestra y ajustar, una por una.
 
@@ -129,7 +137,8 @@ class EnsembleRegressor(torch.nn.Module):
                                       result)
 
             self.fit_to_query(train_set, query_set, relative_weight,
-                              **train_kwargs, log_dir=log_dir)
+                              **train_kwargs, log_dir=log_dir,
+                              use_checkpoint=use_checkpoint)
 
         if final_adjust_weight is not None:
             log_dir = tb_dir+'_final' if tb_dir is not None else None
@@ -195,7 +204,7 @@ if __name__ == "__main__":
     """
     # Primer entrenamiento
     ensemble.fit(train_set, val_set=val_set,
-                 lr=1e-3, epochs=100)
+                 lr=1e-3, epochs=36)
 
     # Ajuste a nuevas muestras
     def label_fun(X):
@@ -210,11 +219,12 @@ if __name__ == "__main__":
                                      label_fun=label_fun,
                                      query_steps=6,
                                      n_queries=10,
-                                     relative_weight=20,
-                                     final_adjust_weight=20,
-                                     lr=3e-4, epochs=16,
-                                     #lr_scheduler=True,
-                                     tb_dir='tb_logs/muestreo_activo/cobra600')
+                                     relative_weight=5,
+                                     final_adjust_weight=5,
+                                     lr=1e-4, epochs=12,
+                                     lr_scheduler=True,
+                                     tb_dir='tb_logs/muestreo_activo/cobra600'
+                                     )
     ensemble.rank_models(test_set)
 
     torch.save(ensemble[ensemble.best_model_idx], 'models/cobra600_MA_v1.pt')
