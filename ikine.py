@@ -1,9 +1,7 @@
+from typing import Callable
 import torch
 from torch.autograd.functional import jacobian
 import roboticstoolbox as rtb
-
-#TODO: Cambiar todo numpy por torch para acelerar interacción con redes
-import numpy as np
 
 
 def batch_jacobian(func, batch, create_graph=False, vectorize=False):
@@ -24,40 +22,59 @@ def batch_jacobian(func, batch, create_graph=False, vectorize=False):
 """
 Métodos iterativos de cinemática inversa
 """
-def ikine_pi_jacob(q_start, x_target, fkine, jacob,
-                   eta=0.01, min_error=0, max_iters=1000):
+def ikine_pi_jacob(q_start: torch.Tensor, p_target: torch.Tensor,
+                   fkine: Callable, jacob : Callable,
+                   eta=0.01, max_error=0, max_iters=1000):
     """
     Método de pseudoinverso de jacobiano
-
+    q_start (Tensor) : Configuración inicial del robot
+    p_target (Tensor) : Posición objetivo en espacio cartesiano
+    fkine (Callable) : Función de cinemática directa (f: q -> p)
+    jacob (Callable) : Función que devuelve jacobiano (f: q -> dp/dq)
+    eta (float) : Coeficiente de actualización por iteración
+    max_error (float) : Máxima distancia tolerada entre posición y
+        objetivo, sujeto a max_iters
+    max_iters (int) : Máximo número de iteraciones
     """
-    q = np.copy(q_start)
+    q = q_start.clone().detach()
     for _ in range(max_iters):
-        delta_x = x_target - fkine(q)
-        error = np.linalg.norm(delta_x)
-        if error < min_error:
+        delta_x = p_target - fkine(q)
+        error = torch.linalg.norm(delta_x)
+        if error < max_error:
             break
 
-        pi_jacob = np.linalg.pinv(jacob(q))
-        q_update = eta * np.dot(pi_jacob, delta_x)
+        pi_jacob = torch.linalg.pinv(jacob(q))
+        q_update = eta * torch.matmul(pi_jacob, delta_x)
 
         q += q_update
 
     return q
 
 
-# Método de transpuesta de jacobiano
-def ikine_trans_jacob(q_start, x_target, fkine, jacob,
-                      eta=0.01, min_error=0, max_iters=1000):
-    q = np.copy(q_start)
+def ikine_trans_jacob(q_start: torch.Tensor, p_target: torch.Tensor,
+                      fkine: Callable, jacob : Callable,
+                      eta=0.01, max_error=0, max_iters=1000):
+    """
+    Método de transpuesta de jacobiano
+    q_start (Tensor) : Configuración inicial del robot
+    p_target (Tensor) : Posición objetivo en espacio cartesiano
+    fkine (Callable) : Función de cinemática directa (f: q -> p)
+    jacob (Callable) : Función que devuelve jacobiano (f: q -> dp/dq)
+    eta (float) : Coeficiente de actualización por iteración
+    max_error (float) : Máxima distancia tolerada entre posición y
+        objetivo, sujeto a max_iters
+    max_iters (int) : Máximo número de iteraciones
+    """
+    q = q_start.clone().detach()
     for _ in range(max_iters):
-        delta_x = x_target - fkine(q)
-        error = np.linalg.norm(delta_x)
-        if error < min_error:
+        delta_x = p_target - fkine(q)
+        error = torch.linalg.norm(delta_x)
+        if error < max_error:
             break
 
         trans_jacob = jacob(q).T
 
-        q_update = eta * np.dot(trans_jacob, delta_x)
+        q_update = eta * torch.matmul(trans_jacob, delta_x)
         q += q_update
 
     return q
@@ -67,22 +84,31 @@ if __name__ == "__main__":
     
     from utils import denorm_q
 
+    # Para tener resultados repetibles
+    torch.manual_seed(42)
+
     robot = rtb.models.DH.Cobra600()
 
-    q0 = denorm_q(robot, [0.1, 0.1, 0.1, 0.1])
+    # Envoltorios para que Corke se lleve bien con tensores
+    def robot_fkine(q):
+        return torch.tensor(robot.fkine(q.numpy()).t)
 
-    q_target = denorm_q(robot, [0.1, 0.4, 0.2, 0.3])
-    x_target = robot.fkine(q_target).t
+    def robot_jacobian(q):
+        return torch.tensor(robot.jacob0(q.numpy())[:3])
 
-    q_inv = ikine_pi_jacob(q0, x_target,
-                           lambda q: robot.fkine(q).t, 
-                           lambda q: robot.jacob0(q)[:3],
-                           max_iters=500)
 
+    q_start = denorm_q(robot, torch.rand(robot.n))
+    q_target = denorm_q(robot, torch.rand(robot.n))
+    p_target = robot_fkine(q_target)
+
+    q_inv = ikine_pi_jacob(q_start, p_target,
+                           fkine=robot_fkine, 
+                           jacob=robot_jacobian,
+                           max_iters=500, eta=0.01)
     print(f"""
-        Initial q: {q0}
-        Initial x: {robot.fkine(q0).t}
+        Initial q: {q_start}
+        Initial x: {robot_fkine(q_start)}
         Requested q: {q_target}
-        Requested x: {x_target}
+        Requested x: {p_target}
         Found q: {q_inv}
-        Reached x: {robot.fkine(q_inv).t}""")
+        Reached x: {robot_fkine(q_inv)}""")
