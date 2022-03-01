@@ -74,7 +74,7 @@ def norm_q(robot, q_vec):
     Normalizar vector de actuación respecto a los límites en
     las juntas del robot
     """
-    q_min, q_max = robot.qlim # Límites de las juntas
+    q_min, q_max = robot.qlim.astype(np.float32) # Límites de las juntas
     return (q_vec - q_min) / (q_max - q_min)
 
 
@@ -83,7 +83,7 @@ def denorm_q(robot, q_vec):
     Extender un vector de valores 0 a 1 al rango completo de
     actuación del robot.
     """
-    q_min, q_max = robot.qlim
+    q_min, q_max = robot.qlim.astype(np.float32)
     return q_vec * (q_max - q_min) + q_min
 
 
