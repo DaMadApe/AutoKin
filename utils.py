@@ -14,58 +14,93 @@ class RoboKinSet(Dataset):
     Los puntos se escogen aleatoriamente en el espacio de parámetros.
 
     robot () : Cadena cinemática para producir ejemplos
-    n_samples (int) : Número de ejemplos
+    q_vecs (int) : Número de ejemplos
     normed_q (bool) : Devolver ejemplos de q normalizados respecto al robot
     output_transform (callable) : Transformación que aplicar a vectores
                                   de posición devueltos
+    uniform_q_noise (float) : Cantidad de ruido uniforme aplicado a ejemplos q
+        Se aplica antes de estirar (denorm) q a los límites del robot
+    normal_q_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a ejemplos q
+        Se aplica antes de estirar (denorm) q a los límites del robot
     """
-    def __init__(self, robot, n_samples: int, normed_q=True,
-                 output_transform=None):
-        self.robot = robot
-        self.n = self.robot.n # Número de ejes
-        self.normed_q_vecs = np.random.rand(n_samples, robot.n)
+    def __init__(self, robot, q_vecs: torch.Tensor, normed_q=True,
+                 output_transform=None,
+                 uniform_q_noise=0, normal_q_noise=0,
+                 uniform_p_noise=0, normal_p_noise=0):
 
-        self.output_transform = output_transform
+        is_q_normed = np.all(q_vecs>=0) and np.all(q_vecs<=1)
+        if not(is_q_normed):
+            raise ValueError('q_vecs debe ir normalizado a intervalo [0,1]')
+
+        self.robot = robot
+        self.q_vecs = q_vecs
         self.normed_q = normed_q
-        self.generate_labels()
+        self.output_transform = output_transform
+
+        self.n = self.robot.n # Número de ejes
+
+        self.q_noise = (uniform_q_noise*torch.rand(len(self), self.n) +
+                        normal_q_noise*torch.randn(len(self), self.n))
+
+        self.p_noise = (uniform_p_noise*torch.rand(len(self), self.n) +
+                        normal_p_noise*torch.randn(len(self), self.n))
+
+        self._generate_labels()
 
     @classmethod
-    def grid_sampling(cls, robot, n_samples: list, normed_q=True):
+    def random_sampling(cls, robot, n_samples: int, **kwargs):
+        """
+        Constructor alternativo
+        Toma muestras uniformemente distribuidas en el espacio de juntas
+
+        args:
+        robot () : Cadena cinemática para producir ejemplos
+        n_samples (int) : Número de ejemplos
+        """
+        q_vecs = np.random.rand(n_samples, robot.n)
+        return cls(robot, q_vecs, **kwargs)
+
+    @classmethod
+    def grid_sampling(cls, robot, n_samples: list, **kwargs):
         """
         Constructor alternativo
         Toma muestras del espacio de juntas en un patrón de cuadrícula
-        """
-        dataset = cls(robot, 0, normed_q)
 
+        args:
+        robot () : Cadena cinemática para producir ejemplos
+        n_samples (int list) : Número de divisiones por junta
+        """
         # Magia negra para producir todas las combinaciones de puntos
         q_vecs = np.meshgrid(*[np.linspace(0,1, int(n)) for n in n_samples])
         q_vecs = np.stack(q_vecs, -1).reshape(-1, robot.n)
+        return cls(robot, q_vecs, **kwargs)
 
-        dataset.normed_q_vecs = q_vecs
-        dataset.generate_labels()
-        return dataset
-
-    def generate_labels(self):
-        self.q_vecs = denorm_q(self.robot, self.normed_q_vecs)
+    def _generate_labels(self):
+        self.denormed_q_vecs = denorm_q(self.robot, self.q_vecs)
         # Hacer cinemática directa
-        self.poses = [self.robot.fkine(q_vec).t for q_vec in self.q_vecs]
+        self.pos_vecs = [self.robot.fkine(q_vec).t for q_vec in self.denormed_q_vecs]
 
         # Acomodar en tensores con tipo float
-        self.poses = torch.tensor(np.array(self.poses), dtype=torch.float)
-        self.normed_q_vecs = torch.tensor(self.normed_q_vecs, dtype=torch.float)
+        self.pos_vecs = torch.tensor(np.array(self.pos_vecs), dtype=torch.float)
         self.q_vecs = torch.tensor(self.q_vecs, dtype=torch.float)
+        self.denormed_q_vecs = torch.tensor(self.denormed_q_vecs, dtype=torch.float)
+        
+        # self.q_vecs = self.q_vecs + self.q_noise
+        # self.pos_vecs = self.pos_vecs + self.p_noise
 
     def __len__(self):
         return self.q_vecs.shape[0]
 
     def __getitem__(self, idx):
         if self.normed_q:
-            q_vec = self.normed_q_vecs[idx]
-        else:
             q_vec = self.q_vecs[idx]
-        pos = self.poses[idx]
+        else:
+            q_vec = self.denormed_q_vecs[idx]
+
+        pos = self.pos_vecs[idx]
         if self.output_transform is not None:
             pos = self.output_transform(pos)
+
         return q_vec, pos
 
 

@@ -179,7 +179,7 @@ if __name__ == "__main__":
     robot = rtb.models.DH.Cobra600() #Puma560()
     n_samples = 10000
 
-    full_set = RoboKinSet(robot, n_samples)
+    full_set = RoboKinSet.random_sampling(robot, n_samples)
 
     # Repartir muestras entre conjuntos
     split_proportions = [0.6, 0.2, 0.2]
