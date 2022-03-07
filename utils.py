@@ -1,7 +1,8 @@
+from multiprocessing.sharedctypes import Value
 import numpy as np
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 
 import roboticstoolbox as rtb
 
@@ -104,6 +105,21 @@ class RoboKinSet(Dataset):
         return q_vec, pos
 
 
+def rand_data_split(dataset: Dataset, proportions: list[float]):
+    """
+    Reparte un conjunto de datos en segmentos aleatoriamente
+    seleccionados, acorde a las proporciones ingresadas.
+
+    args:
+    dataset (torch Dataset): Conjunto de datos a repartir
+    proportions (list[float]): Porcentaje que corresponde a cada partición
+    """
+    if round(sum(proportions), ndigits=2) != 1:
+        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
+    split = [round(prop*len(dataset)) for prop in proportions]
+    return random_split(dataset, split)
+
+
 def norm_q(robot, q_vec):
     """
     Normalizar vector de actuación respecto a los límites en
@@ -157,3 +173,18 @@ def random_robot(min_DH, max_DH, p_P=0.5, min_n=2, max_n=9, n=None):
             links.append(rtb.DHLink(d=d, alpha=alpha, a=a, sigma=0))
                          #qlim=np.array([0, 1.5*max_DH[0]])))
     return rtb.DHRobot(links)
+
+
+def rand_data_split(dataset: Dataset, proportions: list[float]):
+    """
+    Reparte un conjunto de datos en segmentos aleatoriamente
+    seleccionados, acorde a las proporciones ingresadas.
+
+    args:
+    dataset (torch Dataset): Conjunto de datos a repartir
+    proportions (list[float]): Porcentaje que corresponde a cada partición
+    """
+    if round(sum(proportions), ndigits=2) != 1:
+        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
+    split = [round(prop*len(dataset)) for prop in proportions]
+    return random_split(dataset, split)

@@ -166,12 +166,11 @@ class EnsembleRegressor(torch.nn.Module):
 if __name__ == "__main__":
     
     import torch
-    from torch.utils.data import random_split
     import roboticstoolbox as rtb
 
     from modelos import MLP
     from muestreo_activo import EnsembleRegressor
-    from utils import RoboKinSet
+    from utils import RoboKinSet, rand_data_split
 
     """
     Conjuntos de datos
@@ -180,13 +179,7 @@ if __name__ == "__main__":
     n_samples = 10000
 
     full_set = RoboKinSet.random_sampling(robot, n_samples)
-
-    # Repartir muestras entre conjuntos
-    split_proportions = [0.6, 0.2, 0.2]
-    # Convertir proporciones al número de muestras correspondiente
-    split = [round(prop*len(full_set)) for prop in split_proportions]
-
-    train_set, val_set, test_set = random_split(full_set, split)
+    train_set, val_set, test_set = rand_data_split(full_set, [0.6, 0.2, 0.2])
 
     """
     Definición de modelos
