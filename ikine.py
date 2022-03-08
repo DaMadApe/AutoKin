@@ -80,6 +80,33 @@ def ikine_trans_jacob(q_start: torch.Tensor, p_target: torch.Tensor,
     return q
 
 
+def ikine_adam(q_start: torch.Tensor, p_target: torch.Tensor,
+               fkine: Callable, # jacob : Callable,
+               max_error=0, max_iters=1000, **adam_kwargs):
+
+    current_p = fkine(q_start)
+    current_q = q_start.detach().clone()
+    current_q.requires_grad = True
+
+    def error(p):
+        return torch.sum((p - p_target)**2)
+
+    optim = torch.optim.Adam([current_q], **adam_kwargs)
+
+    for _ in range(max_iters):
+        current_p = fkine(current_q)
+        current_error = error(current_p)
+
+        if current_error < max_error:
+            break
+
+        optim.zero_grad()
+        current_error.backward()
+        optim.step()
+
+    return current_q.detach()
+
+
 if __name__ == "__main__":
     
     from utils import denorm_q
