@@ -162,7 +162,7 @@ def random_robot(min_DH, max_DH, p_P=0.5, min_n=2, max_n=9, n=None):
         n_joints = np.random.randint(min_n, max_n+1)
 
     for _ in range(n_joints):
-        DH_vals = (np.random.rand(4) - min_DH) / (max_DH - min_DH)
+        DH_vals = np.random.rand(4) * (max_DH - min_DH) + min_DH
         d, alpha, theta, a = DH_vals
         is_prism = np.random.rand() < p_P
 
