@@ -138,7 +138,7 @@ def denorm_q(robot, q_vec):
     return q_vec * (q_max - q_min) + q_min
 
 
-def random_robot(min_DH, max_DH, p_P=0.5, min_n=2, max_n=9, n=None):
+def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     """
     Robot creado a partir de parámetros DH aleatorios.
     
@@ -151,8 +151,17 @@ def random_robot(min_DH, max_DH, p_P=0.5, min_n=2, max_n=9, n=None):
     n (int) : Número de juntas; si se define, se ignora min_n, max_n
     """
     # rtb.DHLink([d, alpha, theta, a, joint_type])  rev=0, prism=1
+
+    if min_DH is None:
+        min_DH = [0, 0, 0, 0]
+    if max_DH is None:
+        max_DH = [1, 2*np.pi, 2*np.pi, 1]
+
     min_DH = np.array(min_DH)
     max_DH = np.array(max_DH)
+
+    if np.any(min_DH > max_DH):
+        raise ValueError('Parámetros mínimos de DH no son menores a los máximos')
 
     links = []
 
