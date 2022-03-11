@@ -1,33 +1,14 @@
-import inspect
-
 import torch
 from torch import nn
-from torch.nn import functional as F
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, ConcatDataset
+
+from model_mixins import HparamsMixin, DataFitMixin
 
 
-class HparamsMixin():
-    """
-    Clase auxiliar para almacenar los parámetros con los que se define un
-    modelo. Se guarda un diccionario en el atributo hparams del modelo.
-    """
-    def __init__(self):
-        super().__init__()
-        frame = inspect.currentframe()
-        frame = frame.f_back
-        hparams = inspect.getargvalues(frame).locals
-        hparams.pop('self')
-
-        # Si el argumento es una función o módulo, usar su nombre
-        primitive_types = (int, float, str, bool)
-        for key, val in hparams.items():
-            if not isinstance(val, primitive_types):
-                hparams[key] = val.__name__
-
-        self.hparams = hparams
-
-
-class MLP(HparamsMixin, nn.Module):
+class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo
+          DataFitMixin, # Para ajustar y probar modelo con conjuntos de datos
+          nn.Module # Módulo base de modelo de pytorch
+          ):
     """
     Red neuronal simple (Perceptrón Multicapa)
 
@@ -85,7 +66,7 @@ class ResBlock(nn.Module):
         return x + identity
 
 
-class ResNet(HparamsMixin, nn.Module):
+class ResNet(HparamsMixin, DataFitMixin, nn.Module):
     """
     Red residual: Red con conexiones salteadas cada cierto número de capas
 

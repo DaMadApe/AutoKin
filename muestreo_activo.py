@@ -1,8 +1,6 @@
 import torch
 from torch.utils.data import TensorDataset, ConcatDataset
 
-from entrenamiento import train, test
-
 # Mover a modelos?
 class EnsembleRegressor(torch.nn.Module):
     """
@@ -78,7 +76,7 @@ class EnsembleRegressor(torch.nn.Module):
             if use_checkpoint and all(self.last_checkpoints):
                 train_kwargs.update({'checkpoint': self.last_checkpoints[i]})
 
-            checkpoint = train(model, train_set, **train_kwargs)
+            checkpoint = model.fit(train_set, **train_kwargs)
 
             if use_checkpoint:
                 self.last_checkpoints[i].update(checkpoint)
@@ -158,7 +156,7 @@ class EnsembleRegressor(torch.nn.Module):
         """
         best_score = torch.inf
         for i, model in enumerate(self.ensemble):
-            score = test(model, test_set)
+            score = model.test(test_set)
             if score < best_score:
                 self.best_model_idx = i
 
@@ -169,7 +167,6 @@ if __name__ == "__main__":
     import roboticstoolbox as rtb
 
     from modelos import MLP
-    from muestreo_activo import EnsembleRegressor
     from utils import RoboKinSet, rand_data_split
 
     """

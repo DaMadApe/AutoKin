@@ -1,11 +1,9 @@
 from functools import partial
-from random import random
 
 import torch
 import roboticstoolbox as rtb
 
 from modelos import MLP
-from entrenamiento import train, test
 from utils import RoboKinSet, rand_data_split, random_robot
 
 """
@@ -47,12 +45,12 @@ train_params = {
 print('No trans')
 for _ in range(n_tests):
     model = MLP(**model_params)
-    train(model, train_set, val_set, epochs=2000, **train_params)
-    print(f'Test score: {test(model, test_set)}')
+    model.fit(train_set, val_set, epochs=2000, **train_params)
+    print(f'Test score: {model.test(test_set)}')
 
 print('With trans')
 for _ in range(n_tests):
     model = MLP(**model_params)
-    train(model, trans_train_set, trans_val_set, epochs=1000, **train_params)
-    train(model, train_set, val_set, epochs=1000, **train_params)
-    print(f'Test score: {test(model, test_set)}')
+    model.fit(trans_train_set, trans_val_set, epochs=1000, **train_params)
+    model.fit(train_set, val_set, epochs=1000, **train_params)
+    print(f'Test score: {model.test(test_set)}')

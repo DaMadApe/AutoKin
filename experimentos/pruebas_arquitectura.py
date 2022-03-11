@@ -4,7 +4,6 @@ import torch
 import roboticstoolbox as rtb
 
 from modelos import MLP, ResNet
-from entrenamiento import train, test
 from utils import RoboKinSet, rand_data_split, random_robot
 
 """
@@ -89,10 +88,10 @@ for i, params in enumerate(model_params):
         # Preentrenamiento
         # train(model, trans_train_set, trans_val_set, **pretraining_params)
 
-        train(model, train_set, val_set, **training_params,
-            log_dir=f'tb_logs/arq_test{n_prueba}/modelo{i}')
+        model.fit(train_set, val_set, **training_params,
+                  log_dir=f'tb_logs/arq_test{n_prueba}/modelo{i}')
 
-        score = test(model, test_set)
+        score = model.test(test_set)
 
         if score < best_score:
             best_score = score
