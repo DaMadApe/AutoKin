@@ -2,7 +2,6 @@ __pycache__
 .ipynb_checkpoints
 .pytest_cache
 .vscode
-lightning_logs
 tb_logs
 models
-experims/sandbox.ipynb
+sandbox.ipynb
