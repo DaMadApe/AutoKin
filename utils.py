@@ -157,12 +157,12 @@ def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     if min_DH is None:
         min_DH = [0, 0, 0, 0]
     if max_DH is None:
-        max_DH = [1, 2*np.pi, 2*np.pi, 1]
+        max_DH = [1, 2*torch.pi, 2*torch.pi, 1]
 
-    min_DH = np.array(min_DH)
-    max_DH = np.array(max_DH)
+    min_DH = torch.tensor(min_DH)
+    max_DH = torch.tensor(max_DH)
 
-    if np.any(min_DH > max_DH):
+    if torch.any(min_DH > max_DH):
         raise ValueError('Parámetros mínimos de DH no son menores a los máximos')
 
     links = []
@@ -170,12 +170,12 @@ def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     if n is not None:
         n_joints = n
     else:
-        n_joints = np.random.randint(min_n, max_n+1)
+        n_joints = torch.randint(min_n, max_n+1)
 
     for _ in range(n_joints):
-        DH_vals = np.random.rand(4) * (max_DH - min_DH) + min_DH
+        DH_vals = torch.rand(4) * (max_DH - min_DH) + min_DH
         d, alpha, theta, a = DH_vals
-        is_prism = np.random.rand() < p_P
+        is_prism = torch.rand() < p_P
 
         if is_prism:
             links.append(rtb.DHLink(alpha=alpha,theta=theta, a=a, sigma=1,
