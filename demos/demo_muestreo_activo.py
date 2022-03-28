@@ -2,15 +2,17 @@ import torch
 from torch.utils.data import TensorDataset, random_split
 import matplotlib.pyplot as plt
 
-from modelos import MLP, ResNet
-from muestreo_activo import EnsembleRegressor
+from modelos import MLP, ResNet, EnsembleRegressor
+from utils import rand_data_split # El formato de matplotlib cambia por la importación de rtb en utils
+
+torch.manual_seed(8)
 
 """
 Conjunto de datos
 """
 x_min = -1
 x_max = 1
-n_samples = 20
+n_samples = 16
 n_models = 3
 
 # Función de prueba
@@ -21,10 +23,7 @@ X = torch.linspace(x_min, x_max, n_samples).reshape(-1, 1)
 Y = f(X)
 full_set = TensorDataset(X, Y)
 
-split_proportions = [0.5, 0.5]
-split = [round(prop*len(X)) for prop in split_proportions]
-
-train_set, test_set = random_split(full_set, split)
+train_set, test_set = rand_data_split(full_set, [0.5, 0.5])
 
 # Conversión nada elegante para poder graficar ejemplos originales
 # Sólo es relevante para graficar ejemplos en 1D
@@ -47,7 +46,7 @@ models = [MLP(input_dim=1,
 ensemble = EnsembleRegressor(models)
 
 # Entrenar el modelo con datos iniciales
-ensemble.fit(train_set, lr=3e-3, epochs=1000)
+ensemble.fit(train_set, lr=1e-3, epochs=10)#00)
 ensemble.rank_models(test_set)
 
 # Para graficar después
@@ -67,7 +66,7 @@ queries, _ = ensemble.online_fit(train_set,
                                     n_queries=2,
                                     relative_weight=2,
                                     final_adjust_weight=4,
-                                    lr=1e-3, epochs=200)
+                                    lr=1e-3, epochs=4)#00)
 ensemble.rank_models(test_set)
 
 last_pred = ensemble.best_predict(X_plot).detach()
@@ -81,8 +80,11 @@ ax.scatter(X_train, Y_train)
 ax.scatter(queries, f(queries))
 ax.plot(X_plot, first_pred)
 ax.plot(X_plot, last_pred)
-labels = ['Target F', 'Trainset', 'Queries', 'Primer entrenamiento',
-            'Luego de muestreo']
+labels = ['Función objetivo',
+          'Ejemplos iniciales',
+          'Datos solicitados',
+          'Primer entrenamiento',
+          'Luego de muestreo']
 # for i in range(n_models):
 #     ax.plot(X_plot, ensemble[i](X_plot).detach())
 #     labels.append(f'Model {i}')
