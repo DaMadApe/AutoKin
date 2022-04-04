@@ -108,6 +108,7 @@ class EnsembleRegressor(torch.nn.Module):
         super().__init__()
         self.ensemble = torch.nn.ModuleList(models)
         self.best_model_idx = None
+        self.model_scores = None
         self.last_checkpoints = [{}]*len(self.ensemble)
     
     def __getitem__(self, idx):
@@ -134,10 +135,10 @@ class EnsembleRegressor(torch.nn.Module):
     def best_predict(self, x):
         """
         Devuelve la predicción del mejor modelo
-        (requiere ejecutar antes rank_models con un set de prueba)
+        (requiere ejecutar antes self.test con un set de prueba)
         """
         if self.best_model_idx is None:
-            pass
+            raise RuntimeError('No se hizo ensemble.test()')
         else:
             with torch.no_grad():
                 self.ensemble[self.best_model_idx].eval()
@@ -179,6 +180,16 @@ class EnsembleRegressor(torch.nn.Module):
                 self.last_checkpoints[i].update(checkpoint)
         print("Fin del entrenamiento")
 
+    def test(self, test_set, **test_kwargs):
+        self.model_scores = []
+        for model in self.ensemble:
+            score = model.test(test_set, **test_kwargs)
+            self.model_scores.append(score)
+
+        self.best_model_idx = self.model_scores.index(min(self.model_scores))
+
+        return self.model_scores.copy()
+
     def fit_to_query(self, train_set, query_set, relative_weight:int=1,
                      **train_kwargs):
         """
@@ -191,7 +202,7 @@ class EnsembleRegressor(torch.nn.Module):
         relative_weight: Ponderación extra de las muestras nuevas (repetir en dataset)
         **train_kwargs: Argumentos nombrados de la función de entrenamiento
         """
-        augmented_train_set = ConcatDataset([train_set, *relative_weight*[query_set]])
+        augmented_train_set = ConcatDataset([train_set, *(relative_weight*[query_set])])
         self.fit(augmented_train_set, **train_kwargs)
 
     def online_fit(self, train_set, candidate_batch, label_fun, query_steps, n_queries=1,
@@ -244,15 +255,3 @@ class EnsembleRegressor(torch.nn.Module):
                               use_checkpoint=use_checkpoint)
 
         return queries, result
-
-    def rank_models(self, test_set):
-        """
-        Registrar mejor modelo según precisión en un conjunto de prueba
-        TODO: Guardar rendimiento de todos los modelos, ponderarlo en la
-              selección de nuevas muestras
-        """
-        best_score = torch.inf
-        for i, model in enumerate(self.ensemble):
-            score = model.test(test_set)
-            if score < best_score:
-                self.best_model_idx = i
