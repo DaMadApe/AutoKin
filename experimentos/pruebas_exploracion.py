@@ -1,10 +1,9 @@
-from functools import partial
-
 import torch
 import roboticstoolbox as rtb
 
 from modelos import MLP
 from utils import RoboKinSet, rand_data_split, coprime_sines
+from experim import repetir_experimento
 
 """
 Conjuntos de datos
@@ -22,7 +21,7 @@ test_set = RoboKinSet.random_sampling(robot, 1000)
 """
 Definición de modelo y entrenamiento
 """
-n_tests = 4
+n_reps = 3
 
 model_params = {'input_dim': robot.n, 
                 'output_dim': 3,
@@ -38,30 +37,17 @@ train_params = {
                 # 'lr_scheduler': True
                }
 
-def repetir_experimento(experimento, n_reps):
-    best_score = torch.inf
-
-    for _ in range(n_reps):
-        score, model = experimento()
-
-        if score < best_score:
-            best_score = score
-            best_model = model
-    
-    return best_score, best_model
-
-def experim_MLP(dataset):
+def experim_muestreo_MLP(dataset):
     train_set, val_set = rand_data_split(dataset, [0.8, 0.2])
     model = MLP(**model_params)
     model.fit(train_set, val_set, **train_params)
     score = model.test(test_set)
     return score, model
 
-
 print('Trayectoria de exploración')
-score, _ = repetir_experimento(partial(experim_MLP, explr_dataset), n_tests)
+score, _ = repetir_experimento(n_reps, experim_muestreo_MLP, explr_dataset)
 print(f'Best score: {score} \n')
 
 print('Muestreo aleatorio')
-score, _ = repetir_experimento(partial(experim_MLP, random_dataset), n_tests)
+score, _ = repetir_experimento(n_reps, experim_muestreo_MLP, random_dataset)
 print(f'Best score: {score} \n')
