@@ -1,7 +1,8 @@
 import torch
 import roboticstoolbox as rtb
 
-from modelos import MLP, EnsembleRegressor
+from modelos import MLP
+from muestreo_activo import EnsembleRegressor
 from utils import RoboKinSet, rand_data_split
 
 """

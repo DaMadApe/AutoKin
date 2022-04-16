@@ -2,7 +2,8 @@ import torch
 from torch.utils.data import TensorDataset, random_split
 import matplotlib.pyplot as plt
 
-from modelos import MLP, ResNet, EnsembleRegressor
+from modelos import MLP, ResNet
+from muestreo_activo import EnsembleRegressor
 from utils import rand_data_split # El formato de matplotlib cambia por la importación de rtb en utils
 
 torch.manual_seed(8)
