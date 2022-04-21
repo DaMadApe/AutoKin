@@ -12,6 +12,9 @@ from utils import denorm_q, norm_q, random_robot
 assert_equal = partial(tt.assert_close, atol=1e-7, rtol=1e-7)
 assert_close = partial(tt.assert_close, atol=1e-3, rtol=1e-3)
 
+def test_random_robot():
+    robot = random_robot()
+
 @given(some.builds(random_robot))
 def test_denorm_q_within_range(robot):
     qlim_tensor = torch.tensor(robot.qlim, dtype=torch.float32)
