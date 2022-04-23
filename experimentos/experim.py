@@ -6,32 +6,35 @@ import inspect
 
 import torch
 
-
-def ejecutar_experimento(n_reps, experimento,
-                         model_save_dir=None, log_product=True,
-                         *exp_args, **exp_kwargs):
-    filename = os.path.basename(inspect.stack()[1].filename)
-    filename = os.path.splitext(filename)[0]
-
+def setup_logging():
+    filename = inspect.stack()[2].filename
+    filename = os.path.splitext(os.path.basename(filename))[0]
     timestamp = time.strftime('%Y%m%d-%H%M%S')
-    filename=f'experimentos/logs/{filename}_{timestamp}.log'
+    file_dir=f'experimentos/logs/{filename}_{timestamp}.log'
 
-    file_handler = logging.FileHandler(filename)
+    file_handler = logging.FileHandler(file_dir)
     stream_handler = logging.StreamHandler(sys.stdout)
 
     stream_handler.setLevel(logging.INFO)
 
-    logging.basicConfig(
-        format='%(message)s',
-        handlers=[file_handler, stream_handler],
-        level=logging.DEBUG
-        )
+    logging.basicConfig(format='%(message)s',
+                        handlers=[file_handler, stream_handler],
+                        level=logging.DEBUG)
+
+    return logging.getLogger()
+
+
+def ejecutar_experimento(n_reps, experimento, *exp_args,
+                         model_save_dir=None, log_all_products=True,
+                         **exp_kwargs):
+
+    setup_logging()
 
     best_score = torch.inf
 
     for _ in range(n_reps):
         score, product = experimento(*exp_args, **exp_kwargs)
-        if log_product:
+        if log_all_products:
             logging.info(f'Producto: {product}')
         logging.info(f'Puntaje: {score}')
 
