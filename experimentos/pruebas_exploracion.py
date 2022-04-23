@@ -3,7 +3,7 @@ import roboticstoolbox as rtb
 
 from modelos import MLP
 from utils import RoboKinSet, rand_data_split, coprime_sines
-from experim import repetir_experimento
+from experim import setup_logging, ejecutar_experimento
 
 """
 Conjuntos de datos
@@ -44,10 +44,13 @@ def experim_muestreo_MLP(dataset):
     score = model.test(test_set)
     return score, model
 
-print('Trayectoria de exploración')
-score, _ = repetir_experimento(n_reps, experim_muestreo_MLP, explr_dataset)
-print(f'Best score: {score} \n')
 
-print('Muestreo aleatorio')
-score, _ = repetir_experimento(n_reps, experim_muestreo_MLP, random_dataset)
-print(f'Best score: {score} \n')
+logger = setup_logging()
+
+logger.info('Trayectoria de exploración')
+ejecutar_experimento(n_reps, experim_muestreo_MLP, explr_dataset,
+                     log_all_products=False, comment=False)
+
+logger.info('Muestreo aleatorio')
+ejecutar_experimento(n_reps, experim_muestreo_MLP, random_dataset,
+                     log_all_products=False)

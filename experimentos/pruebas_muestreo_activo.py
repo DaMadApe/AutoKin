@@ -1,16 +1,16 @@
 import torch
 import roboticstoolbox as rtb
-from experimentos.experim import repetir_experimento
 
 from modelos import MLP
 from muestreo_activo import EnsembleRegressor
 from utils import RoboKinSet, rand_data_split, coprime_sines
+from experimentos.experim import ejecutar_experimento
 
 """
 Conjuntos de datos
 """
 robot = rtb.models.DH.Cobra600() #Puma560()
-n_samples = 2058
+n_samples = 2000
 
 c_sines = coprime_sines(robot.n, n_samples, wiggle=3)
 dataset = RoboKinSet(robot, c_sines)
@@ -58,7 +58,6 @@ def experim_muestreo_activo():
 
     return score, model
 
-score, best_model = repetir_experimento(n_reps, experim_muestreo_activo)
-
-print(f'Mejor puntaje: {score}')
-torch.save(best_model, 'models/cobra600_MA_v2.pt')
+ejecutar_experimento(n_reps, experim_muestreo_activo,
+                     log_all_products=False,
+                     model_save_dir='models/cobra600_MA_v2.pt')

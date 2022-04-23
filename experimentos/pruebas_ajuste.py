@@ -5,7 +5,7 @@ import roboticstoolbox as rtb
 
 from modelos import MLP
 from utils import RoboKinSet, rand_data_split
-from experim import repetir_experimento
+from experim import ejecutar_experimento
 
 """
 Conjuntos de datos
@@ -37,7 +37,7 @@ def experim_ajuste():
 
     return score, model
 
-score, model = repetir_experimento(5, experim_ajuste)
-print(f'Mejor puntaje = {score}')
 
-torch.save(model, 'models/cobra600_500samples_tanh.pt')
+ejecutar_experimento(1, experim_ajuste,
+                     log_all_products=False,
+                     model_save_dir='models/cobra600_500samples_tanh.pt')

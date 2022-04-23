@@ -5,6 +5,7 @@ import roboticstoolbox as rtb
 
 from modelos import MLP
 from utils import RoboKinSet, rand_data_split, random_robot
+from experim import setup_logging, ejecutar_experimento
 
 """
 Conjuntos de datos
@@ -21,12 +22,10 @@ train_set, val_set, test_set = rand_data_split(full_set, [0.7, 0.2, 0.1])
 
 assert trans_robot.n == robot.n
 
-print(trans_robot)
-print(robot)
 """
 Definición de modelo y entrenamiento
 """
-n_tests = 5
+n_reps = 2
 
 model_params = {'input_dim': robot.n, 
                 'output_dim': 3,
@@ -42,15 +41,31 @@ train_params = {
                 'lr_scheduler': True}
 
 
-print('No trans')
-for _ in range(n_tests):
+def experim_no_trans():
     model = MLP(**model_params)
     model.fit(train_set, val_set, epochs=2000, **train_params)
-    print(f'Test score: {model.test(test_set)}')
+    score = model.test(test_set)
 
-print('With trans')
-for _ in range(n_tests):
+    return score, model # Considerar None
+
+def experim_trans():
     model = MLP(**model_params)
     model.fit(trans_train_set, trans_val_set, epochs=1000, **train_params)
     model.fit(train_set, val_set, epochs=1000, **train_params)
-    print(f'Test score: {model.test(test_set)}')
+    score = model.test(test_set)
+
+    return score, model
+
+
+logger = setup_logging()
+
+logger.info(trans_robot)
+logger.info(robot)
+
+logger.info('Sin transferencia')
+ejecutar_experimento(n_reps, experim_no_trans,
+                     log_all_products=False, anotar=False)
+
+logger.info('Con transferencia')
+ejecutar_experimento(n_reps, experim_trans,
+                     log_all_products=False)
