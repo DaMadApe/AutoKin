@@ -3,38 +3,24 @@ import torch
 from torch.autograd.functional import jacobian
 
 from ikine import ikine_pi_jacob
-from utils import denorm_q, norm_q
+from robot import ModelRobot, RTBrobot
+from experim import setup_logging, ejecutar_experimento
 
-robot = rtb.models.DH.Cobra600() #Puma560()
+robot = RTBrobot.from_name('Cobra600') #Puma560()
+model = ModelRobot.load('models/cobra600_refactor.pt')
 
-model = torch.load('models/cobra600_v1.pt')
-model.eval()
+q_start = torch.rand(robot.n)
+q_target = torch.rand(robot.n)
 
-def model_fkine(q):
-    return model(norm_q(robot, q)).detach()
-
-def model_jacobian(q):
-    return jacobian(model, norm_q(robot, q)).squeeze()
-
-def robot_fkine(q):
-    return torch.tensor(robot.fkine(q.numpy()).t, dtype=torch.float)
-
-def robot_jacobian(q):
-    return torch.tensor(robot.jacob0(q.numpy())[:3], dtype=torch.float)
-
-
-q_start = denorm_q(robot, torch.rand(robot.n))
-p_start = robot_fkine(q_start)
-
-q_target = denorm_q(robot, torch.rand(robot.n))
-p_target = robot_fkine(q_target)
+_, p_start = robot.fkine(q_start)
+_, p_target = robot.fkine(q_target)
 
 
 q_inv = ikine_pi_jacob(q_start, p_target, eta=0.1,
-                       fkine=model_fkine, 
-                       jacob=model_jacobian)
+                       fkine=model.fkine, 
+                       jacob=model.jacobian)
 
-p_reached = robot_fkine(q_inv)
+_, p_reached = robot.fkine(q_inv)
 
 # TODO : escribir experimento, score = error_posición
 

@@ -1,20 +1,20 @@
 from functools import partial
 
 import torch
-import roboticstoolbox as rtb
 
 from modelos import MLP
-from utils import RoboKinSet, rand_data_split
+from robot import RTBrobot
+from utils import FKset
 from experim import ejecutar_experimento
 
 """
 Conjuntos de datos
 """
-robot = rtb.models.DH.Cobra600() #Puma560()
-n_samples = 500
+robot = RTBrobot.from_name('Cobra600') #'Puma560'
+n_samples = 1000
 
-dataset = RoboKinSet.random_sampling(robot, n_samples)
-train_set, val_set, test_set = rand_data_split(dataset, [0.7, 0.2, 0.1])
+dataset = FKset.random_sampling(robot, n_samples)
+train_set, val_set, test_set = dataset.rand_split([0.7, 0.2, 0.1])
 
 """
 Definición de experimento
@@ -37,7 +37,8 @@ def experim_ajuste():
 
     return score, model
 
+n_reps = 3
 
-ejecutar_experimento(1, experim_ajuste,
+ejecutar_experimento(n_reps, experim_ajuste,
                      log_all_products=False,
-                     model_save_dir='models/cobra600_500samples_tanh.pt')
+                     model_save_dir='models/cobra600_refactor.pt')
