@@ -1,30 +1,30 @@
 import torch
-import roboticstoolbox as rtb
 
 from modelos import MLP
+from robot import RTBrobot
 from muestreo_activo import EnsembleRegressor
-from utils import RoboKinSet, rand_data_split, coprime_sines
+from utils import FKset, coprime_sines
 from experimentos.experim import ejecutar_experimento
 
 """
 Conjuntos de datos
 """
-robot = rtb.models.DH.Cobra600() #Puma560()
+robot = RTBrobot.from_name('Cobra600') #Puma560()
 n_samples = 2000
 
 c_sines = coprime_sines(robot.n, n_samples, wiggle=3)
-dataset = RoboKinSet(robot, c_sines)
+dataset = FKset(robot, c_sines)
 
 n_models = 3
 n_reps = 3
 
 # Ajuste a nuevas muestras
 def label_fun(X):
-    result = robot.fkine(X.numpy()).t
-    return torch.tensor(result, dtype=torch.float)
+    _, result = robot.fkine(X)
+    return result
 
 def experim_muestreo_activo():
-    train_set, val_set, test_set = rand_data_split(dataset, [0.6, 0.2, 0.2])
+    train_set, val_set, test_set = dataset.rand_split([0.6, 0.2, 0.2])
 
     models = [MLP(input_dim=robot.n,
                 output_dim=3,
