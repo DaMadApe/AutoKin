@@ -137,7 +137,7 @@ class EnsembleRegressor(torch.nn.Module):
             _, query = self.query(candidate_batch, n_queries=n_queries)
 
             queries[i,] = query
-            print(f'Queried: {query}')
+            # print(f'Queried: {query}')
 
             # Agarrar sólo las entradas que han sido asignadas
             flat_current_queries = queries[:i+1].flatten(end_dim=-2)
