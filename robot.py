@@ -60,6 +60,9 @@ class RTBrobot(Robot):
     def random(cls, *args, **kwargs):
         return cls(random_robot(*args, **kwargs))
 
+    def __repr__(self):
+        return self.robot.__repr__()
+
     def fkine(self, q):
         denormed_q = self.denorm(q)
         p = self.robot.fkine(denormed_q.detach().numpy()).t
