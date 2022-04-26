@@ -1,7 +1,7 @@
 from typing import Callable
+
 import torch
 from torch.autograd.functional import jacobian
-import roboticstoolbox as rtb
 
 
 def batch_jacobian(func, batch, create_graph=False, vectorize=False):
@@ -80,6 +80,21 @@ def ikine_trans_jacob(q_start: torch.Tensor, p_target: torch.Tensor,
     return q
 
 
+"""
+import nevergrad as ng
+def ikine_ngopt(q_start: torch.Tensor, p_target: torch.Tensor,
+                fkine: Callable, # jacob : Callable,
+                eta=0.01, max_error=0, max_iters=1000):
+
+    def error(q):
+        return torch.sum((fkine(q) - p_target)**2)
+
+    optim = ng.optimizers.NGOpt(parametrization=len(q_start), budget=100)
+    q = optim.minimize(error)
+"""
+
+
+
 def ikine_adam(q_start: torch.Tensor, p_target: torch.Tensor,
                fkine: Callable, # jacob : Callable,
                max_error=0, max_iters=1000, **adam_kwargs):
@@ -105,37 +120,3 @@ def ikine_adam(q_start: torch.Tensor, p_target: torch.Tensor,
         optim.step()
 
     return current_q.detach()
-
-
-if __name__ == "__main__":
-    
-    from utils import denorm_q
-
-    # Para tener resultados repetibles
-    torch.manual_seed(42)
-
-    robot = rtb.models.DH.Cobra600()
-
-    # Envoltorios para que Corke se lleve bien con tensores
-    def robot_fkine(q):
-        return torch.tensor(robot.fkine(q.numpy()).t)
-
-    def robot_jacobian(q):
-        return torch.tensor(robot.jacob0(q.numpy())[:3])
-
-
-    q_start = denorm_q(robot, torch.rand(robot.n))
-    q_target = denorm_q(robot, torch.rand(robot.n))
-    p_target = robot_fkine(q_target)
-
-    q_inv = ikine_pi_jacob(q_start, p_target,
-                           fkine=robot_fkine, 
-                           jacob=robot_jacobian,
-                           max_iters=500, eta=0.01)
-    print(f"""
-        Initial q: {q_start}
-        Initial x: {robot_fkine(q_start)}
-        Requested q: {q_target}
-        Requested x: {p_target}
-        Found q: {q_inv}
-        Reached x: {robot_fkine(q_inv)}""")
