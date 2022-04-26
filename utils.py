@@ -5,8 +5,8 @@ from torch.utils.data import Dataset, random_split
 
 import roboticstoolbox as rtb
 
-
-class RoboKinSet(Dataset):
+# TODO: Mandar a muestreo.py
+class FKset(Dataset):
     """
     Producir un conjunto de puntos (configuración,posición) de un robot
     definido con la interfaz de un robot DH de Peter Corke.
@@ -14,19 +14,13 @@ class RoboKinSet(Dataset):
     Los puntos se escogen aleatoriamente en el espacio de parámetros.
 
     robot () : Cadena cinemática para producir ejemplos
-    q_vecs (torch.Tensor) : Lista de vectores de actuación normalizados para generar ejemplos
-    normed_q (bool) : Devolver ejemplos de q normalizados respecto al robot
-    output_transform (callable) : Transformación que aplicar a vectores
-                                  de posición devueltos
+    q_vecs (torch.Tensor) : Lista de vectores de actuación para generar ejemplos
     q_uniform_noise (float) : Cantidad de ruido uniforme aplicado a ejemplos q
-        Se aplica antes de estirar (denorm) q a los límites del robot
     q_normal_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a ejemplos q
-        Se aplica antes de estirar (denorm) q a los límites del robot
     p_uniform_noise (float) : Cantidad de ruido uniforme aplicado a etiquetas pos
     p_normal_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a etiquetas pos
     """
-    def __init__(self, robot, q_vecs: torch.Tensor, 
-                 normed_q=True, output_transform=None,
+    def __init__(self, robot, q_vecs: torch.Tensor,
                  q_uniform_noise=0, q_normal_noise=0,
                  p_uniform_noise=0, p_normal_noise=0):
 
@@ -36,16 +30,13 @@ class RoboKinSet(Dataset):
 
         self.robot = robot
         self.q_vecs = q_vecs
-        self.normed_q = normed_q
-        self.output_transform = output_transform
 
         self.n = self.robot.n # Número de ejes
 
-        self.q_noise = (q_uniform_noise*torch.rand(len(self), self.n) +
-                        q_normal_noise*torch.randn(len(self), self.n))
-
-        self.p_noise = (p_uniform_noise*torch.rand(len(self), 3) +
-                        p_normal_noise*torch.randn(len(self), 3))
+        self.q_uniform_noise = q_uniform_noise
+        self.q_normal_noise = q_normal_noise
+        self.p_uniform_noise = p_uniform_noise
+        self.p_normal_noise = p_normal_noise
 
         self._generate_labels()
 
@@ -79,66 +70,37 @@ class RoboKinSet(Dataset):
         return cls(robot, q_vecs, **kwargs)
 
     def _generate_labels(self):
-        self.denormed_q_vecs = denorm_q(self.robot, self.q_vecs)
         # Hacer cinemática directa
-        self.pos_vecs = [self.robot.fkine(q_vec.numpy()).t for q_vec in self.denormed_q_vecs]
+        self.q_vecs, self.p_vecs = self.robot.fkine(self.q_vecs)
 
-        # Acomodar en tensores con tipo float
-        self.pos_vecs = torch.tensor(np.array(self.pos_vecs), dtype=torch.float)
+        q_noise = (self.q_uniform_noise*torch.rand(len(self), self.n) +
+                   self.q_normal_noise*torch.randn(len(self), self.n))
 
-        self.q_vecs = self.q_vecs + self.q_noise
-        self.pos_vecs = self.pos_vecs + self.p_noise
+        p_noise = (self.p_uniform_noise*torch.rand(len(self), 3) +
+                   self.p_normal_noise*torch.randn(len(self), 3))
+
+        self.q_vecs = self.q_vecs + q_noise
+        self.p_vecs = self.p_vecs + p_noise
 
     def __len__(self):
         return self.q_vecs.shape[0]
 
     def __getitem__(self, idx):
-        if self.normed_q:
-            q_vec = self.q_vecs[idx]
-        else:
-            q_vec = self.denormed_q_vecs[idx]
+        return self.q_vecs[idx], self.p_vecs[idx]
 
-        pos = self.pos_vecs[idx]
-        if self.output_transform is not None:
-            pos = self.output_transform(pos)
+    def rand_split(self, proportions: list[float]):
+        """
+        Reparte el conjunto de datos en segmentos aleatoriamente
+        seleccionados, acorde a las proporciones ingresadas.
 
-        return q_vec, pos
-
-
-def rand_data_split(dataset: Dataset, proportions: list[float]):
-    """
-    Reparte un conjunto de datos en segmentos aleatoriamente
-    seleccionados, acorde a las proporciones ingresadas.
-
-    args:
-    dataset (torch Dataset): Conjunto de datos a repartir
-    proportions (list[float]): Porcentaje que corresponde a cada partición
-    """
-    if round(sum(proportions), ndigits=2) != 1:
-        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
-    split = [round(prop*len(dataset)) for prop in proportions]
-    return random_split(dataset, split)
-
-
-def norm_q(robot, q_vec: torch.Tensor):
-    """
-    Normalizar vector de actuación respecto a los límites en
-    las juntas del robot
-    """
-    q_min, q_max = torch.tensor(robot.qlim, dtype=torch.float32)
-    # q_min, q_max = robot.qlim.astype(np.float32)
-    return (q_vec - q_min) / (q_max - q_min)
-
-
-def denorm_q(robot, q_vec: torch.Tensor):
-    """
-    Extender un vector de valores 0 a 1 al rango completo de
-    actuación del robot.
-    """
-    q_min, q_max = torch.tensor(robot.qlim, dtype=torch.float32)
-    # q_min, q_max = robot.qlim.astype(np.float32)
-    return q_vec * (q_max - q_min) + q_min
-
+        args:
+        dataset (torch Dataset): Conjunto de datos a repartir
+        proportions (list[float]): Porcentaje que corresponde a cada partición
+        """
+        if round(sum(proportions), ndigits=2) != 1:
+            raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
+        split = [round(prop*len(self)) for prop in proportions]
+        return random_split(self, split)
 
 def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     """
@@ -170,12 +132,12 @@ def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     if n is not None:
         n_joints = n
     else:
-        n_joints = torch.randint(min_n, max_n+1)
+        n_joints = torch.randint(min_n, max_n+1, (1,))
 
     for _ in range(n_joints):
         DH_vals = torch.rand(4) * (max_DH - min_DH) + min_DH
         d, alpha, theta, a = DH_vals
-        is_prism = torch.rand() < p_P
+        is_prism = torch.rand(1) < p_P
 
         if is_prism:
             links.append(rtb.DHLink(alpha=alpha,theta=theta, a=a, sigma=1,
@@ -198,9 +160,14 @@ def coprime_sines(n_dim, n_points, wiggle=0):
     las singularidades de un robot si se usan las curvas
     en el espacio de parámetros.
     """
-    coefs = [5, 7, 11, 13, 17, 19, 23, 29, 31]
+    coefs = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31]
     coefs = torch.tensor(coefs) * 2*torch.pi
-    points = torch.stack([torch.linspace(0, 1, n_points)] * n_dim)
+    points = torch.zeros((n_points, n_dim))
+
+    t = torch.linspace(0, 1, n_points)
+    t += 0.5 * torch.rand((n_points)) / n_points
+    #points = 0.3*torch.rand((n_dim, n_points))
+
     for i in range(n_dim):
-        points[i] = torch.sin(coefs[i+wiggle]*points[i])
+        points[:, i] = torch.sin(coefs[i+wiggle]*t) /2 + 0.5
     return points
