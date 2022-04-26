@@ -26,12 +26,12 @@ def experim_ajuste():
                 mid_layer_size=10,
                 activation=torch.tanh)
     model.fit(train_set, val_set=val_set,
-            epochs=1000,
-            lr=1e-3,
-            batch_size=256,
-            optim=partial(torch.optim.Adam, weight_decay=5e-5),
-            lr_scheduler=True,
-            log_dir='tb_logs/entrenamiento/cobra600')
+              epochs=1000,
+              lr=1e-3,
+              batch_size=256,
+              optim=partial(torch.optim.Adam, weight_decay=5e-5),
+              lr_scheduler=True,
+              log_dir='tb_logs/entrenamiento/cobra600')
 
     score = model.test(test_set)
 
