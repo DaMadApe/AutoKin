@@ -1,7 +1,3 @@
-"""
-En este archivo se define la integración con las
-cámaras y con el microcontrolador
-"""
 import torch
 from torch.autograd.functional import jacobian
 
