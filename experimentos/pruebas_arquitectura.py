@@ -68,6 +68,8 @@ Ejecución
 """
 logger = setup_logging()
 
+logger.info(f'Params de entrenamiento: {train_params}')
+
 for i, params in enumerate(model_params):
 
     logger.info(f'Probando parámetros: {params}')
