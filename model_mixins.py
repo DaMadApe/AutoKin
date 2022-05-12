@@ -33,12 +33,29 @@ class HparamsMixin():
 class DataFitMixin():
     def __init__(self):
         super().__init__()
+        self.train_checkpoint = {}
+
+    def set_out_bias(self, reference_set=None):
+        """
+        Ajustar el bias de salida a los promedios de salida
+        de un set de referencia. Acelera convergencia de fit()
+        """
+        out_size = reference_set[0][1].size()
+        out_mean = torch.zeros(out_size)
+
+        for _, y in reference_set:
+            out_mean += y
+
+        out_mean /= len(reference_set)
+
+        self.layers[-1].bias = nn.Parameter(out_mean)
+
 
     def fit(self, train_set, val_set=None,
             epochs=10, lr=1e-3, batch_size=32,
             criterion=nn.MSELoss(), optim=torch.optim.Adam,
             lr_scheduler=False, silent=False, log_dir=None,
-            checkpoint=None):
+            use_checkpoint=True, preadjust_bias=True):
         """
         Rutina de entrenamiento para ajustar a un conjunto de datos
         
@@ -63,6 +80,9 @@ class DataFitMixin():
 
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        if preadjust_bias:
+            self.set_out_bias(train_set)
 
         if log_dir is not None:
             writer = SummaryWriter(log_dir=log_dir)
