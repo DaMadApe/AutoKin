@@ -33,7 +33,7 @@ class HparamsMixin():
 class DataFitMixin():
     def __init__(self):
         super().__init__()
-        self.train_checkpoint = {}
+        self.checkpoint = {}
 
     def set_out_bias(self, reference_set=None):
         """
@@ -77,7 +77,6 @@ class DataFitMixin():
         
         checkpoint : Estado del optimizador y lr_scheduler, para reanudar entrenamiento
         """
-
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -88,13 +87,13 @@ class DataFitMixin():
             writer = SummaryWriter(log_dir=log_dir)
 
         optimizer = optim(self.parameters(), lr=lr)
-        if checkpoint is not None:
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if use_checkpoint and self.checkpoint:
+            optimizer.load_state_dict(self.checkpoint['optimizer_state_dict'])
 
         if lr_scheduler:
             scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
-            if checkpoint is not None:
-                scheduler.load_state_dict(checkpoint['sheduler_state_dict'])
+            if use_checkpoint and self.checkpoint:
+                scheduler.load_state_dict(self.checkpoint['sheduler_state_dict'])
 
         train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
         if val_set is not None:
@@ -149,11 +148,10 @@ class DataFitMixin():
                             metric_dict=metrics, run_name='.')
             writer.close()
 
-        checkpoint = {'optimizer_state_dict': optimizer.state_dict()}
-        if lr_scheduler:
-            checkpoint.update({'sheduler_state_dict': scheduler.state_dict()})
+        self.checkpoint.update({'optimizer_state_dict': optimizer.state_dict()})
 
-        return checkpoint
+        if lr_scheduler:
+            self.checkpoint.update({'sheduler_state_dict': scheduler.state_dict()})
 
 
     def test(self, test_set, criterion=nn.MSELoss()):

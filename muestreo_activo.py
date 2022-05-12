@@ -12,7 +12,6 @@ class EnsembleRegressor(torch.nn.Module):
         self.ensemble = torch.nn.ModuleList(models)
         self.best_model_idx = None
         self.model_scores = None
-        self.last_checkpoints = [{}]*len(self.ensemble)
     
     def __getitem__(self, idx):
         """
@@ -67,20 +66,15 @@ class EnsembleRegressor(torch.nn.Module):
         return candidate_idx, query
         # return torch.topk(deviation, n_queries)
 
-    def fit(self, train_set, use_checkpoint=False, **train_kwargs):
+    def fit(self, train_set, **train_kwargs):
         """
         Entrenar cada uno de los modelos individualmente
         """
         print("Ajustando modelos del conjunto")
 
-        for i, model in enumerate(self.ensemble):
-            if use_checkpoint and all(self.last_checkpoints):
-                train_kwargs.update({'checkpoint': self.last_checkpoints[i]})
+        for model in self.ensemble:
+            model.fit(train_set, **train_kwargs)
 
-            checkpoint = model.fit(train_set, **train_kwargs)
-
-            if use_checkpoint:
-                self.last_checkpoints[i].update(checkpoint)
         print("Fin del entrenamiento")
 
     def test(self, test_set, **test_kwargs):
