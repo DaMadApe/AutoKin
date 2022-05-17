@@ -80,6 +80,8 @@ class DataFitMixin():
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+        self.train()
+
         if preadjust_bias:
             self.set_out_bias(train_set)
 
@@ -106,7 +108,6 @@ class DataFitMixin():
 
         for epoch in epoch_iter:
             # Train step
-            self.train()
             for X, Y in train_loader:
                 pred = self(X)
                 train_loss = criterion(pred, Y)
