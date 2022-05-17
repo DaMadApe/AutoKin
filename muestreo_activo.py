@@ -94,21 +94,6 @@ class EnsembleRegressor(torch.nn.Module):
 
         return self.model_scores.copy()
 
-    def fit_to_query(self, train_set, query_set, relative_weight:int=1,
-                     **train_kwargs):
-        """
-        Entrenar con el conjunto original aumentado con las nuevas muestras.
-        Permite asignar peso adicional a las nuevas muestras.
-
-        args:
-        train_set (Dataset) : Conjunto base de entrenamiento
-        query_set (Dataset) : Conjunto de muestras nuevas para ajustar
-        relative_weight: Ponderación extra de las muestras nuevas (repetir en dataset)
-        **train_kwargs: Argumentos nombrados de la función de entrenamiento
-        """
-        augmented_train_set = ConcatDataset([train_set, *(relative_weight*[query_set])])
-        self.fit(augmented_train_set, **train_kwargs)
-
     def online_fit(self, train_set, label_fun, query_steps,
                    candidate_batch=None, n_queries=1,
                    relative_weight:int=1, final_adjust_weight=None,
@@ -127,8 +112,6 @@ class EnsembleRegressor(torch.nn.Module):
         tb_dir (str) : Directorio base para guardar logs de tensorboard de entrenamientos
         **train_kwargs: Argumentos de entrenamiento usados para cada ajuste
         """
-        queries = torch.zeros(query_steps, n_queries, self.input_dim)
-
         for i in range(query_steps):
 
             log_dir = tb_dir+f'_s{i}' if tb_dir is not None else None
@@ -136,24 +119,8 @@ class EnsembleRegressor(torch.nn.Module):
             query = self.query(candidate_batch=candidate_batch,
                                n_queries=n_queries)
 
-            queries[i,] = query
-            # print(f'Queried: {query}')
+            labels = label_fun(query)
+            new_queries = TensorDataset(query, labels)
+            train_set = ConcatDataset([train_set, new_queries])
 
-            # Agarrar sólo las entradas que han sido asignadas
-            flat_current_queries = queries[:i+1].flatten(end_dim=-2)
-            # Aquí se mandaría la q al robot y luego leer posición
-            # TODO: no reetiquetar muestras ya etiquetadas, hacer concat aquí
-            result = label_fun(flat_current_queries)
-            query_set = TensorDataset(flat_current_queries,
-                                      result)
-
-            self.fit_to_query(train_set, query_set, relative_weight,
-                              **train_kwargs, log_dir=log_dir)
-
-        if final_adjust_weight is not None:
-            log_dir = tb_dir+'_final' if tb_dir is not None else None
-            self.fit_to_query(train_set, query_set,
-                              relative_weight=final_adjust_weight,
-                              **train_kwargs, log_dir=log_dir)
-
-        return queries, result
+            self.fit(train_set, **train_kwargs, log_dir=log_dir)
