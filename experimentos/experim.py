@@ -21,10 +21,6 @@ def setup_logging(exec_call=False):
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
 
-    # logging.basicConfig(format='%(message)s',
-    #                     handlers=[file_handler, stream_handler],
-    #                     level=logging.DEBUG)
-
     return logger
 
 
@@ -42,19 +38,19 @@ def ejecutar_experimento(n_reps, experimento, *exp_args,
     for _ in range(n_reps):
         score, product = experimento(*exp_args, **exp_kwargs)
         if log_all_products:
-            logger.info(f'Producto: {product}')
+            logger.info(f'\nProducto: {product}')
         logger.info(f'Puntaje: {score}')
 
         if score < best_score:
             best_score = score
             best_product = product
 
-    logger.info(f'Mejor producto: {best_product}')
+    logger.info(f'\nMejor producto: {best_product}')
     logger.info(f'Mejor puntaje = {best_score}')
 
     if anotar:
         anotaciones = input('Anotaciones:\n')
-        logger.debug('Anotaciones:\n' + anotaciones)
+        logger.debug('\nAnotaciones:\n' + anotaciones)
 
     if model_save_dir is not None:
         torch.save(product, model_save_dir)
