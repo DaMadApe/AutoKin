@@ -97,7 +97,7 @@ class EnsembleRegressor(torch.nn.Module):
     def online_fit(self, train_set, label_fun, query_steps,
                    candidate_batch=None, n_queries=1,
                    relative_weight:int=1, final_adjust_weight=None,
-                   tb_dir=None, **train_kwargs):
+                   **train_kwargs):
         """
         Ciclo para solicitar muestras y ajustar a ellas
 
@@ -114,8 +114,6 @@ class EnsembleRegressor(torch.nn.Module):
         """
         for i in range(query_steps):
 
-            log_dir = tb_dir+f'_s{i}' if tb_dir is not None else None
-
             query = self.query(candidate_batch=candidate_batch,
                                n_queries=n_queries)
 
@@ -123,4 +121,4 @@ class EnsembleRegressor(torch.nn.Module):
             new_queries = TensorDataset(query, labels)
             train_set = ConcatDataset([train_set, new_queries])
 
-            self.fit(train_set, **train_kwargs, log_dir=log_dir)
+            self.fit(train_set, **train_kwargs)
