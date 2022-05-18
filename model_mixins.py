@@ -1,4 +1,5 @@
 import inspect
+import os
 
 import torch
 import torch.nn as nn
@@ -34,6 +35,8 @@ class DataFitMixin():
     def __init__(self):
         super().__init__()
         self.checkpoint = {}
+        self.writer = None
+        self.trained_epochs = 0
 
     def set_out_bias(self, reference_set=None):
         """
@@ -86,7 +89,10 @@ class DataFitMixin():
             self.set_out_bias(train_set)
 
         if log_dir is not None:
-            writer = SummaryWriter(log_dir=log_dir)
+            if self.writer is None or not os.path.samefile(self.writer.log_dir, log_dir):
+                self.writer = SummaryWriter(log_dir=log_dir)
+            # else:
+            #     self.writer.open()
 
         optimizer = optim(self.parameters(), lr=lr)
         if use_checkpoint and self.checkpoint:
@@ -116,7 +122,8 @@ class DataFitMixin():
                 optimizer.step()
 
                 if log_dir is not None:
-                    writer.add_scalar('Loss/train', train_loss.item(), epoch)
+                    self.writer.add_scalar('Loss/train', train_loss.item(),
+                                           epoch + self.trained_epochs)
 
             progress_info = {'Loss': train_loss.item()}
 
@@ -132,7 +139,8 @@ class DataFitMixin():
                             scheduler.step(val_loss)
 
                         if log_dir is not None:
-                            writer.add_scalar('Loss/val', val_loss.item(), epoch)
+                            self.writer.add_scalar('Loss/val', val_loss.item(),
+                                                   epoch + self.trained_epochs)
 
                 progress_info.update({'Val': val_loss.item()})
 
@@ -145,10 +153,11 @@ class DataFitMixin():
             else:
                 metrics = {'Last train loss': train_loss.item()}
 
-            writer.add_hparams({**self.hparams, 'lr':lr, 'batch_size':batch_size},
+            self.writer.add_hparams({**self.hparams, 'lr':lr, 'batch_size':batch_size},
                             metric_dict=metrics, run_name='.')
-            writer.close()
+            self.writer.close()
 
+        self.trained_epochs += epochs
         self.checkpoint.update({'optimizer_state_dict': optimizer.state_dict()})
 
         if lr_scheduler:
