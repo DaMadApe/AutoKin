@@ -11,6 +11,7 @@ from experim import ejecutar_experimento
 Conjuntos de datos
 """
 robot_name = 'Cobra600' #'Puma560'
+exp_name = 'comp_MA1'
 robot = RTBrobot.from_name(robot_name)
 n_samples = 1000
 
@@ -30,19 +31,19 @@ def experim_ajuste():
                 activation=torch.tanh)
 
     model.fit(train_set, val_set=val_set,
-              epochs=1000,
+              epochs=780, # 300 + 6*80
               lr=1e-3,
               batch_size=256,
-              optim=partial(torch.optim.Adam, weight_decay=5e-5),
-              lr_scheduler=True,
-              log_dir=f'experimentos/tb_logs/p_ajuste/{robot_name}/{label}'
+              #optim=partial(torch.optim.Adam, weight_decay=5e-5),
+              # lr_scheduler=True,
+              log_dir=f'experimentos/tb_logs/p_ajuste/{robot_name}_{exp_name}/{label}'
              )
 
     score = model.test(test_set)
 
     return score, model
 
-n_reps = 5
+n_reps = 15
 
 ejecutar_experimento(n_reps, experim_ajuste,
                      log_all_products=False,
