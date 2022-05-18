@@ -1,3 +1,4 @@
+from random import random
 import torch
 from torch.autograd.functional import jacobian
 
@@ -46,10 +47,7 @@ class RTBrobot(Robot):
 
     @classmethod
     def from_name(cls, name):
-        #try:
         robot = getattr(rtb.models.DH, name)()
-        #except AttributeError:
-        #else:
         return cls(robot)
 
     @classmethod
@@ -76,6 +74,24 @@ class RTBrobot(Robot):
     def denorm(self, q):
         q_min, q_max = torch.tensor(self.robot.qlim, dtype=torch.float32)
         return q * (q_max - q_min) + q_min
+
+
+class RTBnonLinear(Robot):
+
+    def __init__(self, n_joints):
+        self.virtual_bot = RTBrobot.random(min_n=n_joints*2, max_n=n_joints*4)
+
+    def q_trans(self, q):
+        trans_q = q
+        return trans_q
+
+    def fkine(self, q):
+        trans_q = self.q_trans(q)
+        return self.virtual_bot.fkine(trans_q)
+
+    def jacobian(self, q):
+        trans_q = self.q_trans(q)
+        return self.virtual_bot.jacobian(trans_q)
 
 
 class ExternRobot(Robot):
