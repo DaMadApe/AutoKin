@@ -1,4 +1,3 @@
-from random import random
 import torch
 from torch.autograd.functional import jacobian
 
