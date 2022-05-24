@@ -10,10 +10,10 @@ from experim import ejecutar_experimento
 """
 Conjuntos de datos
 """
-robot_name = 'Cobra600' #'Puma560'
-exp_name = 'comp_MA1'
+robot_name = 'Puma560' # 'Cobra600' #
+exp_name = '3000 muestras'
 robot = RTBrobot.from_name(robot_name)
-n_samples = 1000
+n_samples = 3000
 
 dataset = FKset.random_sampling(robot, n_samples)
 train_set, val_set, test_set = dataset.rand_split([0.7, 0.2, 0.1])
@@ -31,7 +31,7 @@ def experim_ajuste():
                 activation=torch.tanh)
 
     model.fit(train_set, val_set=val_set,
-              epochs=780, # 300 + 6*80
+              epochs=2000,
               lr=1e-3,
               batch_size=256,
               #optim=partial(torch.optim.Adam, weight_decay=5e-5),
@@ -43,9 +43,9 @@ def experim_ajuste():
 
     return score, model
 
-n_reps = 15
+n_reps = 5
 
 ejecutar_experimento(n_reps, experim_ajuste,
                      log_all_products=False,
-                     #model_save_dir=f'models/{robot_name}.pt'
+                     model_save_dir=f'models/{robot_name}.pt'
                     )
