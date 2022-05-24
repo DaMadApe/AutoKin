@@ -8,15 +8,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/data/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
 
-def effectorTarget(parentNode, position=[0., 0., 200]):
-    target = parentNode.addChild('Target')
-    target.addObject('EulerImplicitSolver', firstOrder=True)
-    target.addObject('CGLinearSolver')
-    target.addObject('MechanicalObject', name='dofs', position=position, showObject=True, showObjectScale=8, drawMode=2, showColor=[1., 1., 1., 1.])
-    target.addObject('UncoupledConstraintCorrection')
-    return target
-
-
 class Trunk():
     ''' This prefab is implementing a soft robot inspired by the elephant's trunk.
         The robot is entirely soft and actuated with 8 cables.
@@ -36,9 +27,8 @@ class Trunk():
             trunk.displacements = [0., 0., 0., 0., 5., 0., 0., 0.]
     '''
 
-    def __init__(self, parentNode, youngModulus=450, poissonRatio=0.45, totalMass=0.042, inverseMode=False):
+    def __init__(self, parentNode, youngModulus=450, poissonRatio=0.45, totalMass=0.042):
 
-        self.inverseMode = inverseMode
         self.node = parentNode.addChild('Trunk')
 
         self.node.addObject('MeshVTKLoader', name='loader', filename=path+'trunk.vtk')
@@ -74,7 +64,7 @@ class Trunk():
             cableL = self.node.addChild('cableL'+str(i))
             cableL.addObject('MechanicalObject', name='dofs',
                                 position=pullPoint[i]+[pos.toList() for pos in position])
-            cableL.addObject('CableConstraint' if not self.inverseMode else 'CableActuator', template='Vec3', name='cable',
+            cableL.addObject('CableConstraint', template='Vec3', name='cable',
                                 hasPullPoint='0',
                                 indices=list(range(0, 21)),
                                 maxPositiveDisp='70',
@@ -96,7 +86,7 @@ class Trunk():
             cableS = self.node.addChild('cableS'+str(i))
             cableS.addObject('MechanicalObject', name='dofs',
                                 position=pullPoint[i]+[pos.toList() for pos in position])
-            cableS.addObject('CableConstraint' if not self.inverseMode else 'CableActuator', template='Vec3', name='cable',
+            cableS.addObject('CableConstraint', template='Vec3', name='cable',
                                 hasPullPoint='0',
                                 indices=list(range(0, 10)),
                                 maxPositiveDisp='40',
@@ -135,11 +125,6 @@ class Trunk():
 
 def createScene(rootNode):
 
-    # Choose your resolution mode
-    # 1- inverseMode=True, solve the inverse problem and control the end effectors
-    # 2- inverseMode=False, solve the direct problem and set the cable displacements by hand
-    inverseMode = False
-
     rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots','SofaSparseSolver','SofaPreconditioner','SofaPython3','SofaConstraint',
                                                      'SofaImplicitOdeSolver','SofaLoader','SofaSimpleFem','SofaBoundaryCondition','SofaEngine',
                                                      'SofaOpenglVisual'])
@@ -148,13 +133,8 @@ def createScene(rootNode):
     rootNode.gravity = [0., -9810., 0.]
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    if inverseMode:
-        # For inverse resolution, i.e control of effectors position
-        rootNode.addObject('RequiredPlugin', name='SoftRobots.Inverse')
-        rootNode.addObject('QPInverseProblemSolver', epsilon=1e-1)
-    else:
-        # For direct resolution, i.e direct control of the cable displacement
-        rootNode.addObject('GenericConstraintSolver', maxIterations=100, tolerance=1e-5)
+    # For direct resolution, i.e direct control of the cable displacement
+    rootNode.addObject('GenericConstraintSolver', maxIterations=100, tolerance=1e-5)
 
     simulation = rootNode.addChild('Simulation')
 
@@ -163,14 +143,10 @@ def createScene(rootNode):
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
 
-    trunk = Trunk(simulation, inverseMode=inverseMode)
+    trunk = Trunk(simulation)
     trunk.addVisualModel(color=[1., 1., 1., 0.8])
     trunk.fixExtremity()
 
-    if inverseMode:
-        # For inverse resolution, set a constraint for the effector and a target
-        target = effectorTarget(rootNode)
-        trunk.addEffectors(target=target.dofs.getData('position').getLinkPath(), position=[[0., 0., 195]])
 
     # Use this in direct mode as an example of animation ############
     def cableanimation(target, factor):
