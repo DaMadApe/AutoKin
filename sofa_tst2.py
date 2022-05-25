@@ -1,3 +1,5 @@
+import Sofa.Core
+import Sofa.constants.Key as Key
 from math import cos
 from math import sin
 from splib3.numerics import Vec3, Quat
@@ -7,6 +9,35 @@ import os
 path = os.path.dirname(os.path.abspath(__file__))+'/data/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
+class TrunkController(Sofa.Core.Controller):
+    def __init__(self, trunk, *args, **kwargs):
+        super().__init__(self,args,kwargs)
+        self.trunk = trunk
+        self.i = 0
+        self.cable = self.trunk.node.cableL0.cable
+        self.name = "TrunkController"
+
+    def onKeypressedEvent(self, e):
+        displacement = self.cable.value[0]
+        if e["key"] == Key.plus:
+            displacement += 3.
+
+        elif e["key"] == Key.minus:
+            displacement -= 3.
+            if displacement < 0:
+                displacement = 0
+
+        elif e["key"] == '.':
+            self.i += 1
+            self.i %= self.trunk.nbCables
+            # self.cable = self.trunk.node.cableL1.cable
+            self.cable = getattr(self.trunk.node, f'cableL{self.i}').cable
+            print(f'Cambio de cable {self.i}')
+
+        self.cable.value = [displacement]
+        print(f'cable{self.i}.value: {self.cable.value[0]}')
+        print(f'finger: {self.trunk.node.dofs.position.value[0]}')
+        print(f'finger: {self.trunk.node.dofs.position.value[-1]}')
 
 class Trunk():
     ''' This prefab is implementing a soft robot inspired by the elephant's trunk.
@@ -50,6 +81,7 @@ class Trunk():
         direction.normalize()
 
         nbCables = 4
+        self.nbCables = nbCables
         for i in range(0, nbCables):
             theta = 1.57*i
             q = Quat(0., 0., sin(theta/2.), cos(theta/2.))
@@ -100,33 +132,41 @@ class Trunk():
         trunkVisu.addObject('OglModel', color=color)
         trunkVisu.addObject('BarycentricMapping')
 
-    def addCollisionModel(self, selfCollision=False):
-        trunkColli = self.node.addChild('CollisionModel')
-        for i in range(2):
-            part = trunkColli.addChild('Part'+str(i+1))
-            part.addObject('MeshSTLLoader', name='loader', filename=path+'trunk_colli'+str(i+1)+'.stl')
-            part.addObject('MeshTopology', src='@loader')
-            part.addObject('MechanicalObject')
-            part.addObject('TriangleCollisionModel', group=1 if not selfCollision else i)
-            part.addObject('LineCollisionModel', group=1 if not selfCollision else i)
-            part.addObject('PointCollisionModel', group=1 if not selfCollision else i)
-            part.addObject('BarycentricMapping')
+    # def addCollisionModel(self, selfCollision=False):
+    #     trunkColli = self.node.addChild('CollisionModel')
+    #     for i in range(2):
+    #         part = trunkColli.addChild('Part'+str(i+1))
+    #         part.addObject('MeshSTLLoader', name='loader', filename=path+'trunk_colli'+str(i+1)+'.stl')
+    #         part.addObject('MeshTopology', src='@loader')
+    #         part.addObject('MechanicalObject')
+    #         part.addObject('TriangleCollisionModel', group=1 if not selfCollision else i)
+    #         part.addObject('LineCollisionModel', group=1 if not selfCollision else i)
+    #         part.addObject('PointCollisionModel', group=1 if not selfCollision else i)
+    #         part.addObject('BarycentricMapping')
 
     def fixExtremity(self):
         self.node.addObject('BoxROI', name='boxROI', box=[[-20, -20, 0], [20, 20, 20]], drawBoxes=False)
         self.node.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
 
-    def addEffectors(self, target, position=[0., 0., 195.]):
-        effectors = self.node.addChild('Effectors')
-        effectors.addObject('MechanicalObject', position=position)
-        effectors.addObject('PositionEffector', indices=list(range(len(position))), effectorGoal=target)
-        effectors.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
+    # def addEffectors(self, target, position=[0., 0., 195.]):
+    #     effectors = self.node.addChild('Effectors')
+    #     effectors.addObject('MechanicalObject', position=position)
+    #     effectors.addObject('PositionEffector', indices=list(range(len(position))), effectorGoal=target)
+    #     effectors.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
 
 
 def createScene(rootNode):
 
-    rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots','SofaSparseSolver','SofaPreconditioner','SofaPython3','SofaConstraint',
-                                                     'SofaImplicitOdeSolver','SofaLoader','SofaSimpleFem','SofaBoundaryCondition','SofaEngine',
+    rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots',
+                                                     'SofaSparseSolver',
+                                                     'SofaPreconditioner',
+                                                     'SofaPython3',
+                                                     'SofaConstraint',
+                                                     'SofaImplicitOdeSolver',
+                                                     'SofaLoader',
+                                                     'SofaSimpleFem',
+                                                     'SofaBoundaryCondition',
+                                                     'SofaEngine',
                                                      'SofaOpenglVisual'])
     AnimationManager(rootNode)
     rootNode.addObject('VisualStyle', displayFlags='showBehavior')
@@ -148,11 +188,12 @@ def createScene(rootNode):
     trunk.fixExtremity()
 
 
+    trunk.node.addObject(TrunkController(trunk))
     # Use this in direct mode as an example of animation ############
-    def cableanimation(target, factor):
-        target.cable.value = factor*0
+    # def cableanimation(target, factor):
+    #     target.cable.value[0] = factor*100
     
-    animate(cableanimation, {'target': trunk.cableL0}, duration=2, )
+    # animate(cableanimation, {'target': trunk.node.cableL2}, duration=2, )
     #################################################################
 
 # export PYTHONPATH="/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH"
