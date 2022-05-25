@@ -1,7 +1,11 @@
-import Sofa.Core
-import Sofa.constants.Key as Key
+import sys
 from math import cos
 from math import sin
+
+import numpy as np
+
+import Sofa.Core
+import Sofa.constants.Key as Key
 from splib3.numerics import Vec3, Quat
 from splib3.animation import animate, AnimationManager
 
@@ -10,12 +14,15 @@ path = os.path.dirname(os.path.abspath(__file__))+'/data/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
 class TrunkController(Sofa.Core.Controller):
-    def __init__(self, trunk, *args, **kwargs):
+    def __init__(self, trunk, q, *args, **kwargs):
         super().__init__(self,args,kwargs)
         self.trunk = trunk
         self.i = 0
         self.cable = self.trunk.node.cableL0.cable
         self.name = "TrunkController"
+        self.q = q
+        self.step = 0
+        self.p = np.zeros((len(q), 3))
 
     def onKeypressedEvent(self, e):
         displacement = self.cable.value[0]
@@ -38,6 +45,31 @@ class TrunkController(Sofa.Core.Controller):
         print(f'cable{self.i}.value: {self.cable.value[0]}')
         print(f'finger: {self.trunk.node.dofs.position.value[0]}')
         print(f'finger: {self.trunk.node.dofs.position.value[-1]}')
+
+    def update_q(self, dq):
+        for i, dif in enumerate(dq):
+            cable = getattr(self.trunk.node, f'cableL{i}').cable
+            cable.value += dif
+
+    def onAnimateBeginEvent(self, event): # called at each begin of animation step
+        self.step +=1
+        if self.step < len(self.q):
+            dq = self.q[self.step] - self.q[self.step-1]
+            self.update_q(dq)
+        # else
+        print(self.step)
+
+        # self.trunk.node.cableL0.cable.value+=0.1
+
+    def onAnimateEndEvent(self, event):
+        if self.step < len(self.q):
+            pos = self.trunk.node.effector.mo.position[0]
+            self.p[self.step] = pos
+            # print(f'Efector final: {pos}')
+            # print(self.p)
+        elif self.step == len(self.q):
+            np.save(os.path.join(dirPath, 'p_out.npy'), self.p)
+
 
 class Trunk():
     ''' This prefab is implementing a soft robot inspired by the elephant's trunk.
@@ -70,6 +102,7 @@ class Trunk():
         self.node.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=poissonRatio,  youngModulus=youngModulus)
 
         self.__addCables()
+        self.addEffector()
 
     def __addCables(self):
         length1 = 10.
@@ -148,11 +181,11 @@ class Trunk():
         self.node.addObject('BoxROI', name='boxROI', box=[[-20, -20, 0], [20, 20, 20]], drawBoxes=False)
         self.node.addObject('PartialFixedConstraint', fixedDirections=[1, 1, 1], indices='@boxROI.indices')
 
-    # def addEffectors(self, target, position=[0., 0., 195.]):
-    #     effectors = self.node.addChild('Effectors')
-    #     effectors.addObject('MechanicalObject', position=position)
-    #     effectors.addObject('PositionEffector', indices=list(range(len(position))), effectorGoal=target)
-    #     effectors.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
+    def addEffector(self, position=[0., 0., 195.]):
+        effectors = self.node.addChild('effector')
+        effectors.addObject('MechanicalObject', name='mo',
+                            position=position)
+        effectors.addObject('BarycentricMapping', mapForces=False, mapMasses=False)
 
 
 def createScene(rootNode):
@@ -188,7 +221,15 @@ def createScene(rootNode):
     trunk.fixExtremity()
 
 
-    trunk.node.addObject(TrunkController(trunk))
+    # q = [np.arange(200)] * trunk.nbCables
+    # q = np.stack(q, axis=0).T
+
+    q = np.load('q_data.npy')
+
+    print(q)
+
+    trunk.node.addObject(TrunkController(trunk, q))
+
     # Use this in direct mode as an example of animation ############
     # def cableanimation(target, factor):
     #     target.cable.value[0] = factor*100
