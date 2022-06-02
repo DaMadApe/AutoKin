@@ -10,47 +10,65 @@ from splib3.numerics import Vec3, Quat
 from splib3.animation import animate, AnimationManager
 
 import os
-path = os.path.dirname(os.path.abspath(__file__))+'/data/'
+path = os.path.dirname(os.path.abspath(__file__))+'/sofa_obj/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
 class TrunkController(Sofa.Core.Controller):
     def __init__(self, trunk, *args, **kwargs):
         super().__init__(self,args,kwargs)
         self.trunk = trunk
-        self.i = 0
-        self.cable = self.trunk.node.cableL0.cable
+        self.cable_type = 'L'
+        self.cable_n = 0
         self.name = "TrunkController"
-        self.q = 30 * np.load('q_data.npy')
+
+        q = 25 * np.load('q_in.npy')
+        self.q = q #np.concatenate([np.zeros((100, q.shape[-1])),q])
         self.q_diff = np.diff(self.q, axis=0)
+
         self.step = 0
         self.p = np.zeros((len(self.q), 3))
         self.forces = np.zeros((len(self.q), 709)) # len(self.trunk.node.dofs.force.value)))
+
+        self.update_selected_cable()
+
+    def get_pos(self):
+        return self.trunk.node.effector.mo.position[0]
 
     def onKeypressedEvent(self, e):
         displacement = self.cable.value[0]
         if e["key"] == Key.plus:
             displacement += 3.
+            self.cable.value = [displacement]
+            print(f'cable{self.cable_type}{self.cable_n} val: {self.cable.value[0]}')
 
         elif e["key"] == Key.minus:
             displacement -= 3.
             if displacement < 0:
                 displacement = 0
+            self.cable.value = [displacement]
+            print(f'cable{self.cable_type}{self.cable_n} val: {self.cable.value[0]}')
 
         elif e["key"] == '.':
-            self.i += 1
-            self.i %= self.trunk.nbCables
-            # self.cable = self.trunk.node.cableL1.cable
-            self.cable = getattr(self.trunk.node, f'cableL{self.i}').cable
-            print(f'Cambio de cable {self.i}')
+            self.cable_n += 1
+            self.cable_n %= self.trunk.nbCables
+            self.update_selected_cable()
+        
+        elif e["key"] == ',':
+            self.cable_type = 'S' if self.cable_type=='L' else 'L'
+            self.update_selected_cable()
 
-        self.cable.value = [displacement]
-        print(f'cable{self.i}.value: {self.cable.value[0]}')
-        print(f'finger: {self.trunk.node.effector.mo.position[0]}')
+        print(f'finger: {self.get_pos()}')
+
+    def update_selected_cable(self):
+        cable_handle = f'cable{self.cable_type}{self.cable_n}'
+        self.cable = getattr(self.trunk.node, cable_handle).cable
+        print(f'Cambio a {cable_handle}')
 
     def update_q(self, diff):
         for i, dq in enumerate(diff):
             cable = getattr(self.trunk.node, f'cableL{i}').cable
             cable.value += dq
+            # print(f'cable{i}.value: {cable.value[0]}, {dq}')
 
     def onAnimateBeginEvent(self, event): # called at each begin of animation step
         self.step +=1
@@ -60,8 +78,7 @@ class TrunkController(Sofa.Core.Controller):
 
     def onAnimateEndEvent(self, event):
         if self.step < len(self.q):
-            pos = self.trunk.node.effector.mo.position[0]
-            self.p[self.step] = pos
+            self.p[self.step] = self.get_pos()
 
             forces = self.trunk.node.dofs.force.value
             forces = np.linalg.norm(forces, axis=1)
@@ -70,7 +87,7 @@ class TrunkController(Sofa.Core.Controller):
             # print(self.p)
         elif self.step == len(self.q):
             self.p *= 0.1
-            np.save(os.path.join(dirPath, 'p_out.npy'), self.p)
+            np.save(os.path.join(dirPath, 'p_out.npy'), self.p[1:])
             np.save(os.path.join(dirPath, 'forces_out.npy'), self.forces)
 
 
@@ -195,7 +212,7 @@ class Trunk():
 
 def createScene(rootNode):
 
-    logging.getLogger().setLevel(logging.ERROR)
+    # logging.getLogger().setLevel(logging.ERROR)
 
     rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots',
                                                      'SofaSparseSolver',
@@ -210,7 +227,7 @@ def createScene(rootNode):
                                                      'SofaOpenglVisual'])
     AnimationManager(rootNode)
     rootNode.addObject('VisualStyle', displayFlags='showBehavior')
-    rootNode.gravity = [0., 0., 0.] # [-9810., 0., 0.] # [0., -9810., 0.]
+    rootNode.gravity = [0., 0., 9810.] # [-9810., 0., 0.] # [0., -9810., 0.]
 
     rootNode.addObject('FreeMotionAnimationLoop')
     # For direct resolution, i.e direct control of the cable displacement
@@ -223,7 +240,7 @@ def createScene(rootNode):
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
 
-    trunk = Trunk(simulation)
+    trunk = Trunk(simulation, nbCables=3)
     trunk.addVisualModel(color=[1., 1., 1., 0.8])
     trunk.fixExtremity()
 
