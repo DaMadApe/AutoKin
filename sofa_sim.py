@@ -14,12 +14,16 @@ path = os.path.dirname(os.path.abspath(__file__))+'/sofa_obj/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
 class TrunkController(Sofa.Core.Controller):
-    def __init__(self, trunk, *args, **kwargs):
+    def __init__(self, trunk, L=4, S=4, *args, **kwargs):
         super().__init__(self,args,kwargs)
         self.trunk = trunk
-        self.cable_type = 'L'
-        self.cable_n = 0
         self.name = "TrunkController"
+
+        self.cables = [f'cableL{i}' for i in range(L)]
+        self.cables.extend([f'cableS{i}' for i in range(S)])
+        self.cable_n = 0
+
+        self.cable = getattr(self.trunk.node, self.cables[self.cable_n]).cable
 
         q = 25 * np.load('q_in.npy')
         self.q = q #np.concatenate([np.zeros((100, q.shape[-1])),q])
@@ -29,8 +33,6 @@ class TrunkController(Sofa.Core.Controller):
         self.p = np.zeros((len(self.q), 3))
         self.forces = np.zeros((len(self.q), 709)) # len(self.trunk.node.dofs.force.value)))
 
-        self.update_selected_cable()
-
     def get_pos(self):
         return self.trunk.node.effector.mo.position[0]
 
@@ -39,35 +41,29 @@ class TrunkController(Sofa.Core.Controller):
         if e["key"] == Key.plus:
             displacement += 3.
             self.cable.value = [displacement]
-            print(f'cable{self.cable_type}{self.cable_n} val: {self.cable.value[0]}')
+            print(f'cable{self.cables[self.cable_n]} val: {self.cable.value[0]}')
 
         elif e["key"] == Key.minus:
             displacement -= 3.
             if displacement < 0:
                 displacement = 0
             self.cable.value = [displacement]
-            print(f'cable{self.cable_type}{self.cable_n} val: {self.cable.value[0]}')
+            print(f'cable{self.cables[self.cable_n]} val: {self.cable.value[0]}')
 
         elif e["key"] == '.':
             self.cable_n += 1
-            self.cable_n %= 4
-            self.update_selected_cable()
-        
-        elif e["key"] == ',':
-            self.cable_type = 'S' if self.cable_type=='L' else 'L'
-            self.update_selected_cable()
+            self.cable_n %= len(self.cables)
+            cable_handle = self.cables[self.cable_n]
+            self.cable = getattr(self.trunk.node, cable_handle).cable
+            print(f'Cambio a {cable_handle}')
 
         print(f'finger: {self.get_pos()}')
 
-    def update_selected_cable(self):
-        cable_handle = f'cable{self.cable_type}{self.cable_n}'
-        self.cable = getattr(self.trunk.node, cable_handle).cable
-        print(f'Cambio a {cable_handle}')
-
     def update_q(self, diff):
         for i, dq in enumerate(diff):
-            cable = getattr(self.trunk.node, f'cableL{i}').cable
-            cable.value += dq
+            pass
+            #cable = getattr(self.trunk.node, self.cables[i]).cable
+            #cable.value += dq
             # print(f'cable{i}.value: {cable.value[0]}, {dq}')
 
     def onAnimateBeginEvent(self, event): # called at each begin of animation step
@@ -125,6 +121,8 @@ class Trunk():
         self.addCollisionModel()
         self.__addCables(cableL_angs, cableS_angs)
         self.addEffector()
+        self.addVisualModel(color=[1., 1., 1., 0.8])
+        self.fixExtremity()
 
     def __addCables(self, cableL_angs=None, cableS_angs=None):
         length1 = 10.
@@ -144,8 +142,8 @@ class Trunk():
         direction.normalize()
 
         # Adición de cables largos
-        for i in range(4):
-            theta = cableL_angs[i]
+        for i, theta in enumerate(cableL_angs):
+
             q = Quat(0., 0., sin(theta/2.), cos(theta/2.))
 
             position = [[0., 0., 0.]]*20
@@ -167,8 +165,8 @@ class Trunk():
             cableL.addObject('BarycentricMapping', name='mapping',  mapForces=False, mapMasses=False)
 
         # Adición de cables cortos
-        for i in range(0, 4):
-            theta = cableS_angs[i]
+        for i, theta in enumerate(cableS_angs):
+
             q = Quat(0., 0., sin(theta/2.), cos(theta/2.))
 
             position = [[0., 0., 0.]]*10
@@ -247,13 +245,14 @@ def createScene(rootNode):
     simulation.addObject('ShewchukPCGLinearSolver', name='linearSolver', iterations=500, tolerance=1.0e-18, preconditioners='precond')
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
+    
+    L_angs = [np.pi*2/3]
+    S_angs = [np.pi/3]
 
-    trunk = Trunk(simulation, cableL_angs=[0, np.pi*2/3, 0, 0],
-                              cableS_angs=[np.pi/3, 0, 0, 0])
-    trunk.addVisualModel(color=[1., 1., 1., 0.8])
-    trunk.fixExtremity()
+    trunk = Trunk(simulation, cableL_angs=L_angs,
+                              cableS_angs=S_angs)
 
-    trunk.node.addObject(TrunkController(trunk)) # L=2, S=1
+    trunk.node.addObject(TrunkController(trunk, L=len(L_angs), S=len(S_angs)))
 
 # export PYTHONPATH="/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH"
 # export SOFA_ROOT="/home/damadape/SOFA_robosoft"
