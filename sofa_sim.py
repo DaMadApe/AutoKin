@@ -50,7 +50,7 @@ class TrunkController(Sofa.Core.Controller):
 
         elif e["key"] == '.':
             self.cable_n += 1
-            self.cable_n %= self.trunk.nbCables
+            self.cable_n %= 4
             self.update_selected_cable()
         
         elif e["key"] == ',':
@@ -110,7 +110,7 @@ class Trunk():
             trunk.displacements = [0., 0., 0., 0., 5., 0., 0., 0.]
     '''
 
-    def __init__(self, parentNode, nbCables=4,
+    def __init__(self, parentNode, cableL_angs=None, cableS_angs=None,
                  youngModulus=450, poissonRatio=0.45, totalMass=0.042):
 
         self.node = parentNode.addChild('Trunk')
@@ -123,22 +123,29 @@ class Trunk():
         self.node.addObject('TetrahedronFEMForceField', template='Vec3', name='FEM', method='large', poissonRatio=poissonRatio,  youngModulus=youngModulus)
 
         self.addCollisionModel()
-        self.nbCables = nbCables
-        self.__addCables()
+        self.__addCables(cableL_angs, cableS_angs)
         self.addEffector()
 
-    def __addCables(self):
+    def __addCables(self, cableL_angs=None, cableS_angs=None):
         length1 = 10.
         length2 = 2.
         lengthTrunk = 195.
 
-        pullPoint = [[0., length1, 0.], [-length1, 0., 0.], [0., -length1, 0.], [length1, 0., 0.]]
+        if cableL_angs is None: 
+            cableL_angs = [np.pi*i/2 for i in range(4)]
+
+        if cableS_angs is None: 
+            cableS_angs = [np.pi*i/2 for i in range(4)]
+
+        pullPointsL = [[np.sin(t), np.cos(t), 0] for t in cableL_angs]
+        pullPointsS = [[np.sin(t), np.cos(t), 0] for t in cableS_angs]
+
         direction = Vec3(0., length2-length1, lengthTrunk)
         direction.normalize()
 
-        self.nbCables
-        for i in range(0, self.nbCables):
-            theta = 1.57*i
+        # Adición de cables largos
+        for i in range(4):
+            theta = cableL_angs[i]
             q = Quat(0., 0., sin(theta/2.), cos(theta/2.))
 
             position = [[0., 0., 0.]]*20
@@ -150,7 +157,7 @@ class Trunk():
 
             cableL = self.node.addChild(f'cableL{i}')
             cableL.addObject('MechanicalObject', name='dofs',
-                                position=pullPoint[i]+[pos.toList() for pos in position])
+                                position=pullPointsL[i]+[pos.toList() for pos in position])
             cableL.addObject('CableConstraint', template='Vec3', name='cable',
                                 hasPullPoint='0',
                                 indices=list(range(0, 21)),
@@ -159,8 +166,9 @@ class Trunk():
                                 minForce=0)
             cableL.addObject('BarycentricMapping', name='mapping',  mapForces=False, mapMasses=False)
 
-        for i in range(0, self.nbCables):
-            theta = 1.57*i
+        # Adición de cables cortos
+        for i in range(0, 4):
+            theta = cableS_angs[i]
             q = Quat(0., 0., sin(theta/2.), cos(theta/2.))
 
             position = [[0., 0., 0.]]*10
@@ -172,7 +180,7 @@ class Trunk():
 
             cableS = self.node.addChild(f'cableS{i}')
             cableS.addObject('MechanicalObject', name='dofs',
-                                position=pullPoint[i]+[pos.toList() for pos in position])
+                                position=pullPointsS[i]+[pos.toList() for pos in position])
             cableS.addObject('CableConstraint', template='Vec3', name='cable',
                                 hasPullPoint='0',
                                 indices=list(range(0, 10)),
@@ -240,11 +248,12 @@ def createScene(rootNode):
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
 
-    trunk = Trunk(simulation, nbCables=3)
+    trunk = Trunk(simulation, cableL_angs=[0, np.pi*2/3, 0, 0],
+                              cableS_angs=[np.pi/3, 0, 0, 0])
     trunk.addVisualModel(color=[1., 1., 1., 0.8])
     trunk.fixExtremity()
 
-    trunk.node.addObject(TrunkController(trunk))
+    trunk.node.addObject(TrunkController(trunk)) # L=2, S=1
 
 # export PYTHONPATH="/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH"
 # export SOFA_ROOT="/home/damadape/SOFA_robosoft"
