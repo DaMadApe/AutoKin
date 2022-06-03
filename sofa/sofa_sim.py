@@ -10,7 +10,7 @@ from splib3.numerics import Vec3, Quat
 from splib3.animation import animate, AnimationManager
 
 import os
-path = os.path.dirname(os.path.abspath(__file__))+'/sofa_obj/'
+path = os.path.dirname(os.path.abspath(__file__))+'/model_files/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
 
 class TrunkController(Sofa.Core.Controller):
@@ -25,8 +25,8 @@ class TrunkController(Sofa.Core.Controller):
 
         self.cable = getattr(self.trunk.node, self.cables[self.cable_n]).cable
 
-        q = 25 * np.load('q_in.npy')
-        self.q = q #np.concatenate([np.zeros((100, q.shape[-1])),q])
+        q = 20 * np.load('q_in.npy')
+        self.q = np.concatenate([np.zeros((1, q.shape[-1])),q])
         self.q_diff = np.diff(self.q, axis=0)
 
         self.step = 0
@@ -61,9 +61,8 @@ class TrunkController(Sofa.Core.Controller):
 
     def update_q(self, diff):
         for i, dq in enumerate(diff):
-            pass
-            #cable = getattr(self.trunk.node, self.cables[i]).cable
-            #cable.value += dq
+            cable = getattr(self.trunk.node, self.cables[i]).cable
+            cable.value += dq
             # print(f'cable{i}.value: {cable.value[0]}, {dq}')
 
     def onAnimateBeginEvent(self, event): # called at each begin of animation step
@@ -73,7 +72,7 @@ class TrunkController(Sofa.Core.Controller):
         # print(self.step)
 
     def onAnimateEndEvent(self, event):
-        if self.step < len(self.q):
+        if self.step < len(self.q)-1:
             self.p[self.step] = self.get_pos()
 
             forces = self.trunk.node.dofs.force.value
@@ -81,7 +80,7 @@ class TrunkController(Sofa.Core.Controller):
             self.forces[self.step] = forces
             # print(f'Efector final: {pos}')
             # print(self.p)
-        elif self.step == len(self.q):
+        elif self.step == len(self.q)-1:
             self.p *= 0.1
             np.save(os.path.join(dirPath, 'p_out.npy'), self.p[1:])
             np.save(os.path.join(dirPath, 'forces_out.npy'), self.forces)
@@ -218,6 +217,9 @@ class Trunk():
 
 def createScene(rootNode):
 
+    import sys
+
+    print(sys.argv)
     # logging.getLogger().setLevel(logging.ERROR)
 
     rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots',
@@ -246,8 +248,22 @@ def createScene(rootNode):
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
     
-    L_angs = [np.pi*2/3]
-    S_angs = [np.pi/3]
+
+    with open('config.txt', 'r') as f:
+        config = f.read()
+
+    print(config)
+
+    configs = {'LLLL': ([0, np.pi/2, np.pi, np.pi*3/2],[]),
+               'LSLS': ([0, np.pi],[np.pi/2, np.pi*3/2]),
+               'LSSL': ([0, np.pi*2/3],[0, np.pi*2/3]),
+               'LSL': ([0, np.pi*2/3], [np.pi/3]),
+               'SLS': ([np.pi/3],[0, np.pi*2/3]),
+               'LLL': ([0, np.pi/3, np.pi*2/3],[]),
+               'LS': ([0],[np.pi*2/3]),
+               'LL': ([0, np.pi*2/3],[])}
+
+    L_angs, S_angs = configs[config]
 
     trunk = Trunk(simulation, cableL_angs=L_angs,
                               cableS_angs=S_angs)
