@@ -77,65 +77,6 @@ def coprime_sines(n_dim, n_points, densidad=0, base_frec=0):
     return points
 
 
-def cuadro2circ(q):
-    # https://www.xarg.org/2017/07/how-to-map-a-square-to-a-circle/
-    def _map(x, y): return (x*torch.sqrt(1 - y**2/2),
-                            y*torch.sqrt(1 - x**2/2))
-
-    trans_q = q.clone()
-    for i, point in enumerate(q):
-        trans_q[i,:] = torch.tensor(_map(*point[:]))
-
-    return trans_q
-
-
-def cubo2esfera(q):
-    # https://math.stackexchange.com/questions/118760/can-someone-please-explain-the-cube-to-sphere-mapping-formula-to-me
-    def _map(x, y, z): return (x*torch.sqrt(1 - y**2/2 - z**2/2 + y**2*z**2/3),
-                               y*torch.sqrt(1 - z**2/2 - x**2/2 + z**2*x**2/3),
-                               z*torch.sqrt(1 - x**2/2 - y**2/2 + x**2*y**2/3))
-
-    trans_q = q.clone()
-    for i, point in enumerate(q):
-        trans_q[i,:] = torch.tensor(_map(*point[:]))
-
-    return trans_q
-
-
-def cubo2esfera2(q):
-    def _xmap(u, v, s): return u*torch.sqrt(1 - v**2/2 - s**2/2 + v**2*s**2/3)
-    def _map(x, y, z): return (_xmap(x, y, z), _xmap(y, z, x), _xmap(z, x, y))
-
-    trans_q = q.clone()
-    for i, point in enumerate(q):
-        trans_q[i,:] = torch.tensor(_map(*point[:]))
-
-    return trans_q
-
-
-def hcubo2hesfera(q):
-    # Igual que aplicar cubo2esfera=hcubo2hesfera(x,y,z,0)?
-    def _xmap(u, v, s, t): return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
-                                                 + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
-                                                 - v**2*s**2*t**2/4)
-    def _map(x, y, z, w): return (_xmap(x, y, z, w), _xmap(y, z, w, x), _xmap(z, w, x, y), _xmap(w, x, y, z))
-
-    trans_q = q.clone()
-    for i, point in enumerate(q):
-        trans_q[i,:] = torch.tensor(_map(*point[:]))
-
-    return trans_q
-
-
-def rampa():
-    ramp = torch.cat([], dim=0)
-
-def interp():
-    pass
-
-def suavizar():
-    pass
-
 def restringir(q):
     def _map(u, v, s, t): return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
                                                 + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
