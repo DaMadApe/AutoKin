@@ -1,106 +1,8 @@
-import numpy as np
-
 import torch
-from torch.utils.data import Dataset, random_split
+import numpy as np
 
 import roboticstoolbox as rtb
 
-# TODO: Mandar a muestreo.py
-class FKset(Dataset):
-    """
-    Producir un conjunto de puntos (configuración,posición) de un robot
-    definido con la interfaz de un robot DH de Peter Corke.
-    
-    Los puntos se escogen aleatoriamente en el espacio de parámetros.
-
-    robot () : Cadena cinemática para producir ejemplos
-    q_vecs (torch.Tensor) : Lista de vectores de actuación para generar ejemplos
-    q_uniform_noise (float) : Cantidad de ruido uniforme aplicado a ejemplos q
-    q_normal_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a ejemplos q
-    p_uniform_noise (float) : Cantidad de ruido uniforme aplicado a etiquetas pos
-    p_normal_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a etiquetas pos
-    """
-    def __init__(self, robot, q_vecs: torch.Tensor,
-                 q_uniform_noise=0, q_normal_noise=0,
-                 p_uniform_noise=0, p_normal_noise=0):
-
-        is_q_normed = torch.all(q_vecs>=0) and torch.all(q_vecs<=1)
-        if not(is_q_normed):
-            raise ValueError('q_vecs debe ir normalizado a intervalo [0,1]')
-
-        self.robot = robot
-        self.q_vecs = q_vecs
-
-        self.n = self.robot.n # Número de ejes
-
-        self.q_uniform_noise = q_uniform_noise
-        self.q_normal_noise = q_normal_noise
-        self.p_uniform_noise = p_uniform_noise
-        self.p_normal_noise = p_normal_noise
-
-        self._generate_labels()
-
-    @classmethod
-    def random_sampling(cls, robot, n_samples: int, **kwargs):
-        """
-        Constructor alternativo
-        Toma muestras uniformemente distribuidas en el espacio de juntas
-
-        args:
-        robot () : Cadena cinemática para producir ejemplos
-        n_samples (int) : Número de ejemplos
-        """
-        q_vecs = torch.rand(n_samples, robot.n)
-        return cls(robot, q_vecs, **kwargs)
-
-    @classmethod
-    def grid_sampling(cls, robot, n_samples: list, **kwargs):
-        """
-        Constructor alternativo
-        Toma muestras del espacio de juntas en un patrón de cuadrícula
-
-        args:
-        robot () : Cadena cinemática para producir ejemplos
-        n_samples (int list) : Número de divisiones por junta
-        """
-        # Magia negra para producir todas las combinaciones de puntos
-        q_vecs = torch.meshgrid(*[torch.linspace(0,1, int(n)) for n in n_samples],
-                                indexing='ij')
-        q_vecs = torch.stack(q_vecs, -1).reshape(-1, robot.n)
-        return cls(robot, q_vecs, **kwargs)
-
-    def _generate_labels(self):
-        # Hacer cinemática directa
-        self.q_vecs, self.p_vecs = self.robot.fkine(self.q_vecs)
-
-        q_noise = (self.q_uniform_noise*torch.rand(len(self), self.n) +
-                   self.q_normal_noise*torch.randn(len(self), self.n))
-
-        p_noise = (self.p_uniform_noise*torch.rand(len(self), 3) +
-                   self.p_normal_noise*torch.randn(len(self), 3))
-
-        self.q_vecs = self.q_vecs + q_noise
-        self.p_vecs = self.p_vecs + p_noise
-
-    def __len__(self):
-        return self.q_vecs.shape[0]
-
-    def __getitem__(self, idx):
-        return self.q_vecs[idx], self.p_vecs[idx]
-
-    def rand_split(self, proportions: list[float]):
-        """
-        Reparte el conjunto de datos en segmentos aleatoriamente
-        seleccionados, acorde a las proporciones ingresadas.
-
-        args:
-        dataset (torch Dataset): Conjunto de datos a repartir
-        proportions (list[float]): Porcentaje que corresponde a cada partición
-        """
-        if round(sum(proportions), ndigits=2) != 1:
-            raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
-        split = [round(prop*len(self)) for prop in proportions]
-        return random_split(self, split)
 
 def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     """
@@ -148,7 +50,7 @@ def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
     return rtb.DHRobot(links)
 
 
-def coprime_sines(n_dim, n_points, wiggle=0):
+def coprime_sines(n_dim, n_points, densidad=0, base_frec=0):
     # https://www.desmos.com/calculator/m4pjhqjgz6
     """
     Genera trayectoria paramétrica explorando cada dimensión
@@ -160,7 +62,8 @@ def coprime_sines(n_dim, n_points, wiggle=0):
     las singularidades de un robot si se usan las curvas
     en el espacio de parámetros.
     """
-    coefs = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31]
+    coefs = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+             31, 37, 41, 43, 47, 53, 59, 61, 67]
     coefs = torch.tensor(coefs) * 2*torch.pi
     points = torch.zeros((n_points, n_dim))
 
@@ -169,5 +72,83 @@ def coprime_sines(n_dim, n_points, wiggle=0):
     #points = 0.3*torch.rand((n_dim, n_points))
 
     for i in range(n_dim):
-        points[:, i] = torch.sin(coefs[i+wiggle]*t) /2 + 0.5
+        frec = base_frec + coefs[i+densidad]
+        points[:, i] = torch.sin(frec*t) /2 + 0.5
     return points
+
+
+def cuadro2circ(q):
+    # https://www.xarg.org/2017/07/how-to-map-a-square-to-a-circle/
+    def _map(x, y): return (x*torch.sqrt(1 - y**2/2),
+                            y*torch.sqrt(1 - x**2/2))
+
+    trans_q = q.clone()
+    for i, point in enumerate(q):
+        trans_q[i,:] = torch.tensor(_map(*point[:]))
+
+    return trans_q
+
+
+def cubo2esfera(q):
+    # https://math.stackexchange.com/questions/118760/can-someone-please-explain-the-cube-to-sphere-mapping-formula-to-me
+    def _map(x, y, z): return (x*torch.sqrt(1 - y**2/2 - z**2/2 + y**2*z**2/3),
+                               y*torch.sqrt(1 - z**2/2 - x**2/2 + z**2*x**2/3),
+                               z*torch.sqrt(1 - x**2/2 - y**2/2 + x**2*y**2/3))
+
+    trans_q = q.clone()
+    for i, point in enumerate(q):
+        trans_q[i,:] = torch.tensor(_map(*point[:]))
+
+    return trans_q
+
+
+def cubo2esfera2(q):
+    def _xmap(u, v, s): return u*torch.sqrt(1 - v**2/2 - s**2/2 + v**2*s**2/3)
+    def _map(x, y, z): return (_xmap(x, y, z), _xmap(y, z, x), _xmap(z, x, y))
+
+    trans_q = q.clone()
+    for i, point in enumerate(q):
+        trans_q[i,:] = torch.tensor(_map(*point[:]))
+
+    return trans_q
+
+
+def hcubo2hesfera(q):
+    # Igual que aplicar cubo2esfera=hcubo2hesfera(x,y,z,0)?
+    def _xmap(u, v, s, t): return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
+                                                 + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
+                                                 - v**2*s**2*t**2/4)
+    def _map(x, y, z, w): return (_xmap(x, y, z, w), _xmap(y, z, w, x), _xmap(z, w, x, y), _xmap(w, x, y, z))
+
+    trans_q = q.clone()
+    for i, point in enumerate(q):
+        trans_q[i,:] = torch.tensor(_map(*point[:]))
+
+    return trans_q
+
+
+def rampa():
+    ramp = torch.cat([], dim=0)
+
+def interp():
+    pass
+
+def suavizar():
+    pass
+
+def restringir(q):
+    def _map(u, v, s, t): return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
+                                                + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
+                                                - v**2*s**2*t**2/4)
+
+    maps = [lambda u, v: (_map(u, v, 0, 0), _map(v, u, 0, 0)),
+            lambda u, v, s: (_map(u, v, s, 0), _map(v, s, u, 0), _map(s, u, v, 0)),
+            lambda u, v, s, t: (_map(u, v, s, t), _map(v, s, t, u), _map(s, t, u, v), _map(t, u, v, s))]
+
+    map_fn = maps[q.size()[-1] - 2]
+
+    trans_q = q.clone()
+    for i, point in enumerate(q):
+        trans_q[i,:] = torch.tensor(map_fn(*point[:]))
+
+    return trans_q
