@@ -1,28 +1,33 @@
+from turtle import width
 import numpy as np
 from matplotlib import pyplot as plt
 
+from utils import coprime_sines, restringir
 from robot import SofaRobot
-from utils import coprime_sines
 
-n_samples = 10000
+n_samples = 5000
 
-robot = SofaRobot()
+q = coprime_sines(2, n_samples, densidad=6)#2,8 # Buenos valores: [6:10]
+q = restringir(q)
 
-c_sines = coprime_sines(3, n_samples, wiggle=6)
-q, p = robot.fkine(c_sines)
+fig = plt.figure()
 
-q, p
+n_dim = q.size()[-1]
+if n_dim ==2:
+    # Para 2 actuadores
+    ax = fig.add_subplot()
+    ax.plot(q[:,0], q[:,1], linewidth=1.5)
+    ax.set_xlabel('q1')
+    ax.set_ylabel('q2')
 
+elif n_dim ==3:
+    # Para 3 actuadores
+    ax = fig.add_subplot(projection='3d')
+    #ax.scatter(q[:,0], q[:,1], q[:,2])
+    ax.plot(q[:,0], q[:,1], q[:,2], linewidth=1.5)
+    ax.set_xlabel('q1')
+    ax.set_ylabel('q2')
+    ax.set_zlabel('q3')
 
-f = np.load('forces_out.npy')
-
-max_f = np.max(f, axis=1)
-mean_f = np.mean(f, axis=1)
-
-q_mag = np.linalg.norm(q.numpy(), axis=1)
-#q_mag = np.sum(q.numpy()**2, axis=1)
-
-plt.plot(q_mag, max_f)
-plt.xlabel('||q||') # = (q1² + q2²)¹/²')
-plt.ylabel('Máximo esfuerzo interno')
-plt.title('Actuación v. esfuerzo (3 actuadores)')
+# plt.tight_layout()
+plt.show()

@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 from modelos import MLP, ResNet
 from muestreo_activo import EnsembleRegressor
-from utils import rand_data_split # El formato de matplotlib cambia por la importación de rtb en utils
 
 torch.manual_seed(8)
 
@@ -24,7 +23,8 @@ X = torch.linspace(x_min, x_max, n_samples).reshape(-1, 1)
 Y = f(X)
 full_set = TensorDataset(X, Y)
 
-train_set, test_set = rand_data_split(full_set, [0.5, 0.5])
+train_set, test_set = random_split(full_set,
+                                   [n_samples//2, n_samples//2])
 
 # Conversión nada elegante para poder graficar ejemplos originales
 # Sólo es relevante para graficar ejemplos en 1D
@@ -48,7 +48,7 @@ ensemble = EnsembleRegressor(models)
 
 # Entrenar el modelo con datos iniciales
 ensemble.fit(train_set, lr=1e-3, epochs=10)#00)
-ensemble.rank_models(test_set)
+ensemble.test(test_set)
 
 # Para graficar después
 X_plot = torch.linspace(x_min, x_max, 1000).view(-1,1)
@@ -61,14 +61,14 @@ Afinación con muestras nuevas recomendadas
 X_query = torch.rand(64).view(-1, 1)*(x_max-x_min) + x_min
 
 queries, _ = ensemble.online_fit(train_set,
-                                    candidate_batch=X_query,
-                                    label_fun=f,
-                                    query_steps=4,
-                                    n_queries=2,
-                                    relative_weight=2,
-                                    final_adjust_weight=4,
-                                    lr=1e-3, epochs=4)#00)
-ensemble.rank_models(test_set)
+                                 candidate_batch=X_query,
+                                 label_fun=f,
+                                 query_steps=4,
+                                 n_queries=2,
+                                 relative_weight=2,
+                                 final_adjust_weight=4,
+                                 lr=1e-3, epochs=4)#00)
+ensemble.test(test_set)
 
 last_pred = ensemble.best_predict(X_plot).detach()
 
