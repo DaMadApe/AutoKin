@@ -4,20 +4,23 @@ import torch
 
 from modelos import MLP
 from robot import RTBrobot
-from utils import FKset
+from utils import coprime_sines
+from muestreo import FKset
 from experim import ejecutar_experimento
 
 """
 Conjuntos de datos
 """
-robot_name = 'Puma560' # 'Cobra600' #
-exp_name = 'pose'
-n_samples = 3000
-full_pose = True
+robot_name = 'Cobra600' #
+exp_name = ''
+n_samples = 5000
+full_pose = False
 
 robot = RTBrobot.from_name(robot_name, full_pose=full_pose)
-dataset = FKset.random_sampling(robot, n_samples)
-train_set, val_set, test_set = dataset.rand_split([0.7, 0.2, 0.1])
+c_sines = coprime_sines(robot.n, n_samples, densidad=3)
+dataset = FKset(robot, c_sines)
+train_set, val_set = dataset.rand_split([0.8, 0.2])
+test_set = FKset.random_sampling(robot, n_samples//5)
 
 """
 Definición de experimento

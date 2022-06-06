@@ -14,7 +14,7 @@ exp_name = 'MA1'
 robot = RTBrobot.from_name(robot_name)
 n_samples = 900
 
-# c_sines = coprime_sines(robot.n, n_samples, wiggle=3)
+# c_sines = coprime_sines(robot.n, n_samples, densidad=3)
 # dataset = FKset(robot, c_sines)
 
 dataset = FKset.random_sampling(robot, n_samples)

@@ -1,25 +1,47 @@
 from functools import partial
 
 import torch
+from torch.utils.data import TensorDataset, random_split
+import numpy as np
 
 from modelos import MLP
 from robot import SofaRobot
-from utils import FKset, coprime_sines
+from muestreo import FKset
+from utils import coprime_sines, restringir
 from experim import ejecutar_experimento
 
 """
 Conjuntos de datos
 """
-robot_name = 'Trunk4C'
-exp_name = 'exp1'
-n_samples = 3000
+robot_name = 'Trunk_LL'
+exp_name = 'OF'
+n_samples = 10000
 
-robot = SofaRobot()
+robot = SofaRobot(config='LL')
 
-c_sines = coprime_sines(robot.n, n_samples, wiggle=3)
-dataset = FKset(robot, c_sines)
-# dataset = FKset.random_sampling(robot, n_samples)
-train_set, val_set, test_set = dataset.rand_split([0.7, 0.2, 0.1])
+def rand_split(self, proportions: list[float]):
+    """
+    Reparte el conjunto de datos en segmentos aleatoriamente
+    seleccionados, acorde a las proporciones ingresadas.
+
+    args:
+    dataset (torch Dataset): Conjunto de datos a repartir
+    proportions (list[float]): Porcentaje que corresponde a cada partición
+    """
+    if round(sum(proportions), ndigits=2) != 1:
+        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
+    split = [round(prop*len(self)) for prop in proportions]
+    return random_split(self, split)
+
+
+
+q = coprime_sines(robot.n, n_samples, densidad=6)
+q = restringir(q)
+# dataset = FKset(robot, q)
+dataset = TensorDataset(torch.tensor(np.load('sofa/q_in.npy'), dtype=torch.float),
+                        torch.tensor(np.load('sofa/p_out.npy'), dtype=torch.float))
+
+train_set, val_set, test_set = rand_split(dataset, [0.7, 0.2, 0.1])
 
 """
 Definición de experimento

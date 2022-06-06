@@ -13,7 +13,7 @@ def ikine_experiment():
     q_target = torch.rand(robot.n)
 
     # TODO: Rutina para conectar puntos "suavemente"
-    q1 = torch.stack([torch.zeros(robot.n), q_start, q_start, q_target, q_target])
+    # q1 = torch.stack([torch.zeros(robot.n), q_start, q_start, q_target, q_target])
 
     _, r1 = robot.fkine(q1)
 

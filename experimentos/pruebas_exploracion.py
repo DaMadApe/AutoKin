@@ -2,16 +2,17 @@ import torch
 
 from modelos import MLP
 from robot import RTBrobot
-from utils import FKset, coprime_sines
+from muestreo import FKset
+from utils import coprime_sines
 from experim import setup_logging, ejecutar_experimento
 
 """
 Conjuntos de datos
 """
 robot = RTBrobot.from_name('Cobra600') #Puma560()
-n_samples = 2058
+n_samples = 10000
 
-c_sines = coprime_sines(robot.n, n_samples, wiggle=3)
+c_sines = coprime_sines(robot.n, n_samples, densidad=10)
 explr_dataset = FKset(robot, c_sines)
 
 random_dataset = FKset.random_sampling(robot, n_samples)
