@@ -138,7 +138,9 @@ class ModelRobot(Robot):
         return cls(model)
 
     def fkine(self, q):
-        return self.model(q)
+        with torch.no_grad():
+            p = self.model(q)
+        return q, p
 
     def jacob(self, q):
         return jacobian(self.model, q).squeeze()

@@ -23,6 +23,7 @@ class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo
         super().__init__()
 
         self.input_dim = input_dim
+        self.output_dim = output_dim
         # Armar modelo
         self.layers = nn.ModuleList()
         
@@ -83,6 +84,7 @@ class ResNet(HparamsMixin, DataFitMixin, nn.Module):
         super().__init__()
         
         self.input_dim = input_dim
+        self.output_dim = output_dim
         self.blocks = nn.ModuleList()
         self.blocks.append(nn.Linear(input_dim,
                                      block_width))

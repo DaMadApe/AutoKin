@@ -38,12 +38,12 @@ if __name__ == "__main__":
 
     from utils import coprime_sines
 
-    # N = 100
+    N = 1000
     # q = [np.zeros(N), np.linspace(0, 1, N), np.ones(N), np.linspace(1, 0, N)]
     # q = np.stack(q, axis=0).T
     # q  = np.linspace([0,0,0], [0.5, 0.5, 0.5], 10)
 
-    q = coprime_sines(3, 10).numpy()
+    q = coprime_sines(3, N, densidad=2).numpy()
     #qs = np.zeros((10, 3))
     
     # q = np.full((20, 3), 0.7)

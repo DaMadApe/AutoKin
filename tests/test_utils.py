@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given
 import hypothesis.strategies as some
 
-from utils import denorm_q, norm_q, random_robot
+from utils import random_robot, restringir
 
 assert_equal = partial(tt.assert_close, atol=1e-7, rtol=1e-7)
 assert_close = partial(tt.assert_close, atol=1e-3, rtol=1e-3)
@@ -15,7 +15,14 @@ assert_close = partial(tt.assert_close, atol=1e-3, rtol=1e-3)
 def test_random_robot():
     robot = random_robot()
 
-@given(some.builds(random_robot))
+def test_restringir():
+    for i in [2, 3, 4]:
+        q = torch.rand(100, i)
+        q_trans = restringir(q)
+        max_norm = max(q_trans.norm(dim=-1))
+        assert max_norm <= 1
+
+""" @given(some.builds(random_robot))
 def test_denorm_q_within_range(robot):
     qlim_tensor = torch.tensor(robot.qlim, dtype=torch.float32)
     unit_q_vec = torch.rand((robot.n))
@@ -57,4 +64,4 @@ def test_norm_q_full_range(robot):
     normed_max = norm_q(robot, qlim_tensor[1])
 
     assert_equal(normed_min, zero_vec)
-    assert_equal(normed_max, ones_vec)
+    assert_equal(normed_max, ones_vec) """

@@ -13,8 +13,8 @@ full_q = coprime_sines(robot.n, 300, densidad=1)
 pad = torch.zeros((150, robot.n))
 exp_q = torch.concat([pad, full_q, pad, pad])
 
-# _, p_sim = robot.fkine(exp_q)
-p_sim = torch.tensor(np.load('sofa/p_out.npy'))
+_, p_sim = robot.fkine(exp_q)
+#p_sim = torch.tensor(np.load('sofa/p_out.npy'))
 
 q_resamp = exp_q[::7]
 p_resamp = p_sim[::3]

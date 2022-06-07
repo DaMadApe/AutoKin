@@ -72,15 +72,13 @@ class TrunkController(Sofa.Core.Controller):
         # print(self.step)
 
     def onAnimateEndEvent(self, event):
-        if self.step < len(self.q)-1:
-            self.p[self.step] = self.get_pos()
-
-            forces = self.trunk.node.dofs.force.value
-            forces = np.linalg.norm(forces, axis=1)
-            self.forces[self.step] = forces
-            # print(f'Efector final: {pos}')
-            # print(self.p)
-        elif self.step == len(self.q)-1:
+        self.p[self.step] = self.get_pos()
+        forces = self.trunk.node.dofs.force.value
+        forces = np.linalg.norm(forces, axis=1)
+        self.forces[self.step] = forces
+        # print(f'Efector final: {pos}')
+        # print(self.p)
+        if self.step == len(self.q)-1:
             self.p *= 0.1
             np.save(os.path.join(dirPath, 'p_out.npy'), self.p[1:])
             np.save(os.path.join(dirPath, 'forces_out.npy'), self.forces)
@@ -256,7 +254,7 @@ def createScene(rootNode):
 
     configs = {'LLLL': ([0, np.pi/2, np.pi, np.pi*3/2],[]),
                'LSLS': ([0, np.pi],[np.pi/2, np.pi*3/2]),
-               'LSSL': ([0, np.pi*2/3],[0, np.pi*2/3]),
+               'LSSL': ([0, np.pi/3],[0, np.pi/3]),
                'LSL': ([0, np.pi*2/3], [np.pi/3]),
                'SLS': ([np.pi/3],[0, np.pi*2/3]),
                'LLL': ([0, np.pi/3, np.pi*2/3],[]),

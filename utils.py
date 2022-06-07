@@ -1,3 +1,4 @@
+from re import M
 import torch
 import numpy as np
 
@@ -93,3 +94,17 @@ def restringir(q):
         trans_q[i,:] = torch.tensor(map_fn(*point[:]))
 
     return trans_q
+
+
+def linterp(q1, q2, pasos):
+    assert q1.size() == q2.size(), 'Tensores de distinto tamaño'
+    assert len(q1.size()) == 1, 'Tensores de más de 1D'
+
+    n_dim = q1.size()[-1]
+    interp = torch.zeros((pasos, n_dim))
+
+    for i in range(n_dim):
+        qi, qf = q1[i], q2[i]
+        interp[:, i] = torch.linspace(qi, qf, pasos)
+
+    return interp
