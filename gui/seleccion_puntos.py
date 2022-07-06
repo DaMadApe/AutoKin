@@ -137,19 +137,19 @@ class Popup_agregar_punto(tk.Toplevel):
 
         x_label = ttk.Label(frame_xyz, text='x:')
         x_label.grid(column=0, row=0)
-        self.x_entry = ttk.Entry(frame_xyz, width=5) # , text=x_val)
+        self.x_entry = ttk.Entry(frame_xyz, width=5)
         self.x_entry.grid(column=1, row=0)
         self.x_entry.insert(0, 0.)
 
         y_label = ttk.Label(frame_xyz, text='y:')
         y_label.grid(column=2, row=0)
-        self.y_entry = ttk.Entry(frame_xyz, width=5) # , text=y_val)
+        self.y_entry = ttk.Entry(frame_xyz, width=5)
         self.y_entry.grid(column=3, row=0)
         self.y_entry.insert(0, 0.)
 
         z_label = ttk.Label(frame_xyz, text='z:')
         z_label.grid(column=4, row=0)
-        self.z_entry = ttk.Entry(frame_xyz, width=5) # , text=z_val)
+        self.z_entry = ttk.Entry(frame_xyz, width=5)
         self.z_entry.grid(column=5, row=0)
         self.z_entry.insert(0, 0.)
 
@@ -158,7 +158,8 @@ class Popup_agregar_punto(tk.Toplevel):
 
         t_t_label = ttk.Label(frame_tiempos, text='Tiempo transición (s):')
         t_t_label.grid(column=0, row=0, sticky=E)
-        self.t_t_entry = ttk.Entry(frame_tiempos, width=5)
+        self.t_t_entry = ttk.Entry(frame_tiempos, width=5,
+                                   validatecommand=self.validate_pos_float)
         self.t_t_entry.grid(column=1, row=0)
         self.t_t_entry.insert(0, 1.)
 
@@ -170,21 +171,49 @@ class Popup_agregar_punto(tk.Toplevel):
 
         boton_aceptar = ttk.Button(self, text='Agregar',
                                    command=self.agregar_punto)
-        boton_aceptar.grid(column=0, row=2)
+        boton_aceptar.grid(column=0, row=4)
+
+        self.error_msg = tk.StringVar()
+        self.error_msg.set(' ')
+        error_label = ttk.Label(frame_tiempos, textvariable=self.error_msg,
+                                foreground='#f00')
+        error_label.grid(column=0, row=5)
 
         for frame in [self, frame_xyz, frame_tiempos]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
     def agregar_punto(self):
-        x = float(self.x_entry.get())
-        y = float(self.y_entry.get())
-        z = float(self.z_entry.get())
-        t_t = float(self.t_t_entry.get())
-        t_s = float(self.t_s_entry.get())
+        x = self.x_entry.get()
+        y = self.y_entry.get()
+        z = self.z_entry.get()
+        t_t = self.t_t_entry.get()
+        t_s = self.t_s_entry.get()
 
-        self.parent.agregar_punto([x, y, z, t_t, t_s])
-        self.withdraw()
+        valid = True
+        for var in [x,y,z]:
+            valid &= self.validate_float(var)
+        for var in [t_t, t_s]:
+            valid &= self.validate_pos_float(var)
+
+        if valid:
+            punto = [x, y, z, t_t, t_s]
+            punto = [float(val) for val in punto]
+            self.parent.agregar_punto(punto)
+            self.destroy()
+        else:
+            self.error_msg.set('Números inválidos')
+
+    def validate_float(self, x):
+        try:
+            float(x)
+        except:
+            return False
+        else:
+            return True
+
+    def validate_pos_float(self, x):
+        return self.validate_float(x) and float(x)>0
 
 
 if __name__ == "__main__":
