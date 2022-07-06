@@ -18,7 +18,7 @@ class PantallaSelecPuntos(ttk.Frame):
         parent.rowconfigure(0, weight=1)
         parent.title('Selección de puntos')
 
-        self.puntos = None
+        self.puntos = []
 
         self.definir_elementos()
 
@@ -46,7 +46,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Boton para agregar entrada
         boton_agregar = ttk.Button(frame_tabla, text='Agregar punto',
-                                   command=self.agregar_punto)
+                                   command=self.nuevo_punto)
         boton_agregar.grid(column=0, row=1, sticky=(W,E))
 
         # Guardar/Cargar lista de puntos
@@ -99,63 +99,8 @@ class PantallaSelecPuntos(ttk.Frame):
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
-
-    def agregar_punto(self):
-        popup = tk.Toplevel()
-        popup.wm_title('Agregar punto')
-
-        frame_xyz = ttk.Frame(popup)
-        frame_xyz.grid(column=0, row=0, sticky=(W,E))
-        x_label = ttk.Label(frame_xyz, text='x:')
-        x_label.grid(column=0, row=0)
-        # x_val = tk.DoubleVar()
-        x_entry = ttk.Entry(frame_xyz, width=5) # , text=x_val)
-        x_entry.grid(column=1, row=0)
-        x_entry.insert(0, 0.)
-
-        y_label = ttk.Label(frame_xyz, text='y:')
-        y_label.grid(column=2, row=0)
-        # y_val = tk.DoubleVar()
-        y_entry = ttk.Entry(frame_xyz, width=5) # , text=y_val)
-        y_entry.grid(column=3, row=0)
-        y_entry.insert(0, 0.)
-
-        z_label = ttk.Label(frame_xyz, text='z:')
-        z_label.grid(column=4, row=0)
-        # z_val = tk.DoubleVar()
-        z_entry = ttk.Entry(frame_xyz, width=5) # , text=z_val)
-        z_entry.grid(column=5, row=0)
-        z_entry.insert(0, 0.)
-
-        frame_tiempos = ttk.Frame(popup)
-        frame_tiempos.grid(column=0, row=1)
-
-        t_t_label = ttk.Label(frame_tiempos, text='Tiempo transición (s):')
-        t_t_label.grid(column=0, row=0, sticky=E)
-        t_t_val = tk.DoubleVar()
-        t_t_val.set(1.)
-        t_t_entry = ttk.Entry(frame_tiempos, width=5, textvariable=t_t_val)
-        t_t_val = tk.DoubleVar()
-        t_t_entry.grid(column=1, row=0)
-
-        t_s_label = ttk.Label(frame_tiempos, text='Tiempo estacionario (s):')
-        t_s_label.grid(column=0, row=1, sticky=E)
-        t_s_val = tk.DoubleVar()
-        t_s_val.set(1.)
-        t_s_entry = ttk.Entry(frame_tiempos, width=5, textvariable=t_s_val)
-        t_s_val = tk.DoubleVar()
-        t_s_entry.grid(column=1, row=1)
-
-        boton_aceptar = ttk.Button(popup, text='Agregar',
-                                   command=self.guardar_lista_puntos)
-        boton_aceptar.grid(column=0, row=2)
-
-        for frame in [popup, frame_xyz, frame_tiempos]:
-            for child in frame.winfo_children():
-                child.grid_configure(padx=5, pady=5)
-
-        
-
+    def nuevo_punto(self):
+        popup = Popup_agregar_punto(self)
 
     def guardar_lista_puntos(self):
         pass
@@ -168,9 +113,78 @@ class PantallaSelecPuntos(ttk.Frame):
         self.ax.scatter(*p_data.T, color='r')
         self.grafica.draw()
 
+    def agregar_punto(self, punto):
+        self.puntos.append(punto) # TODO: Meter en fila de tabla seleccionada
 
-# class Popup_agregar_punto:
+        self.tabla.delete(*self.tabla.get_children())
+        for i, point in enumerate(self.puntos):
+            self.tabla.insert('', 'end', text=str(i), 
+                        values=tuple((round(x, ndigits=4) for x in point)))
 
+
+class Popup_agregar_punto(tk.Toplevel):
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+        self.wm_title('Agregar punto')
+        self.definir_elementos()
+
+    def definir_elementos(self):
+        frame_xyz = ttk.Frame(self)
+        frame_xyz.grid(column=0, row=0, sticky=(W,E))
+
+        x_label = ttk.Label(frame_xyz, text='x:')
+        x_label.grid(column=0, row=0)
+        self.x_entry = ttk.Entry(frame_xyz, width=5) # , text=x_val)
+        self.x_entry.grid(column=1, row=0)
+        self.x_entry.insert(0, 0.)
+
+        y_label = ttk.Label(frame_xyz, text='y:')
+        y_label.grid(column=2, row=0)
+        self.y_entry = ttk.Entry(frame_xyz, width=5) # , text=y_val)
+        self.y_entry.grid(column=3, row=0)
+        self.y_entry.insert(0, 0.)
+
+        z_label = ttk.Label(frame_xyz, text='z:')
+        z_label.grid(column=4, row=0)
+        self.z_entry = ttk.Entry(frame_xyz, width=5) # , text=z_val)
+        self.z_entry.grid(column=5, row=0)
+        self.z_entry.insert(0, 0.)
+
+        frame_tiempos = ttk.Frame(self)
+        frame_tiempos.grid(column=0, row=1)
+
+        t_t_label = ttk.Label(frame_tiempos, text='Tiempo transición (s):')
+        t_t_label.grid(column=0, row=0, sticky=E)
+        self.t_t_entry = ttk.Entry(frame_tiempos, width=5)
+        self.t_t_entry.grid(column=1, row=0)
+        self.t_t_entry.insert(0, 1.)
+
+        t_s_label = ttk.Label(frame_tiempos, text='Tiempo estacionario (s):')
+        t_s_label.grid(column=0, row=1, sticky=E)
+        self.t_s_entry = ttk.Entry(frame_tiempos, width=5)
+        self.t_s_entry.grid(column=1, row=1)
+        self.t_s_entry.insert(0, 1.)
+
+        boton_aceptar = ttk.Button(self, text='Agregar',
+                                   command=self.agregar_punto)
+        boton_aceptar.grid(column=0, row=2)
+
+        for frame in [self, frame_xyz, frame_tiempos]:
+            for child in frame.winfo_children():
+                child.grid_configure(padx=5, pady=5)
+
+    def agregar_punto(self):
+        x = float(self.x_entry.get())
+        y = float(self.y_entry.get())
+        z = float(self.z_entry.get())
+        t_t = float(self.t_t_entry.get())
+        t_s = float(self.t_s_entry.get())
+
+        self.parent.agregar_punto([x, y, z, t_t, t_s])
+        self.withdraw()
 
 
 if __name__ == "__main__":
