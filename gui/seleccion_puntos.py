@@ -25,11 +25,9 @@ class PantallaSelecPuntos(ttk.Frame):
     def definir_elementos(self):
 
         # Títulos
-        titulo = ttk.Label(self, text='Selección de puntos')
-        titulo.grid(column=0, row=0, sticky=W)
-
-        titulo_grafica = ttk.Label(self, text='Previsualiación')
-        titulo_grafica.grid(column=1, row=1, sticky=W)
+        # titulo = ttk.Label(self, text='Selección de puntos',
+        #                    font=('mincho', 18))
+        # titulo.grid(column=0, row=0, sticky=W)
 
         # Tabla de puntos
         frame_tabla = ttk.Frame(self)
