@@ -4,7 +4,7 @@ from cmath import tan
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W
+from tkinter import N, E, S, W, NORMAL, DISABLED
 from turtle import bgcolor
 
 import numpy as np
@@ -48,6 +48,7 @@ class PantallaSelecPuntos(ttk.Frame):
             self.tabla.column(col, width=50)
             self.tabla.heading(col, text=col)
 
+        self.tabla.bind('<ButtonRelease-1>', self.clickTabla)
         self.tabla.bind('<Double-1>', self.dobleClickTabla)
         self.tabla.bind('<Escape>', self.escaparTabla)
 
@@ -56,31 +57,39 @@ class PantallaSelecPuntos(ttk.Frame):
         vscroll.grid(column=1, row=0, sticky=(N,S))
         self.tabla.config(yscrollcommand=vscroll.set)
 
-        # Boton para agregar entrada
-        boton_agregar = ttk.Button(frame_tabla, text="Agregar punto",
-                                   command=self.nuevo_punto)
-        boton_agregar.grid(column=0, row=1, sticky=(W,E))
+        # Botones para agregar y borrar puntos
+        frame_puntos = ttk.Frame(frame_tabla)
+        frame_puntos.grid(column=0, row=1)
+
+        boton_agregar = ttk.Button(frame_puntos, text="Agregar punto",
+                                   command=self.dialogo_agregar_punto)
+        boton_agregar.grid(column=0, row=0, padx=(0, 10))
+
+        self.boton_borrar = ttk.Button(frame_puntos, text="Borrar punto",
+                                       command=self.borrar_punto)
+        self.boton_borrar.grid(column=1, row=0, padx=(0, 10))
+        self.boton_borrar['state'] = DISABLED
+
+        boton_limpiar = tk.Button(frame_puntos, text="Limpiar",
+                                   bg='#FAA', activebackground='#F66',
+                                   command=self.limpiar)
+        boton_limpiar.grid(column=2, row=0, padx=(30, 0))
 
         # Guardar/Cargar lista de puntos
         frame_guardar = ttk.Frame(frame_tabla)
         frame_guardar.grid(column=0, row=2)
 
-        boton_limpiar = tk.Button(frame_guardar, text="Limpiar",
-                                   bg='#FAA', activebackground='#F66',
-                                   command=self.limpiar)
-        boton_limpiar.grid(column=0, row=0, padx=(0, 5))
-
         boton_guardar = ttk.Button(frame_guardar, text="Guardar",
-                                   command=self.guardar_lista_puntos)
-        boton_guardar.grid(column=1, row=0, padx=(0, 5))
+                                   command=self.guardar_puntos)
+        boton_guardar.grid(column=0, row=0, padx=(0, 5))
 
         boton_cargar = ttk.Button(frame_guardar, text="Cargar",
-                                  command=self.cargar_lista_puntos)
-        boton_cargar.grid(column=2, row=0, padx=(0, 5))
+                                  command=self.cargar_puntos)
+        boton_cargar.grid(column=1, row=0, padx=(0, 5))
 
         seleccion = tk.StringVar()
         self.listas = ttk.Combobox(frame_guardar, textvariable=seleccion)
-        self.listas.grid(column=3, row=0, padx=(5, 0))
+        self.listas.grid(column=2, row=0, padx=(5, 0))
         self.cargar_listas()
 
         # Gráfica
@@ -121,17 +130,17 @@ class PantallaSelecPuntos(ttk.Frame):
     def cargar_listas(self):
         self.listas['values'] = [os.path.splitext(n)[0] for n in os.listdir(save_dir)]
 
-    def nuevo_punto(self):
-        popup = Popup_agregar_punto(self)
+    def dialogo_agregar_punto(self):
+        Popup_agregar_punto(self)
 
-    def guardar_lista_puntos(self):
+    def guardar_puntos(self):
         if self.puntos:
             nombre = self.listas.get()
             save_path =  os.path.join(save_dir, nombre)
             np.save(save_path, np.array(self.puntos))
             self.cargar_listas()
 
-    def cargar_lista_puntos(self):
+    def cargar_puntos(self):
         nombre = self.listas.get() + '.npy'
         load_path = os.path.join(save_dir, nombre)
 
@@ -139,9 +148,6 @@ class PantallaSelecPuntos(ttk.Frame):
             self.puntos = np.load(load_path).tolist()
             self.recargar_grafica()
             self.recargar_tabla()
-
-        # self.puntos = np.load('sofa/p_out.npy')[:10].tolist()
-        # self.recargar_tabla()
 
     def limpiar(self):
         self.puntos = []
@@ -159,6 +165,14 @@ class PantallaSelecPuntos(ttk.Frame):
         self.recargar_tabla()
         self.recargar_grafica()
 
+    def borrar_punto(self):
+        seleccion = self.tabla.focus()
+        indice_actual = self.tabla.index(seleccion)
+
+        self.puntos.pop(indice_actual)
+        self.recargar_tabla()
+        self.recargar_grafica()
+
     def recargar_tabla(self):
         # Sería ideal sólo insertar el punto en lugar de rehacer la
         # tabla pero no sé cómo tratar con el número i de cada punto
@@ -167,6 +181,8 @@ class PantallaSelecPuntos(ttk.Frame):
             punto_trunco = tuple((round(x, ndigits=4) for x in point))
             self.tabla.insert('', 'end', text=str(i), 
                               values=punto_trunco)
+
+        self.boton_borrar['state'] = DISABLED
 
     def recargar_grafica(self):
         self.ax.clear()
@@ -181,12 +197,17 @@ class PantallaSelecPuntos(ttk.Frame):
         self.ax.set_zlabel('z')
         self.grafica.draw()
 
+    def clickTabla(self, event):
+        if self.tabla.focus() != '':
+            self.boton_borrar['state'] = NORMAL
+
     def dobleClickTabla(self, event):
-        self.nuevo_punto()
+        self.dialogo_agregar_punto()
 
     def escaparTabla(self, event):
         for elem in self.tabla.selection():
             self.tabla.selection_remove(elem)
+        self.boton_borrar['state'] = DISABLED
 
 
 # class TablaPuntos(ttk.Treeview):
