@@ -14,8 +14,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 save_dir = 'gui/data'
 
+
 class PantallaSelecPuntos(ttk.Frame):
-    
+
     def __init__(self, parent):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky=(N,W,E,S))
@@ -29,11 +30,6 @@ class PantallaSelecPuntos(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
-
-        # Títulos
-        # titulo = ttk.Label(self, text='Selección de puntos',
-        #                    font=('mincho', 18))
-        # titulo.grid(column=0, row=0, sticky=W)
 
         # Tabla de puntos
         frame_tabla = ttk.Frame(self)
@@ -127,11 +123,17 @@ class PantallaSelecPuntos(ttk.Frame):
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
-    def cargar_listas(self):
-        self.listas['values'] = [os.path.splitext(n)[0] for n in os.listdir(save_dir)]
 
     def dialogo_agregar_punto(self):
         Popup_agregar_punto(self)
+
+    def limpiar(self):
+        self.puntos = []
+        self.recargar_tabla()
+        self.recargar_grafica()
+
+    def cargar_listas(self):
+        self.listas['values'] = [os.path.splitext(n)[0] for n in os.listdir(save_dir)]
 
     def guardar_puntos(self):
         if self.puntos:
@@ -148,11 +150,6 @@ class PantallaSelecPuntos(ttk.Frame):
             self.puntos = np.load(load_path).tolist()
             self.recargar_grafica()
             self.recargar_tabla()
-
-    def limpiar(self):
-        self.puntos = []
-        self.recargar_tabla()
-        self.recargar_grafica()
 
     def agregar_punto(self, punto):
         seleccion = self.tabla.focus()
@@ -186,7 +183,6 @@ class PantallaSelecPuntos(ttk.Frame):
 
     def recargar_grafica(self):
         self.ax.clear()
-        #self.ax.scatter(*p_data.T, color='r')
         if self.puntos:
             puntosTranspuesto = list(zip(*self.puntos))
             self.ax.plot(*puntosTranspuesto[:3], color='lightcoral',
@@ -208,11 +204,6 @@ class PantallaSelecPuntos(ttk.Frame):
         for elem in self.tabla.selection():
             self.tabla.selection_remove(elem)
         self.boton_borrar['state'] = DISABLED
-
-
-# class TablaPuntos(ttk.Treeview):
-#     def __init__(self, parent):
-#         super().__init__()
 
 
 class Popup_agregar_punto(tk.Toplevel):
