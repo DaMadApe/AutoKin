@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-save_dir = 'gui/data'
+save_dir = 'gui/data/trayec'
 
 
 class PantallaSelecPuntos(ttk.Frame):
@@ -33,11 +33,11 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Tabla de puntos
         frame_tabla = ttk.Frame(self)
-        frame_tabla.grid(column=0, row=0, sticky=(N,W,E))
+        frame_tabla.grid(column=0, row=0, sticky=(N,S,W,E))
         
         columnas=('x', 'y', 'z', 'tt', 'ts')
         self.tabla = ttk.Treeview(frame_tabla, columns=columnas, show=('tree','headings'))
-        self.tabla.grid(column=0, row=0, sticky=(W,E))
+        self.tabla.grid(column=0, row=0, sticky=(N,S,W,E))
         self.tabla.column('#0', width=30, anchor='w')
         self.tabla.heading('#0', text='i')
         for col in columnas:
@@ -55,7 +55,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Botones para agregar y borrar puntos
         frame_puntos = ttk.Frame(frame_tabla)
-        frame_puntos.grid(column=0, row=1)
+        frame_puntos.grid(column=0, row=1, sticky=S)
 
         boton_agregar = ttk.Button(frame_puntos, text="Agregar punto",
                                    command=self.dialogo_agregar_punto)
@@ -73,7 +73,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Guardar/Cargar lista de puntos
         frame_guardar = ttk.Frame(frame_tabla)
-        frame_guardar.grid(column=0, row=2)
+        frame_guardar.grid(column=0, row=2, sticky=S)
 
         boton_guardar = ttk.Button(frame_guardar, text="Guardar",
                                    command=self.guardar_puntos)
@@ -89,7 +89,7 @@ class PantallaSelecPuntos(ttk.Frame):
         self.cargar_listas()
 
         # Gráfica
-        self.fig = Figure(figsize=(4,4), dpi=90)
+        self.fig = Figure(figsize=(8,8), dpi=90)
         self.ax = self.fig.add_subplot(projection='3d')
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=self)
@@ -98,7 +98,7 @@ class PantallaSelecPuntos(ttk.Frame):
         self.recargar_grafica()
 
         # Configuraciones del movimiento
-        frame_configs = ttk.Frame(self)
+        frame_configs = ttk.LabelFrame(self)
         frame_configs.grid(column=0, row=1, sticky=(W,E,N,S))
 
         config1_lbl = ttk.Label(frame_configs, text="Config 1")
@@ -122,6 +122,13 @@ class PantallaSelecPuntos(ttk.Frame):
         for frame in [self, frame_configs, frame_tabla]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
+
+        # Comportamiento al cambiar de tamaño
+        frame_tabla.rowconfigure(0, weight=2)
+        frame_tabla.rowconfigure(0, weight=2)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        #self.rowconfigure(1, weight=1)
 
 
     def dialogo_agregar_punto(self):
@@ -303,6 +310,8 @@ class Popup_agregar_punto(tk.Toplevel):
 if __name__ == '__main__':
 
     root = tk.Tk()
-    root.resizable(width=False, height=False)
+    root.geometry('800x450+100+100')
+    root.minsize(550,330)
+    root.maxsize(1200,800)
     pant5 = PantallaSelecPuntos(root)
     root.mainloop()
