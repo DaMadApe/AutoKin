@@ -1,19 +1,14 @@
-from json import load
 import os
-from cmath import tan
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W, NORMAL, DISABLED
-from turtle import bgcolor
+from tkinter import N, E, S, W
 
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-save_dir = 'gui/data/trayec'
-
+save_dir = 'app_data/trayec'
 
 class PantallaSelecPuntos(ttk.Frame):
 
@@ -64,7 +59,7 @@ class PantallaSelecPuntos(ttk.Frame):
         self.boton_borrar = ttk.Button(frame_puntos, text="Borrar punto",
                                        command=self.borrar_punto)
         self.boton_borrar.grid(column=1, row=0, padx=(0, 10))
-        self.boton_borrar['state'] = DISABLED
+        self.boton_borrar['state'] = 'disabled'
 
         boton_limpiar = tk.Button(frame_puntos, text="Limpiar",
                                    bg='#FAA', activebackground='#F66',
@@ -83,8 +78,7 @@ class PantallaSelecPuntos(ttk.Frame):
                                   command=self.cargar_puntos)
         boton_cargar.grid(column=1, row=0, padx=(0, 5))
 
-        seleccion = tk.StringVar()
-        self.listas = ttk.Combobox(frame_guardar, textvariable=seleccion)
+        self.listas = ttk.Combobox(frame_guardar) 
         self.listas.grid(column=2, row=0, padx=(5, 0))
         self.cargar_listas()
 
@@ -128,7 +122,6 @@ class PantallaSelecPuntos(ttk.Frame):
         frame_tabla.rowconfigure(0, weight=2)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
-        #self.rowconfigure(1, weight=1)
 
 
     def dialogo_agregar_punto(self):
@@ -186,7 +179,7 @@ class PantallaSelecPuntos(ttk.Frame):
             self.tabla.insert('', 'end', text=str(i), 
                               values=punto_trunco)
 
-        self.boton_borrar['state'] = DISABLED
+        self.boton_borrar['state'] = 'disabled'
 
     def recargar_grafica(self):
         self.ax.clear()
@@ -202,7 +195,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
     def clickTabla(self, event):
         if self.tabla.focus() != '':
-            self.boton_borrar['state'] = NORMAL
+            self.boton_borrar['state'] = 'normal'
 
     def dobleClickTabla(self, event):
         self.dialogo_agregar_punto()
@@ -210,7 +203,7 @@ class PantallaSelecPuntos(ttk.Frame):
     def escaparTabla(self, event):
         for elem in self.tabla.selection():
             self.tabla.selection_remove(elem)
-        self.boton_borrar['state'] = DISABLED
+        self.boton_borrar['state'] = 'disabled'
 
 
 class Popup_agregar_punto(tk.Toplevel):
