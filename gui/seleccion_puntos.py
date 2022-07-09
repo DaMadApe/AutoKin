@@ -3,10 +3,13 @@ import os
 import tkinter as tk
 from tkinter import ttk
 from tkinter import N, E, S, W
+from turtle import width
 
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from gui.gui_utils import Label_Entry
 
 save_dir = 'app_data/trayec'
 
@@ -95,15 +98,17 @@ class PantallaSelecPuntos(ttk.Frame):
         frame_configs = ttk.LabelFrame(self)
         frame_configs.grid(column=0, row=1, sticky=(W,E,N,S))
 
-        config1_lbl = ttk.Label(frame_configs, text="Config 1")
-        config1_lbl.grid(column=0, row=0, sticky=W)
-        config2_lbl = ttk.Label(frame_configs, text="Config 2")
-        config2_lbl.grid(column=0, row=1, sticky=W)
+        self.config1_entry = Label_Entry(frame_configs,
+                                         label="Config 1",
+                                         var_type='float',
+                                         width=10)
+        self.config1_entry.grid(column=0, row=0)
 
-        config1_entry = ttk.Entry(frame_configs, width=10)
-        config1_entry.grid(column=1, row=0, sticky=E)
-        config2_entry = ttk.Entry(frame_configs, width=10)
-        config2_entry.grid(column=1, row=1, sticky=E)
+        self.config2_entry = Label_Entry(frame_configs,
+                                         label="Config 2",
+                                         var_type='float',
+                                         width=10)
+        self.config2_entry.grid(column=0, row=1)
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar")
@@ -219,53 +224,41 @@ class Popup_agregar_punto(tk.Toplevel):
         frame_xyz = ttk.Frame(self)
         frame_xyz.grid(column=0, row=0, sticky=(W,E))
 
-        x_label = ttk.Label(frame_xyz, text="x:")
-        x_label.grid(column=0, row=0)
-        self.x_entry = ttk.Entry(frame_xyz, width=5)
-        self.x_entry.grid(column=1, row=0)
-        self.x_entry.insert(0, 0.)
 
-        y_label = ttk.Label(frame_xyz, text="y:")
-        y_label.grid(column=2, row=0)
-        self.y_entry = ttk.Entry(frame_xyz, width=5)
-        self.y_entry.grid(column=3, row=0)
-        self.y_entry.insert(0, 0.)
+        self.x_entry = Label_Entry(frame_xyz, label='x:',
+                                   var_type='float', default_val=0.0)
+        self.x_entry.grid(column=0, row=0)
 
-        z_label = ttk.Label(frame_xyz, text="z:")
-        z_label.grid(column=4, row=0)
-        self.z_entry = ttk.Entry(frame_xyz, width=5)
-        self.z_entry.grid(column=5, row=0)
-        self.z_entry.insert(0, 0.)
+        self.y_entry = Label_Entry(frame_xyz, label='y:',
+                                   var_type='float', default_val=0.0)
+        self.y_entry.grid(column=2, row=0)
+
+        self.z_entry = Label_Entry(frame_xyz, label='z:',
+                                   var_type='float', default_val=0.0)
+        self.z_entry.grid(column=4, row=0)
 
         frame_tiempos = ttk.Frame(self)
         frame_tiempos.grid(column=0, row=1)
 
-        t_t_label = ttk.Label(frame_tiempos, text="Tiempo transición (s):")
-        t_t_label.grid(column=0, row=0, sticky=E)
-        self.t_t_entry = ttk.Entry(frame_tiempos, width=5,
-                                   validatecommand=self.validate_pos_float)
-        self.t_t_entry.grid(column=1, row=0)
-        self.t_t_entry.insert(0, 1.)
+        self.t_t_entry = Label_Entry(frame_tiempos,
+                                     label="Tiempo transición (s):",
+                                     var_type='float', default_val=1.0,
+                                     restr_positiv=True, non_zero=True)
+        self.t_t_entry.grid(column=0, row=0)
 
-        t_s_label = ttk.Label(frame_tiempos, text="Tiempo estacionario (s):")
-        t_s_label.grid(column=0, row=1, sticky=E)
-        self.t_s_entry = ttk.Entry(frame_tiempos, width=5)
-        self.t_s_entry.grid(column=1, row=1)
-        self.t_s_entry.insert(0, 1.)
+        self.t_s_entry = Label_Entry(frame_tiempos,
+                                     label="Tiempo estacionario (s):",
+                                     var_type='float', default_val=1.0,
+                                     restr_positiv=True, non_zero=True)
+        self.t_s_entry.grid(column=0, row=1)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
                                    command=self.agregar_punto)
-        boton_aceptar.grid(column=0, row=4)
-
-        self.error_msg = tk.StringVar()
-        self.error_msg.set(' ')
-        error_label = ttk.Label(frame_tiempos, textvariable=self.error_msg,
-                                foreground='#f00')
-        error_label.grid(column=0, row=5)
+        boton_aceptar.grid(column=0, row=2)
 
         for frame in [self, frame_xyz, frame_tiempos]:
             for child in frame.winfo_children():
-                child.grid_configure(padx=5, pady=5)
+                child.grid_configure(padx=5, pady=3)
 
     def agregar_punto(self):
         x = self.x_entry.get()
@@ -274,30 +267,11 @@ class Popup_agregar_punto(tk.Toplevel):
         t_t = self.t_t_entry.get()
         t_s = self.t_s_entry.get()
 
-        valid = True
-        for var in [x,y,z]:
-            valid &= self.validate_float(var)
-        for var in [t_t, t_s]:
-            valid &= self.validate_pos_float(var)
+        punto = [x, y, z, t_t, t_s]
 
-        if valid:
-            punto = [x, y, z, t_t, t_s]
-            punto = [float(val) for val in punto]
+        if not (None in punto):
             self.parent.agregar_punto(punto)
             self.destroy()
-        else:
-            self.error_msg.set("Números inválidos")
-
-    def validate_float(self, x):
-        try:
-            float(x)
-        except:
-            return False
-        else:
-            return True
-
-    def validate_pos_float(self, x):
-        return self.validate_float(x) and float(x)>0
 
 
 if __name__ == '__main__':
@@ -306,5 +280,9 @@ if __name__ == '__main__':
     root.geometry('800x450+100+100')
     root.minsize(550,330)
     root.maxsize(1200,800)
+
+    # style= ttk.Style()
+    # style.theme_use('clam')
+
     pant5 = PantallaSelecPuntos(root)
     root.mainloop()
