@@ -1,9 +1,13 @@
+from distutils.command.config import LANG_EXT
 import os
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W, NORMAL, DISABLED
+from tkinter import N, E, S, W
 
+from gui.gui_utils import Label_Entry
+
+save_dir = 'app_data/robots'
 
 class PantallaSelecRobot(ttk.Frame):
 
@@ -15,7 +19,7 @@ class PantallaSelecRobot(ttk.Frame):
         parent.rowconfigure(0, weight=1)
         parent.title("Seleccionar robot")
 
-        self.robots = {}
+        self.robots = []
 
         self.definir_elementos()
 
@@ -49,26 +53,24 @@ class PantallaSelecRobot(ttk.Frame):
                                        width=20,
                                        command=self.copiar_robot)
         self.boton_copiar.grid(column=0, row=1)
-        self.boton_copiar['state'] = DISABLED
 
         self.boton_t_log = ttk.Button(frame_botones, text="Log ajuste",
                                       width=20,
                                       command=self.abrir_train_log)
         self.boton_t_log.grid(column=0, row=2)
-        self.boton_t_log['state'] = DISABLED
 
         self.boton_config = ttk.Button(frame_botones, text="Configurar",
                                        width=20,
                                        command=self.configurar_robot)
         self.boton_config.grid(column=0, row=3)
-        self.boton_config['state'] = DISABLED
 
         self.boton_eliminar = tk.Button(frame_botones, text="Eliminar",
                                         width=18,
                                         bg='#FAA', activebackground='#F66',
                                         command=self.eliminar_robot)
         self.boton_eliminar.grid(column=0, row=4)
-        self.boton_eliminar['state'] = DISABLED
+
+        self.desactivar_botones()
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
@@ -82,9 +84,14 @@ class PantallaSelecRobot(ttk.Frame):
     def dialogo_agregar_robot(self):
         Popup_agregar_robot(self)
 
-    def agregar_robot(self, nombre, n_q):
-        self.robots[nombre] = {'n_q' : n_q}
-        # Guardar/sobreescribir archivo de robot(s)
+    def agregar_robot(self, nombre):
+        for robot in self.robots:
+            if robot['nombre'] == nombre:
+                return False
+        self.robots.append({'nombre': nombre})
+        # pickle/json.save(self.robots)
+        self.tabla.insert('', 'end', text=nombre, values=('', ''))
+        return True
 
     def copiar_robot(self):
         indice_actual = self.tabla.index(self.tabla.focus())
@@ -98,14 +105,15 @@ class PantallaSelecRobot(ttk.Frame):
         pass
 
     def eliminar_robot(self):
-        pass
+        elem_actual = self.tabla.focus()
+        indice_actual = self.tabla.index(elem_actual)
+        
+        self.robots.pop(indice_actual)
+        self.tabla.delete(elem_actual)
 
     def clickTabla(self, event):
         if self.tabla.focus() != '':
-            self.boton_copiar['state'] = NORMAL
-            self.boton_t_log['state'] = NORMAL
-            self.boton_config['state'] = NORMAL
-            self.boton_eliminar['state'] = NORMAL
+            self.activar_botones()
 
     def dobleClickTabla(self, event):
         self.configurar_robot()
@@ -113,10 +121,20 @@ class PantallaSelecRobot(ttk.Frame):
     def escaparTabla(self, event):
         for elem in self.tabla.selection():
             self.tabla.selection_remove(elem)
-        self.boton_copiar['state'] = DISABLED
-        self.boton_t_log['state'] = DISABLED
-        self.boton_config['state'] = DISABLED
-        self.boton_eliminar['state'] = DISABLED
+        self.desactivar_botones()
+
+    def config_botones(self, activar:bool):
+        estado = 'normal' if activar else 'disabled'
+        self.boton_copiar['state'] = estado
+        self.boton_t_log['state'] = estado
+        self.boton_config['state'] = estado
+        self.boton_eliminar['state'] = estado
+
+    def activar_botones(self):
+        self.config_botones(activar=True)
+
+    def desactivar_botones(self):
+        self.config_botones(activar=False)
 
 
 class Popup_agregar_robot(tk.Toplevel):
@@ -127,42 +145,34 @@ class Popup_agregar_robot(tk.Toplevel):
 
         self.wm_title("Nuevo robot")
         self.definir_elementos()
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
 
     def definir_elementos(self):
 
-        nom_label = ttk.Label(self, text="Nombre")
-        nom_label.grid(column=0, row=0, sticky=W)
+        self.nom_entry = Label_Entry(self, label="Nombre", 
+                                var_type='str', width=20)
+        self.nom_entry.grid(column=0, row=0)
 
-        self.nom_entry = ttk.Entry(self)
-        self.nom_entry.grid(column=0, row=1, sticky=(E,W))
-
-        n_q_label = ttk.Label(self, text="Número de actuadores")
-        n_q_label.grid(column=0, row=2, sticky=W)
-
-        self.n_q_entry = ttk.Entry(self)
-        self.n_q_entry.grid(column=0, row=3, sticky=(E,W))
-
-        frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=0, row=4)
-
-        boton_aceptar = ttk.Button(frame_botones, text="Agregar",
+        boton_aceptar = ttk.Button(self, text="Agregar",
                                    command=self.agregar_robot)
-        boton_aceptar.grid(column=0, row=0)
+        boton_aceptar.grid(column=0, row=1)
 
-        boton_aceptar = ttk.Button(frame_botones, text="Cancelar",
+        boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.cancelar)
-        boton_aceptar.grid(column=1, row=0)
+        boton_cancelar.grid(column=1, row=1, sticky=E)
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
 
     def agregar_robot(self):
         nombre = self.nom_entry.get()
-        n_q = self.n_q_entry.get()
-        if n_q.isnumeric():
-            n_q = int(n_q)
-            self.parent.agregar_robot(nombre, n_q)
-            self.destroy()
+        if nombre != '':
+            agregado = self.parent.agregar_robot(nombre)
+            if agregado:
+                self.destroy()
 
     def cancelar(self):
         self.destroy()
@@ -171,8 +181,16 @@ class Popup_agregar_robot(tk.Toplevel):
 if __name__ == '__main__':
 
     root = tk.Tk()
-    root.geometry('800x450+100+100')
     root.minsize(550,330)
     root.maxsize(1200,800)
+
+    win_width = 800
+    win_height = 450
+    x_pos = int(root.winfo_screenwidth()/2 - win_width/2)
+    y_pos = int(root.winfo_screenheight()/2 - win_height/2)
+
+    geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
+    root.geometry(geom)
+
     pant1 = PantallaSelecRobot(root)
     root.mainloop()
