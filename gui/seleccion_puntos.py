@@ -29,6 +29,10 @@ class PantallaSelecPuntos(ttk.Frame):
 
     def definir_elementos(self):
 
+        style= ttk.Style()
+        style.configure('Red.TButton', background='#FAA')
+        style.map('Red.TButton', background=[('active', '#F66')])
+
         # Tabla de puntos
         frame_tabla = ttk.Frame(self)
         frame_tabla.grid(column=0, row=0, sticky=(N,S,W,E))
@@ -64,10 +68,10 @@ class PantallaSelecPuntos(ttk.Frame):
         self.boton_borrar.grid(column=1, row=0, padx=(0, 10))
         self.boton_borrar['state'] = 'disabled'
 
-        boton_limpiar = tk.Button(frame_puntos, text="Limpiar",
-                                   bg='#FAA', activebackground='#F66',
+        boton_limpiar = ttk.Button(frame_puntos, text="Limpiar",
                                    command=self.limpiar)
         boton_limpiar.grid(column=2, row=0, padx=(30, 0))
+        boton_limpiar['style'] = 'Red.TButton'
 
         # Guardar/Cargar lista de puntos
         frame_guardar = ttk.Frame(frame_tabla)
