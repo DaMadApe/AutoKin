@@ -220,37 +220,40 @@ class Popup_agregar_punto(tk.Toplevel):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-
         self.wm_title("Agregar punto")
+
         self.definir_elementos()
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
 
     def definir_elementos(self):
         frame_xyz = ttk.Frame(self)
         frame_xyz.grid(column=0, row=0, sticky=(W,E))
 
-
-        self.x_entry = Label_Entry(frame_xyz, label='x:',
+        self.x_entry = Label_Entry(frame_xyz, label='x:', width=5,
                                    var_type='float', default_val=0.0)
         self.x_entry.grid(column=0, row=0)
 
-        self.y_entry = Label_Entry(frame_xyz, label='y:',
+        self.y_entry = Label_Entry(frame_xyz, label='y:', width=5,
                                    var_type='float', default_val=0.0)
         self.y_entry.grid(column=2, row=0)
 
-        self.z_entry = Label_Entry(frame_xyz, label='z:',
+        self.z_entry = Label_Entry(frame_xyz, label='z:', width=5,
                                    var_type='float', default_val=0.0)
         self.z_entry.grid(column=4, row=0)
 
         frame_tiempos = ttk.Frame(self)
         frame_tiempos.grid(column=0, row=1)
 
-        self.t_t_entry = Label_Entry(frame_tiempos,
+        self.t_t_entry = Label_Entry(frame_tiempos, width=5,
                                      label="Tiempo transición (s):",
                                      var_type='float', default_val=1.0,
                                      restr_positiv=True, non_zero=True)
         self.t_t_entry.grid(column=0, row=0)
 
-        self.t_s_entry = Label_Entry(frame_tiempos,
+        self.t_s_entry = Label_Entry(frame_tiempos, width=5,
                                      label="Tiempo estacionario (s):",
                                      var_type='float', default_val=1.0,
                                      restr_positiv=True, non_zero=True)
@@ -281,9 +284,16 @@ class Popup_agregar_punto(tk.Toplevel):
 if __name__ == '__main__':
 
     root = tk.Tk()
-    root.geometry('800x450+100+100')
     root.minsize(550,330)
     root.maxsize(1200,800)
+
+    win_width = 800
+    win_height = 450
+    x_pos = int(root.winfo_screenwidth()/2 - win_width/2)
+    y_pos = int(root.winfo_screenheight()/2 - win_height/2)
+
+    geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
+    root.geometry(geom)
 
     # style= ttk.Style()
     # style.theme_use('clam')
