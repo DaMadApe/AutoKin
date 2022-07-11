@@ -10,9 +10,10 @@ class PantallaConfigAjuste(ttk.Frame):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
 
-        parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(0, weight=1)
-        parent.title("Parámetros de aproximación")
+        self.parent = parent
+        self.parent.columnconfigure(0, weight=1)
+        self.parent.rowconfigure(0, weight=1)
+        self.parent.title("Parámetros de aproximación")
 
         self.definir_elementos()
 
@@ -54,11 +55,11 @@ class PantallaConfigAjuste(ttk.Frame):
 
         # Botones inferiores
         boton_cancelar = ttk.Button(self, text="Cancelar",
-                                   command=self.cancelar)
+                                   command=self.destroy)
         boton_cancelar.grid(column=0, row=2)
 
         boton_cancelar = ttk.Button(self, text="Ejecutar",
-                                   command=self.cancelar)
+            command=lambda: self.parent.avanzar(self.__class__))
         boton_cancelar.grid(column=1, row=2)
 
         for child in self.winfo_children():
@@ -123,9 +124,6 @@ class PantallaConfigAjuste(ttk.Frame):
 
         for child in self.frame_mod_params.winfo_children():
             child.grid_configure(padx=5, pady=5)
-
-    def cancelar(self):
-        pass
 
 
 if __name__ == '__main__':

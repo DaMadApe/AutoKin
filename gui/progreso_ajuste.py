@@ -8,11 +8,20 @@ class PantallaProgresoAjuste(ttk.Frame):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
 
-        parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(0, weight=1)
-        parent.title("Progreso de entrenamiento")
+        self.parent = parent
+        self.parent.columnconfigure(0, weight=1)
+        self.parent.rowconfigure(0, weight=1)
+        self.parent.title("Progreso de entrenamiento")
 
         self.definir_elementos()
 
     def definir_elementos(self):
-        pass
+
+        # Botones
+        boton_regresar = ttk.Button(self, text="Regresar",
+                                    command=self.destroy)
+        boton_regresar.grid(column=0, row=2, sticky='w')
+
+        boton_continuar = ttk.Button(self, text="Aceptar",
+                                    command=self.parent.reset)
+        boton_continuar.grid(column=1, row=2, sticky='e')

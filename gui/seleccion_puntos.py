@@ -18,9 +18,10 @@ class PantallaSelecPuntos(ttk.Frame):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
 
-        parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(0, weight=1)
-        parent.title("Selección de puntos")
+        self.parent = parent
+        self.parent.columnconfigure(0, weight=1)
+        self.parent.rowconfigure(0, weight=1)
+        self.parent.title("Selección de puntos")
 
         self.puntos = []
 
@@ -114,10 +115,12 @@ class PantallaSelecPuntos(ttk.Frame):
         self.config2_entry.grid(column=0, row=1)
 
         # Botones
-        boton_regresar = ttk.Button(self, text="Regresar")
+        boton_regresar = ttk.Button(self, text="Regresar",
+                                    command=self.destroy)
         boton_regresar.grid(column=0, row=2, sticky='w')
 
-        boton_ejecutar = ttk.Button(self, text="Ejecutar")
+        boton_ejecutar = ttk.Button(self, text="Ejecutar",
+            command=lambda: self.parent.avanzar(self.__class__))
         boton_ejecutar.grid(column=1, row=2, sticky='e')
 
         # Agregar pad a todos los widgets
