@@ -11,6 +11,7 @@ from gui.gui_utils import Label_Entry
 
 save_dir = 'app_data/trayec'
 
+
 class PantallaSelecPuntos(ttk.Frame):
 
     def __init__(self, parent):
@@ -291,9 +292,6 @@ if __name__ == '__main__':
 
     geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
     root.geometry(geom)
-
-    # style= ttk.Style()
-    # style.theme_use('clam')
 
     pant5 = PantallaSelecPuntos(root)
     root.mainloop()
