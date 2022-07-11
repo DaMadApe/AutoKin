@@ -56,10 +56,10 @@ class Label_Entry: #(ttk.Frame):
             self.entry['style'] = 'Red.TEntry'
             return None
 
-    def grid(self, column, row):
+    def grid(self, column, row, label_sticky='w', entry_sticky='we'):
         c,r = (0,1) if self.vertical else (1,0)
-        self.label.grid(column=column+0, row=row+0, sticky='w')
-        self.entry.grid(column=column+c, row=row+r, sticky='we')
+        self.label.grid(column=column+0, row=row+0, sticky=label_sticky)
+        self.entry.grid(column=column+c, row=row+r, sticky=entry_sticky)
         if self.post_label is not None:
             self.post_label.grid(column=column+2*c, row=row+2*r, sticky='w')
 
