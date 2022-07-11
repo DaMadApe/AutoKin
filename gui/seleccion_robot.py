@@ -1,9 +1,7 @@
-from distutils.command.config import LANG_EXT
 import os
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W
 
 from gui.gui_utils import Label_Entry
 
@@ -13,7 +11,7 @@ class PantallaSelecRobot(ttk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky=(N,W,E,S))
+        self.grid(column=0, row=0, sticky='nsew')
 
         parent.columnconfigure(0, weight=1)
         parent.rowconfigure(0, weight=1)
@@ -28,13 +26,13 @@ class PantallaSelecRobot(ttk.Frame):
         columnas = ('modelo', 'actuadores')
         self.tabla = ttk.Treeview(self, columns=columnas, 
                                    show=('tree','headings'))
-        self.tabla.grid(column=0, row=0, sticky=(N,S,W,E))
+        self.tabla.grid(column=0, row=0, sticky='nsew')
 
-        self.tabla.column('#0', width=240, anchor='w')
-        self.tabla.heading('#0', text='nombre')
+        self.tabla.column('#0', width=200, anchor='w')
+        self.tabla.heading('#0', text=' nombre', anchor='w')
         for col in columnas:
             self.tabla.column(col, width=120)
-            self.tabla.heading(col, text=col)
+            self.tabla.heading(col, text=col, anchor='w')
 
         self.tabla.bind('<ButtonRelease-1>', self.clickTabla)
         self.tabla.bind('<Double-1>', self.dobleClickTabla)
@@ -42,7 +40,7 @@ class PantallaSelecRobot(ttk.Frame):
 
         # Botones de tabla
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=1, row=0, sticky=N)
+        frame_botones.grid(column=1, row=0, sticky='n')
 
         boton_n_robot = ttk.Button(frame_botones, text="Nuevo...",
                                    width=20,
@@ -90,7 +88,8 @@ class PantallaSelecRobot(ttk.Frame):
                 return False
         self.robots.append({'nombre': nombre})
         # pickle/json.save(self.robots)
-        self.tabla.insert('', 'end', text=nombre, values=('', ''))
+        self.tabla.insert('', 'end', text=nombre,
+                          values=('No', 'n = ?'))
         return True
 
     def copiar_robot(self):
@@ -162,7 +161,7 @@ class Popup_agregar_robot(tk.Toplevel):
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.cancelar)
-        boton_cancelar.grid(column=1, row=1, sticky=E)
+        boton_cancelar.grid(column=1, row=1, sticky='e')
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
