@@ -23,6 +23,11 @@ class PantallaSelecRobot(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
+
+        style= ttk.Style()
+        style.configure('Red.TButton', background='#FAA')
+        style.map('Red.TButton', background=[('active', '#F66')])
+
         # Tabla principal
         columnas = ('modelo', 'actuadores')
         self.tabla = ttk.Treeview(self, columns=columnas, 
@@ -63,12 +68,11 @@ class PantallaSelecRobot(ttk.Frame):
                                        command=self.configurar_robot)
         self.boton_config.grid(column=0, row=3)
 
-        # TODO: Actualizar a ttk.Button, revisar SelecPuntos/Limpiar
-        self.boton_eliminar = tk.Button(frame_botones, text="Eliminar",
-                                        width=18,
-                                        bg='#FAA', activebackground='#F66',
+        self.boton_eliminar = ttk.Button(frame_botones, text="Eliminar",
+                                        width=20,
                                         command=self.eliminar_robot)
         self.boton_eliminar.grid(column=0, row=4)
+        self.boton_eliminar['style'] = 'Red.TButton'
 
         self.desactivar_botones()
 
@@ -77,7 +81,7 @@ class PantallaSelecRobot(ttk.Frame):
 
 
         self.boton_regresar = ttk.Button(self, text="Regresar",
-                                         width=18,
+                                         width=20,
                                          command=self.regresar)
         self.boton_regresar.grid(column=1, row=1)
 
