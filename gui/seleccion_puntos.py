@@ -2,8 +2,6 @@ import os
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W
-from turtle import width
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -17,7 +15,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky=(N,W,E,S))
+        self.grid(column=0, row=0, sticky='nsew')
 
         parent.columnconfigure(0, weight=1)
         parent.rowconfigure(0, weight=1)
@@ -35,11 +33,11 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Tabla de puntos
         frame_tabla = ttk.Frame(self)
-        frame_tabla.grid(column=0, row=0, sticky=(N,S,W,E))
+        frame_tabla.grid(column=0, row=0, sticky='nsew')
         
         columnas=('x', 'y', 'z', 'tt', 'ts')
         self.tabla = ttk.Treeview(frame_tabla, columns=columnas, show=('tree','headings'))
-        self.tabla.grid(column=0, row=0, sticky=(N,S,W,E))
+        self.tabla.grid(column=0, row=0, sticky='nsew')
         self.tabla.column('#0', width=30, anchor='w')
         self.tabla.heading('#0', text='i')
         for col in columnas:
@@ -52,12 +50,12 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Scrollbar de tabla
         vscroll = ttk.Scrollbar(frame_tabla, command=self.tabla.yview)
-        vscroll.grid(column=1, row=0, sticky=(N,S))
+        vscroll.grid(column=1, row=0, sticky='ns')
         self.tabla.config(yscrollcommand=vscroll.set)
 
         # Botones para agregar y borrar puntos
         frame_puntos = ttk.Frame(frame_tabla)
-        frame_puntos.grid(column=0, row=1, sticky=S)
+        frame_puntos.grid(column=0, row=1, sticky='s')
 
         boton_agregar = ttk.Button(frame_puntos, text="Agregar punto",
                                    command=self.dialogo_agregar_punto)
@@ -75,7 +73,7 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Guardar/Cargar lista de puntos
         frame_guardar = ttk.Frame(frame_tabla)
-        frame_guardar.grid(column=0, row=2, sticky=S)
+        frame_guardar.grid(column=0, row=2, sticky='s')
 
         boton_guardar = ttk.Button(frame_guardar, text="Guardar",
                                    command=self.guardar_puntos)
@@ -94,13 +92,13 @@ class PantallaSelecPuntos(ttk.Frame):
         self.ax = self.fig.add_subplot(projection='3d')
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=self)
-        self.grafica.get_tk_widget().grid(column=1, row=0, sticky=N,
+        self.grafica.get_tk_widget().grid(column=1, row=0, sticky='n',
                                           rowspan=2, padx=5, pady=5)
         self.recargar_grafica()
 
         # Configuraciones del movimiento
         frame_configs = ttk.LabelFrame(self)
-        frame_configs.grid(column=0, row=1, sticky=(W,E,N,S))
+        frame_configs.grid(column=0, row=1, sticky='nsew')
 
         self.config1_entry = Label_Entry(frame_configs,
                                          label="Config 1",
@@ -116,10 +114,10 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar")
-        boton_regresar.grid(column=0, row=2, sticky=(W))
+        boton_regresar.grid(column=0, row=2, sticky='w')
 
         boton_ejecutar = ttk.Button(self, text="Ejecutar")
-        boton_ejecutar.grid(column=1, row=2, sticky=E)
+        boton_ejecutar.grid(column=1, row=2, sticky='e')
 
         # Agregar pad a todos los widgets
         for frame in [self, frame_configs, frame_tabla]:
@@ -127,7 +125,6 @@ class PantallaSelecPuntos(ttk.Frame):
                 child.grid_configure(padx=5, pady=5)
 
         # Comportamiento al cambiar de tamaño
-        frame_tabla.rowconfigure(0, weight=2)
         frame_tabla.rowconfigure(0, weight=2)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
@@ -230,7 +227,7 @@ class Popup_agregar_punto(tk.Toplevel):
 
     def definir_elementos(self):
         frame_xyz = ttk.Frame(self)
-        frame_xyz.grid(column=0, row=0, sticky=(W,E))
+        frame_xyz.grid(column=0, row=0, sticky='ew')
 
         self.x_entry = Label_Entry(frame_xyz, label='x:', width=5,
                                    var_type='float', default_val=0.0)
