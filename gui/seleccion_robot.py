@@ -13,9 +13,10 @@ class PantallaSelecRobot(ttk.Frame):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
 
-        parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(0, weight=1)
-        parent.title("Seleccionar robot")
+        self.parent = parent
+        self.parent.columnconfigure(0, weight=1)
+        self.parent.rowconfigure(0, weight=1)
+        self.parent.title("Seleccionar robot")
 
         self.robots = []
 
@@ -26,7 +27,7 @@ class PantallaSelecRobot(ttk.Frame):
         columnas = ('modelo', 'actuadores')
         self.tabla = ttk.Treeview(self, columns=columnas, 
                                    show=('tree','headings'))
-        self.tabla.grid(column=0, row=0, sticky='nsew')
+        self.tabla.grid(column=0, row=0, rowspan=2, sticky='nsew')
 
         self.tabla.column('#0', width=200, anchor='w')
         self.tabla.heading('#0', text=' nombre', anchor='w')
@@ -62,6 +63,7 @@ class PantallaSelecRobot(ttk.Frame):
                                        command=self.configurar_robot)
         self.boton_config.grid(column=0, row=3)
 
+        # TODO: Actualizar a ttk.Button, revisar SelecPuntos/Limpiar
         self.boton_eliminar = tk.Button(frame_botones, text="Eliminar",
                                         width=18,
                                         bg='#FAA', activebackground='#F66',
@@ -70,10 +72,19 @@ class PantallaSelecRobot(ttk.Frame):
 
         self.desactivar_botones()
 
-        for child in self.winfo_children():
-            child.grid_configure(padx=5, pady=5)
         for child in frame_botones.winfo_children():
             child.grid_configure(padx=3, pady=3)
+
+
+        self.boton_regresar = ttk.Button(self, text="Regresar",
+                                         width=18,
+                                         command=self.regresar)
+        self.boton_regresar.grid(column=1, row=1)
+
+
+        for child in self.winfo_children():
+            child.grid_configure(padx=5, pady=5)
+
 
         # Comportamiento al cambiar de tamaño
         self.columnconfigure(0, weight=1)
@@ -109,6 +120,9 @@ class PantallaSelecRobot(ttk.Frame):
         
         self.robots.pop(indice_actual)
         self.tabla.delete(elem_actual)
+
+    def regresar(self):
+        self.destroy()
 
     def clickTabla(self, event):
         if self.tabla.focus() != '':
