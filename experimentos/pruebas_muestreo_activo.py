@@ -37,7 +37,7 @@ def experim_muestreo_activo():
                   output_dim=3,
                   depth=3,
                   mid_layer_size=10,
-                  activation=torch.tanh) for _ in range(n_models)]
+                  activation='tanh') for _ in range(n_models)]
 
     ensemble = EnsembleRegressor(models)
 

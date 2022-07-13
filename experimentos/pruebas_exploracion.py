@@ -28,7 +28,7 @@ model_params = {'input_dim': robot.n,
                 'output_dim': 3,
                 'depth': 2,
                 'mid_layer_size': 10,
-                'activation': torch.relu}
+                'activation': 'relu'}
 
 train_params = {
                 'epochs': 300,

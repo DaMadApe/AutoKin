@@ -32,7 +32,7 @@ def experim_ajuste():
                 output_dim=6 if full_pose else 3,
                 depth=3,
                 mid_layer_size=10,
-                activation=torch.tanh)
+                activation='tanh')
 
     model.fit(train_set, val_set=val_set,
               epochs=1000,

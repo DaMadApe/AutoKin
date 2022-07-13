@@ -16,10 +16,10 @@ class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo
     ouput_dim (int) : Tamaño de la salida
     depth (int) : Número de capas
     mid_layer_size (int) : Número de neuronas en cada capa
-    activation (callable) : Función de activación aplicada después de cada capa
+    activation (string) : Función de activación aplicada después de cada capa
     """
     def __init__(self, input_dim=1, output_dim=1,
-                 depth=1, mid_layer_size=10, activation=torch.tanh):
+                 depth=1, mid_layer_size=10, activation='tanh'):
         super().__init__()
 
         self.input_dim = input_dim
@@ -35,7 +35,7 @@ class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo
         self.layers.append(nn.Linear(mid_layer_size,
                                      output_dim))
 
-        self.activation = activation
+        self.activation = getattr(torch, activation)
 
     def forward(self, x):
         for layer in self.layers[:-1]:
@@ -76,12 +76,14 @@ class ResNet(HparamsMixin, DataFitMixin, nn.Module):
     depth (int) : Número de bloques residuales
     block_depth (int) : Número de capas en cada bloque
     block_width (int) : Número de neuronas por capa
-    activation (callable) : Función de activación aplicada después de cada capa
+    activation (string) : Función de activación aplicada después de cada capa
     """
     def __init__(self, input_dim=1, output_dim=1,
                  depth=3, block_depth=3, block_width=10,
-                 activation=torch.tanh):
+                 activation='tanh'):
         super().__init__()
+
+        self.activation = getattr(torch, activation)
         
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -89,7 +91,8 @@ class ResNet(HparamsMixin, DataFitMixin, nn.Module):
         self.blocks.append(nn.Linear(input_dim,
                                      block_width))
         for _ in range(depth):
-            self.blocks.append(ResBlock(block_depth, block_width, activation))
+            self.blocks.append(ResBlock(block_depth, block_width,
+                                        self.activation))
         
         self.blocks.append(nn.Linear(block_width,
                                      output_dim))

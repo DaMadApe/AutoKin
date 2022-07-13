@@ -31,7 +31,7 @@ model_params = {'input_dim': robot.n,
                 'output_dim': 3,
                 'depth': 3,
                 'mid_layer_size': 10,
-                'activation': torch.tanh}
+                'activation': 'tanh'}
 
 train_params = {
                 #'epochs': 1000,
