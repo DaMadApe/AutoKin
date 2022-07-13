@@ -2,10 +2,10 @@ from functools import partial
 
 import torch
 
-from modelos import MLP
-from utils import FKset
-from robot import RTBrobot
-from experim import setup_logging, ejecutar_experimento
+from autokin.modelos import MLP
+from autokin.muestreo import FKset
+from autokin.robot import RTBrobot
+from autokin.experimentos.experim import setup_logging, ejecutar_experimento
 
 """
 Conjuntos de datos

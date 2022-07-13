@@ -3,9 +3,9 @@ from torch.utils.data import TensorDataset
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robot import ModelRobot, SofaRobot
-from utils import coprime_sines, restringir
-from experim import setup_logging, ejecutar_experimento
+from autokin.robot import ModelRobot, SofaRobot
+from autokin.utils import coprime_sines, restringir
+from autokin.experimentos.experim import setup_logging, ejecutar_experimento
 
 # def static_point(robot, q: torch.Tensor):
 #     pad = torch.zeros((50, q.size()[-1]))

@@ -1,9 +1,9 @@
 import numpy as np
 
-from modelos import MLP
-from muestreo import EnsembleRegressor, FKset
-from robot import RTBrobot
-from utils import random_robot
+from autokin.modelos import MLP
+from autokin.muestreo import EnsembleRegressor, FKset
+from autokin.robot import RTBrobot
+from autokin.utils import random_robot
 
 def test_ajuste_modelos():
     robot = RTBrobot(random_robot())

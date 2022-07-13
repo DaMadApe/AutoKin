@@ -4,8 +4,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from robot import SofaRobot
-from utils import coprime_sines, linterp
+from autokin.robot import SofaRobot
+from autokin.utils import coprime_sines, linterp
 
 robot = SofaRobot(config='LL')
 

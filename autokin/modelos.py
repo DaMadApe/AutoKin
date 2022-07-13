@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from model_mixins import HparamsMixin, DataFitMixin
+from autokin.model_mixins import HparamsMixin, DataFitMixin
 
 
 class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo

@@ -1,10 +1,10 @@
 import torch
 
-from modelos import MLP
-from robot import RTBrobot
-from muestreo_activo import EnsembleRegressor
-from utils import FKset, coprime_sines
-from experimentos.experim import ejecutar_experimento
+from autokin.modelos import MLP
+from autokin.robot import RTBrobot
+from autokin.muestreo import EnsembleRegressor, FKset
+from autokin.utils import coprime_sines
+from autokin.experimentos.experim import ejecutar_experimento
 
 """
 Conjuntos de datos

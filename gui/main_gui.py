@@ -8,7 +8,7 @@ from gui.seleccion_puntos import PantallaSelecPuntos
 from gui.resultados_pos import PantallaResultadosPosicion
 from gui.progreso_ajuste import PantallaProgresoAjuste
 
-from autokin import models
+from autokin import modelos
 
 
 class Interfaz(tk.Tk):

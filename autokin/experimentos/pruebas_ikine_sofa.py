@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import TensorDataset
 import numpy as np
 
-from robot import ModelRobot, SofaRobot
-from experim import setup_logging, ejecutar_experimento
+from autokin.robot import ModelRobot, SofaRobot
+from autokin.experimentos.experim import setup_logging, ejecutar_experimento
 
 robot = SofaRobot()
 model = ModelRobot.load('models/Trunk4C_exp1.pt') 

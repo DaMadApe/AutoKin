@@ -2,11 +2,11 @@ from functools import partial
 
 import torch
 
-from modelos import MLP
-from robot import RTBrobot
-from utils import coprime_sines
-from muestreo import FKset
-from experim import ejecutar_experimento
+from autokin.modelos import MLP
+from autokin.robot import RTBrobot
+from autokin.utils import coprime_sines
+from autokin.muestreo import FKset
+from autokin.experimentos.experim import ejecutar_experimento
 
 """
 Conjuntos de datos

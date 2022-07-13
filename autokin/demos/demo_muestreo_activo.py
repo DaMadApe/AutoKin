@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import TensorDataset, random_split
 import matplotlib.pyplot as plt
 
-from modelos import MLP, ResNet
-from muestreo import EnsembleRegressor
+from autokin.modelos import MLP, ResNet
+from autokin.muestreo import EnsembleRegressor
 
 torch.manual_seed(8)
 

@@ -1,11 +1,10 @@
-from multiprocessing.sharedctypes import Value
 import torch
 from torch.autograd.functional import jacobian
 
 import roboticstoolbox as rtb
 
-from robot_mixins import IkineMixin
-from utils import random_robot
+from autokin.robot_mixins import IkineMixin
+from autokin.utils import random_robot
 from sofa.sofa_call import sofa_fkine
 
 

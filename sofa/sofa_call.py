@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
-    from utils import coprime_sines
+    from autokin.utils import coprime_sines
 
     N = 1000
     # q = [np.zeros(N), np.linspace(0, 1, N), np.ones(N), np.linspace(1, 0, N)]

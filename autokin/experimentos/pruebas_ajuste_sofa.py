@@ -4,11 +4,11 @@ import torch
 from torch.utils.data import TensorDataset, random_split
 import numpy as np
 
-from modelos import MLP
-from robot import SofaRobot
-from muestreo import FKset
-from utils import coprime_sines, restringir
-from experim import ejecutar_experimento
+from autokin.modelos import MLP
+from autokin.robot import SofaRobot
+from autokin.muestreo import FKset
+from autokin.utils import coprime_sines, restringir
+from autokin.experimentos.experim import ejecutar_experimento
 
 """
 Conjuntos de datos

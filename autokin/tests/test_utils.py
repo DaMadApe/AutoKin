@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given
 import hypothesis.strategies as some
 
-from utils import random_robot, restringir
+from autokin.utils import random_robot, restringir
 
 assert_equal = partial(tt.assert_close, atol=1e-7, rtol=1e-7)
 assert_close = partial(tt.assert_close, atol=1e-3, rtol=1e-3)
