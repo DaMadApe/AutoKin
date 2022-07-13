@@ -17,3 +17,6 @@ dependencies:
 # conda env create -f AutokinEnv.yml
 # Actualizar env
 # conda env update -f AutokinEnv.yml --prune
+
+# Para importar módulos entre carpetas
+# conda-develop Path/To/Autokin -n AutokinEnv
