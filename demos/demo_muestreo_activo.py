@@ -3,7 +3,7 @@ from torch.utils.data import TensorDataset, random_split
 import matplotlib.pyplot as plt
 
 from modelos import MLP, ResNet
-from muestreo_activo import EnsembleRegressor
+from muestreo import EnsembleRegressor
 
 torch.manual_seed(8)
 
@@ -42,7 +42,7 @@ models = [MLP(input_dim=1,
                 output_dim=1,
                 depth=3,
                 mid_layer_size=10,
-                activation=torch.tanh) for _ in range(n_models)]
+                activation='tanh') for _ in range(n_models)]
 
 ensemble = EnsembleRegressor(models)
 
