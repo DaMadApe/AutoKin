@@ -36,13 +36,13 @@ class PantallaMenuPrincipal(ttk.Frame):
                                           width=20,
                                           command=self.entrenar)
         self.boton_entrenar.grid(column=0, row=1)
-        self.boton_entrenar['state'] = 'disabled'
+        # self.boton_entrenar['state'] = 'disabled'
 
         self.boton_controlar = ttk.Button(frame_botones, text="Controlar",
                                           width=20,
                                           command=self.controlar)
         self.boton_controlar.grid(column=0, row=2)
-        self.boton_controlar['state'] = 'disabled'
+        # self.boton_controlar['state'] = 'disabled'
 
         for child in frame_botones.winfo_children():
             child.grid_configure(padx=5, pady=5)

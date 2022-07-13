@@ -23,7 +23,6 @@ class PantallaSelecRobot(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
-
         style= ttk.Style()
         style.configure('Red.TButton', background='#FAA')
         style.map('Red.TButton', background=[('active', '#F66')])
@@ -79,16 +78,13 @@ class PantallaSelecRobot(ttk.Frame):
         for child in frame_botones.winfo_children():
             child.grid_configure(padx=3, pady=3)
 
-
         self.boton_regresar = ttk.Button(self, text="Regresar",
                                          width=20,
                                          command=self.regresar)
         self.boton_regresar.grid(column=1, row=1)
 
-
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
-
 
         # Comportamiento al cambiar de tamaño
         self.columnconfigure(0, weight=1)
@@ -168,7 +164,6 @@ class Popup_agregar_robot(tk.Toplevel):
         self.geometry(f'+{x_pos}+{y_pos}')
 
     def definir_elementos(self):
-
         self.nom_entry = Label_Entry(self, label="Nombre", 
                                 var_type='str', width=20)
         self.nom_entry.grid(column=0, row=0)
@@ -178,7 +173,7 @@ class Popup_agregar_robot(tk.Toplevel):
         boton_aceptar.grid(column=0, row=1)
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
-                                   command=self.cancelar)
+                                   command=self.destroy)
         boton_cancelar.grid(column=1, row=1, sticky='e')
 
         for child in self.winfo_children():
@@ -191,8 +186,42 @@ class Popup_agregar_robot(tk.Toplevel):
             if agregado:
                 self.destroy()
 
-    def cancelar(self):
-        self.destroy()
+
+class Popup_agregar_robot(tk.Toplevel):
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+        self.wm_title("Nuevo robot")
+        self.definir_elementos()
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
+
+    def definir_elementos(self):
+        self.nom_entry = Label_Entry(self, label="Nombre", 
+                                var_type='str', width=20)
+        self.nom_entry.grid(column=0, row=0)
+
+        boton_aceptar = ttk.Button(self, text="Agregar",
+                                   command=self.agregar_robot)
+        boton_aceptar.grid(column=0, row=1)
+
+        boton_cancelar = ttk.Button(self, text="Cancelar",
+                                   command=self.destroy)
+        boton_cancelar.grid(column=1, row=1, sticky='e')
+
+        for child in self.winfo_children():
+            child.grid_configure(padx=5, pady=3)
+
+    def agregar_robot(self):
+        nombre = self.nom_entry.get()
+        if nombre != '':
+            agregado = self.parent.agregar_robot(nombre)
+            if agregado:
+                self.destroy()
 
 
 if __name__ == '__main__':

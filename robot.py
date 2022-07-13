@@ -18,6 +18,7 @@ class Robot(IkineMixin):
     si se enlaza con un robot que opere con otros valores
     """
     def __init__(self, n_act, out_n):
+        super().__init__()
         self.n = n_act # Número de actuadores
         self.out_n = out_n # Número de salidas
 

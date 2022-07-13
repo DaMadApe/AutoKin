@@ -8,6 +8,8 @@ from gui.seleccion_puntos import PantallaSelecPuntos
 from gui.resultados_pos import PantallaResultadosPosicion
 from gui.progreso_ajuste import PantallaProgresoAjuste
 
+from autokin import models
+
 
 class Interfaz(tk.Tk):
 
@@ -42,11 +44,13 @@ class Interfaz(tk.Tk):
                      PantallaProgresoAjuste]
         self.frame_stack.append(PantallaConfigAjuste(self))
 
-    def avanzar(self, caller):
-        # Obtener la clase de donde viene la llamada
-        # stack = inspect.stack()
-        # caller_cls = stack[1][0].f_locals["self"].__class__
+    def set_model(self, model_cls, model_kwargs, train_kwargs):
+        model = model_cls(input_dim=self.selected_robot.n,
+                          output_dim=3, **model_kwargs)
+        # TODO: Rehacer sin pseudocódigo
+        self.configs['train_kwargs'] = train_kwargs
 
+    def avanzar(self, caller):
         idx = self.ruta.index(caller)
         self.frame_stack.append(self.ruta[idx+1](self))
 
