@@ -5,7 +5,7 @@ from tkinter import ttk
 
 from gui.gui_utils import Label_Entry
 
-save_dir = 'app_data/robots'
+save_dir = 'gui/app_data/robots'
 
 class PantallaSelecRobot(ttk.Frame):
 

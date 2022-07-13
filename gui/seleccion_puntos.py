@@ -9,7 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.gui_utils import Label_Entry
 
-save_dir = 'app_data/trayec'
+save_dir = 'gui/app_data/trayec'
 
 
 class PantallaSelecPuntos(ttk.Frame):
