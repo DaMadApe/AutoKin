@@ -18,7 +18,7 @@ class HparamsMixin():
     def __init__(self):
         super().__init__()
         frame = inspect.currentframe()
-        frame = frame.f_back
+        frame = frame.f_back.f_back
         hparams = inspect.getargvalues(frame).locals
         hparams.pop('self')
 

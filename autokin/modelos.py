@@ -1,13 +1,21 @@
 import torch
 from torch import nn
+from torch.autograd.functional import jacobian
 
 from autokin.model_mixins import HparamsMixin, DataFitMixin
 
+class FKModel(HparamsMixin, # Para almacenar hiperparámetros del modelo
+              DataFitMixin, # Para ajustar y probar modelo con datos
+              nn.Module # Módulo base de modelo de pytorch
+              ):
+    """
+    Base para definir modelos que aproximan cinemática directa
+    """
+    def __init__(self):
+        super().__init__()
 
-class MLP(HparamsMixin, # Para almacenar hiperparámetros del modelo
-          DataFitMixin, # Para ajustar y probar modelo con conjuntos de datos
-          nn.Module # Módulo base de modelo de pytorch
-          ):
+
+class MLP(FKModel):
     """
     Red neuronal simple (Perceptrón Multicapa)
 
@@ -66,7 +74,7 @@ class ResBlock(nn.Module):
         return x + identity
 
 
-class ResNet(HparamsMixin, DataFitMixin, nn.Module):
+class ResNet(FKModel):
     """
     Red residual: Red con conexiones salteadas cada cierto número de capas
 
@@ -103,9 +111,9 @@ class ResNet(HparamsMixin, DataFitMixin, nn.Module):
         return x
 
 
-class RBFnet(HparamsMixin, DataFitMixin, nn.Module):
+class RBFnet(FKModel):
     pass
 
 
-class ELM(HparamsMixin, DataFitMixin, nn.Module):
+class ELM(FKModel):
     pass
