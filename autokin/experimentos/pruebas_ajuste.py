@@ -40,7 +40,7 @@ def experim_ajuste():
               batch_size=256,
               # optim=partial(torch.optim.Adam, weight_decay=5e-5),
               # lr_scheduler=True,
-              log_dir=f'experimentos/tb_logs/p_ajuste/{robot_name}_{exp_name}/{label}'
+              log_dir=f'autokin/experimentos/tb_logs/p_ajuste/{robot_name}_{exp_name}/{label}'
              )
 
     score = model.test(test_set)

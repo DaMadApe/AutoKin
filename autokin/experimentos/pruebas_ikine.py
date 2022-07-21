@@ -1,9 +1,7 @@
-import roboticstoolbox as rtb
 import torch
-from torch.autograd.functional import jacobian
 
 from autokin.robot import ModelRobot, RTBrobot
-from autokin.experimentos.experim import setup_logging, ejecutar_experimento
+from autokin.experimentos.experim import ejecutar_experimento
 
 robot = RTBrobot.from_name('Cobra600')
 model = ModelRobot.load('models/Cobra600_.pt')

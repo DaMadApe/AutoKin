@@ -45,7 +45,7 @@ def experim_muestreo_activo():
     print(f'Prefit: {len(train_set)}')
     ensemble.fit(train_set, val_set=val_set,
                  lr=1e-3, epochs=300, batch_size=256,
-                 log_dir=f'experimentos/tb_logs/MA/{robot_name}_{exp_name}/{label}')
+                 log_dir=f'autokin/experimentos/tb_logs/MA/{robot_name}_{exp_name}/{label}')
     print(f'Postfit: {len(train_set)}')
     ensemble.online_fit(train_set,
                         val_set=val_set,
@@ -57,7 +57,7 @@ def experim_muestreo_activo():
                         lr=1e-3, epochs=80,
                         batch_size=256,
                         # lr_scheduler=True,
-                        log_dir=f'experimentos/tb_logs/MA/{robot_name}_{exp_name}/{label}'
+                        log_dir=f'autokin/experimentos/tb_logs/MA/{robot_name}_{exp_name}/{label}'
                        )
     print(f'Post online: {len(train_set)}')
     score = max(ensemble.test(test_set))

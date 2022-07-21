@@ -10,7 +10,7 @@ def setup_logging(exec_call=False):
     filename = inspect.stack()[1+exec_call].filename
     filename = os.path.splitext(os.path.basename(filename))[0]
     timestamp = time.strftime('%Y%m%d-%H%M%S')
-    file_dir=f'experimentos/logs/{filename}_{timestamp}.log'
+    file_dir=f'autokin/experimentos/logs/{filename}_{timestamp}.log'
 
     file_handler = logging.FileHandler(file_dir)
     stream_handler = logging.StreamHandler(sys.stdout)
