@@ -20,7 +20,7 @@ def batch_jacobian(func, batch, create_graph=False, vectorize=False):
 
 class IkineMixin:
 
-    def __init__():
+    def __init__(self):
         super().__init__()
     
     def ikine_pi_jacob(self, q_start: torch.Tensor, p_target: torch.Tensor,
@@ -38,7 +38,7 @@ class IkineMixin:
         """
         q = q_start.clone().detach()
         for _ in range(max_iters):
-            delta_x = p_target - self.fkine(q)
+            delta_x = p_target - self.fkine(q)[1]
             error = torch.linalg.norm(delta_x)
             if error < max_error:
                 break
@@ -66,7 +66,7 @@ class IkineMixin:
         """
         q = q_start.clone().detach()
         for _ in range(max_iters):
-            delta_x = p_target - self.fkine(q)
+            delta_x = p_target - self.fkine(q)[1]
             error = torch.linalg.norm(delta_x)
             if error < max_error:
                 break
