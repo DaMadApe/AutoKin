@@ -1,4 +1,3 @@
-from asyncore import close_all
 import tkinter as tk
 from tkinter import ttk
 
