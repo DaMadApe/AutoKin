@@ -23,7 +23,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         style.configure('Red.TLabel', foreground='#A11')
 
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=10)
+        frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=(20,10))
 
         # Botones izquierdos
         boton_seleccionar = ttk.Button(frame_botones, text="Seleccionar",
@@ -81,9 +81,6 @@ class PantallaMenuPrincipal(ttk.Frame):
         self.label_status2['style'] = 'Red.TLabel'
 
         for child in frame_status.winfo_children():
-                child.grid_configure(padx=5, pady=5)
-
-        for child in self.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
         self.columnconfigure(0, weight=1)
