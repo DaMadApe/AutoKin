@@ -5,14 +5,22 @@ from tkinter import ttk
 from tkinter import N, E, S, W
 
 
-class Label_Entry: #(ttk.Frame):
+
+class Label_Entry:
+    """
+    Composición de ttk.Label y ttk.Entry con validación
+
+    Requiere un acomodo tipo grid en el widget sobre el
+    que se dibuja, ocupa 2 posiciones por default
+    (vertical => rowspan=2; ~vertical => colspan=2).
+    Ocupa 3 posiciones si se declara post_label
+    """
 
     def __init__(self, parent, label:str,
                  var_type:str, default_val=None,
                  restr_positiv=False, non_zero=False,
                  vertical=False, post_label:str=None,
                  **entry_kwargs):
-        #super().__init__(parent)
 
         style= ttk.Style()
         style.configure('Red.TEntry', foreground='red')
@@ -56,13 +64,16 @@ class Label_Entry: #(ttk.Frame):
             self.entry['style'] = 'Red.TEntry'
             return None
 
-    def grid(self, column, row, label_sticky='w', entry_sticky='we'):
+    def grid(self, column, row, label_sticky='w',
+             entry_sticky='we', **both_kwargs):
         c,r = (0,1) if self.vertical else (1,0)
-        self.label.grid(column=column+0, row=row+0, sticky=label_sticky)
-        self.entry.grid(column=column+c, row=row+r, sticky=entry_sticky)
+        self.label.grid(column=column+0, row=row+0,
+                        sticky=label_sticky, **both_kwargs)
+        self.entry.grid(column=column+c, row=row+r,
+                        sticky=entry_sticky, **both_kwargs)
         if self.post_label is not None:
-            self.post_label.grid(column=column+2*c, row=row+2*r, sticky='w')
-
+            self.post_label.grid(column=column+2*c,
+                                 row=row+2*r, sticky='w')
 
 
 def validate_float(x):
