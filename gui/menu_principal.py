@@ -81,7 +81,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         self.label_status2['style'] = 'Red.TLabel'
 
         for child in frame_status.winfo_children():
-                child.grid_configure(padx=5, pady=5)
+            child.grid_configure(padx=5, pady=5)
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)

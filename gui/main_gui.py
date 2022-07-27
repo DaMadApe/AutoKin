@@ -36,11 +36,13 @@ class Interfaz(tk.Tk):
         self.frame_stack.append(PantallaSelecRobot(self))
 
     def controlar_robot(self):
-        self.ruta = [PantallaSelecPuntos, PantallaResultadosPosicion]
+        self.ruta = [PantallaSelecPuntos,
+                     PantallaResultadosPosicion]
         self.frame_stack.append(PantallaSelecPuntos(self))
 
     def entrenar_robot(self):
-        self.ruta = [PantallaConfigAjuste, PantallaConfigMuestreo,
+        self.ruta = [PantallaConfigAjuste,
+                     PantallaConfigMuestreo,
                      PantallaProgresoAjuste]
         self.frame_stack.append(PantallaConfigAjuste(self))
 

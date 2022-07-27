@@ -76,10 +76,6 @@ class RobotDatabase:
 
 
 if __name__ == "__main__":
-    from autokin.robot import RTBrobot
-    robot = RTBrobot.from_name('Cobra600')
-
     database = RobotDatabase('gui/app_data/robotRegs')
-    database.agregar('asd', robot)
     print(list(database))
     print(type(database._data))
