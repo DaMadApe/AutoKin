@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.gui_utils import Label_Entry
+from gui.gui_utils import Label_Entry, TablaYBotones
 
 save_dir = 'gui/app_data/trayec'
 
@@ -29,53 +29,27 @@ class PantallaSelecPuntos(ttk.Frame):
 
     def definir_elementos(self):
 
-        style= ttk.Style()
-        style.configure('Red.TButton', background='#FAA')
-        style.map('Red.TButton', background=[('active', '#F66')])
+        columnas = ('i', 'x', 'y', 'z', 'tt', 'ts')
+        self.frame_tabla = TablaYBotones(self, botones_abajo=True,
+                                         columnas=columnas,
+                                         anchos=(30, 56, 56, 56, 56, 56),
+                                         fn_doble_click=self.dialogo_agregar_punto)
+        self.frame_tabla.grid(column=0, row=0)
 
-        # Tabla de puntos
-        frame_tabla = ttk.Frame(self)
-        frame_tabla.grid(column=0, row=0, sticky='nsew')
-        
-        columnas=('x', 'y', 'z', 'tt', 'ts')
-        self.tabla = ttk.Treeview(frame_tabla, columns=columnas, show=('tree','headings'))
-        self.tabla.grid(column=0, row=0, sticky='nsew')
-        self.tabla.column('#0', width=30, anchor='w')
-        self.tabla.heading('#0', text='i')
-        for col in columnas:
-            self.tabla.column(col, width=50)
-            self.tabla.heading(col, text=col)
+        self.frame_tabla.agregar_boton(text="Agregar punto",
+                                       command=self.dialogo_agregar_punto)
 
-        self.tabla.bind('<ButtonRelease-1>', self.clickTabla)
-        self.tabla.bind('<Double-1>', self.dobleClickTabla)
-        self.tabla.bind('<Escape>', self.escaparTabla)
+        self.frame_tabla.agregar_boton(text="Borrar punto",
+                                       command=self.borrar_punto,
+                                       activo_en_seleccion=True)
 
-        # Scrollbar de tabla
-        vscroll = ttk.Scrollbar(frame_tabla, command=self.tabla.yview)
-        vscroll.grid(column=1, row=0, sticky='ns')
-        self.tabla.config(yscrollcommand=vscroll.set)
-
-        # Botones para agregar y borrar puntos
-        frame_puntos = ttk.Frame(frame_tabla)
-        frame_puntos.grid(column=0, row=1, sticky='s')
-
-        boton_agregar = ttk.Button(frame_puntos, text="Agregar punto",
-                                   command=self.dialogo_agregar_punto)
-        boton_agregar.grid(column=0, row=0, padx=(0, 10))
-
-        self.boton_borrar = ttk.Button(frame_puntos, text="Borrar punto",
-                                       command=self.borrar_punto)
-        self.boton_borrar.grid(column=1, row=0, padx=(0, 10))
-        self.boton_borrar['state'] = 'disabled'
-
-        boton_limpiar = ttk.Button(frame_puntos, text="Limpiar",
-                                   command=self.limpiar)
-        boton_limpiar.grid(column=2, row=0, padx=(30, 0))
-        boton_limpiar['style'] = 'Red.TButton'
+        self.frame_tabla.agregar_boton(text="Limpiar",
+                                       command=self.limpiar,
+                                       rojo=True)
 
         # Guardar/Cargar lista de puntos
-        frame_guardar = ttk.Frame(frame_tabla)
-        frame_guardar.grid(column=0, row=2, sticky='s')
+        frame_guardar = ttk.Frame(self)
+        frame_guardar.grid(column=0, row=1, sticky='s')
 
         boton_guardar = ttk.Button(frame_guardar, text="Guardar",
                                    command=self.guardar_puntos)
@@ -95,12 +69,12 @@ class PantallaSelecPuntos(ttk.Frame):
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=self)
         self.grafica.get_tk_widget().grid(column=1, row=0, sticky='n',
-                                          rowspan=2, padx=5, pady=5)
+                                          rowspan=3, padx=5, pady=5)
         self.recargar_grafica()
 
         # Configuraciones del movimiento
         frame_configs = ttk.LabelFrame(self)
-        frame_configs.grid(column=0, row=1, sticky='nsew')
+        frame_configs.grid(column=0, row=2, sticky='nsew')
 
         self.config1_entry = Label_Entry(frame_configs,
                                          label="Config 1",
@@ -117,27 +91,32 @@ class PantallaSelecPuntos(ttk.Frame):
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
                                     command=self.destroy)
-        boton_regresar.grid(column=0, row=2, sticky='w')
+        boton_regresar.grid(column=0, row=3, sticky='w')
 
         boton_ejecutar = ttk.Button(self, text="Ejecutar",
             command=lambda: self.parent.avanzar(self.__class__))
-        boton_ejecutar.grid(column=1, row=2, sticky='e')
+        boton_ejecutar.grid(column=1, row=3, sticky='e')
 
         # Agregar pad a todos los widgets
-        for frame in [self, frame_configs, frame_tabla]:
+        for frame in [self, frame_configs]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
         # Comportamiento al cambiar de tamaño
-        frame_tabla.rowconfigure(0, weight=2)
+        # self.frame_tabla.rowconfigure(0, weight=2)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
-
-    def dialogo_agregar_punto(self):
+    # TODO: Integrar función de agregar punto
+    def dialogo_agregar_punto(self, *args):
         Popup_agregar_punto(self)
 
-    def limpiar(self):
+    def borrar_punto(self, indice_actual):
+        self.puntos.pop(indice_actual)
+        self.recargar_tabla()
+        self.recargar_grafica()
+
+    def limpiar(self, *args):
         self.puntos = []
         self.recargar_tabla()
         self.recargar_grafica()
@@ -162,34 +141,22 @@ class PantallaSelecPuntos(ttk.Frame):
             self.recargar_tabla()
 
     def agregar_punto(self, punto):
-        seleccion = self.tabla.focus()
-        if seleccion == '':
-            indice_actual = len(self.puntos)
-        else:
-            indice_actual = self.tabla.index(seleccion)
+        indice_actual = self.frame_tabla.indice_actual()
 
         self.puntos.insert(indice_actual, punto)
-        self.recargar_tabla()
-        self.recargar_grafica()
-
-    def borrar_punto(self):
-        seleccion = self.tabla.focus()
-        indice_actual = self.tabla.index(seleccion)
-
-        self.puntos.pop(indice_actual)
         self.recargar_tabla()
         self.recargar_grafica()
 
     def recargar_tabla(self):
         # Sería ideal sólo insertar el punto en lugar de rehacer la
         # tabla pero no sé cómo tratar con el número i de cada punto
-        self.tabla.delete(*self.tabla.get_children())
+        self.frame_tabla.limpiar_tabla()
         for i, point in enumerate(self.puntos):
             punto_trunco = tuple((round(x, ndigits=4) for x in point))
-            self.tabla.insert('', 'end', text=str(i), 
-                              values=punto_trunco)
+            self.frame_tabla.tabla.insert('', 'end', text=str(i), 
+                                          values=punto_trunco)
 
-        self.boton_borrar['state'] = 'disabled'
+        self.frame_tabla.desactivar_botones()
 
     def recargar_grafica(self):
         self.ax.clear()
@@ -202,18 +169,6 @@ class PantallaSelecPuntos(ttk.Frame):
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
         self.grafica.draw()
-
-    def clickTabla(self, event):
-        if self.tabla.focus() != '':
-            self.boton_borrar['state'] = 'normal'
-
-    def dobleClickTabla(self, event):
-        self.dialogo_agregar_punto()
-
-    def escaparTabla(self, event):
-        for elem in self.tabla.selection():
-            self.tabla.selection_remove(elem)
-        self.boton_borrar['state'] = 'disabled'
 
 
 class Popup_agregar_punto(tk.Toplevel):
