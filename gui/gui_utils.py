@@ -2,8 +2,14 @@ import builtins
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import N, E, S, W
 
+
+def validate_float(x):
+    try:
+        float(x)
+        return True
+    except:
+        return False
 
 
 class Label_Entry:
@@ -74,11 +80,3 @@ class Label_Entry:
         if self.post_label is not None:
             self.post_label.grid(column=column+2*c,
                                  row=row+2*r, sticky='w')
-
-
-def validate_float(x):
-    try:
-        float(x)
-        return True
-    except:
-        return False
