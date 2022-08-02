@@ -33,11 +33,11 @@ class PantallaSelecPuntos(ttk.Frame):
         self.frame_tabla = TablaYBotones(self, botones_abajo=True,
                                          columnas=columnas,
                                          anchos=(30, 56, 56, 56, 56, 56),
-                                         fn_doble_click=self.dialogo_agregar_punto)
+                                         fn_doble_click=self.agregar_punto)
         self.frame_tabla.grid(column=0, row=0)
 
         self.frame_tabla.agregar_boton(text="Agregar punto",
-                                       command=self.dialogo_agregar_punto)
+                                       command=self.agregar_punto)
 
         self.frame_tabla.agregar_boton(text="Borrar punto",
                                        command=self.borrar_punto,
@@ -107,12 +107,15 @@ class PantallaSelecPuntos(ttk.Frame):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
-    # TODO: Integrar función de agregar punto
-    def dialogo_agregar_punto(self, *args):
-        Popup_agregar_punto(self)
+    def agregar_punto(self, indice):
+        def callback(punto):
+            self.puntos.insert(indice, punto)
+            self.recargar_tabla()
+            self.recargar_grafica()
+        Popup_agregar_punto(self, callback)
 
-    def borrar_punto(self, indice_actual):
-        self.puntos.pop(indice_actual)
+    def borrar_punto(self, indice):
+        self.puntos.pop(indice)
         self.recargar_tabla()
         self.recargar_grafica()
 
@@ -140,13 +143,6 @@ class PantallaSelecPuntos(ttk.Frame):
             self.recargar_grafica()
             self.recargar_tabla()
 
-    def agregar_punto(self, punto):
-        indice_actual = self.frame_tabla.indice_actual()
-
-        self.puntos.insert(indice_actual, punto)
-        self.recargar_tabla()
-        self.recargar_grafica()
-
     def recargar_tabla(self):
         # Sería ideal sólo insertar el punto en lugar de rehacer la
         # tabla pero no sé cómo tratar con el número i de cada punto
@@ -173,9 +169,10 @@ class PantallaSelecPuntos(ttk.Frame):
 
 class Popup_agregar_punto(tk.Toplevel):
 
-    def __init__(self, parent):
+    def __init__(self, parent, callback_registro):
         super().__init__()
         self.parent = parent
+        self.callback_registro = callback_registro
         self.wm_title("Agregar punto")
 
         self.definir_elementos()
@@ -233,7 +230,7 @@ class Popup_agregar_punto(tk.Toplevel):
         punto = [x, y, z, t_t, t_s]
 
         if not (None in punto):
-            self.parent.agregar_punto(punto)
+            self.callback_registro(punto)
             self.destroy()
 
 
