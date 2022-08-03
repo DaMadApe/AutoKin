@@ -1,5 +1,4 @@
 import builtins
-from functools import partial
 
 import tkinter as tk
 from tkinter import ttk
@@ -132,7 +131,7 @@ class TablaYBotones(ttk.Frame):
             self.activar_botones()
 
     def _dobleClickTabla(self, event):
-        self._incluir_indice(self.fn_doble_click)()
+        self.fn_doble_click(self.indice_actual())
 
     def _escaparTabla(self, event):
         for elem in self.tabla.selection():
@@ -145,7 +144,10 @@ class TablaYBotones(ttk.Frame):
             boton['state'] = estado
 
     def _incluir_indice(self, fun):
-        return partial(fun, self.indice_actual())
+        def aux():
+            idx = self.indice_actual()
+            return fun(idx)
+        return aux
 
     def activar_botones(self):
         self._config_botones(activar=True)
@@ -164,7 +166,8 @@ class TablaYBotones(ttk.Frame):
     def limpiar_tabla(self):
         self.tabla.delete(*self.tabla.get_children())
 
-    def agregar_boton(self, rojo=False, activo_en_seleccion=False, **btn_kwargs):
+    def agregar_boton(self, rojo=False, activo_en_seleccion=False,
+                      padx=5, pady=5, **btn_kwargs):
         btn_kwargs['command'] = self._incluir_indice(btn_kwargs['command'])
         boton = ttk.Button(self.frame_botones, **btn_kwargs)
         if rojo:
@@ -173,4 +176,4 @@ class TablaYBotones(ttk.Frame):
             boton['state'] = 'disabled'
             self.botones_vinculados.append(boton)
         boton.pack(side='left' if self.botones_abajo else 'top',
-                   padx=10, pady=10)
+                   padx=padx, pady=pady)

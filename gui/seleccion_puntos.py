@@ -28,7 +28,6 @@ class PantallaSelecPuntos(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
-
         columnas = ('i', 'x', 'y', 'z', 'tt', 'ts')
         self.frame_tabla = TablaYBotones(self, botones_abajo=True,
                                          columnas=columnas,
@@ -37,13 +36,16 @@ class PantallaSelecPuntos(ttk.Frame):
         self.frame_tabla.grid(column=0, row=0)
 
         self.frame_tabla.agregar_boton(text="Agregar punto",
+                                       width=14,
                                        command=self.agregar_punto)
 
         self.frame_tabla.agregar_boton(text="Borrar punto",
+                                       width=14,
                                        command=self.borrar_punto,
                                        activo_en_seleccion=True)
 
         self.frame_tabla.agregar_boton(text="Limpiar",
+                                       width=10,
                                        command=self.limpiar,
                                        rojo=True)
 
@@ -100,7 +102,7 @@ class PantallaSelecPuntos(ttk.Frame):
         # Agregar pad a todos los widgets
         for frame in [self, frame_configs]:
             for child in frame.winfo_children():
-                child.grid_configure(padx=5, pady=5)
+                child.grid_configure(padx=5, pady=6)
 
         # Comportamiento al cambiar de tamaño
         # self.frame_tabla.rowconfigure(0, weight=2)
