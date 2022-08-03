@@ -31,23 +31,23 @@ class PantallaSelecPuntos(ttk.Frame):
         columnas = ('i', 'x', 'y', 'z', 'tt', 'ts')
         self.frame_tabla = TablaYBotones(self, botones_abajo=True,
                                          columnas=columnas,
-                                         anchos=(30, 56, 56, 56, 56, 56),
+                                         anchos=(30, 50, 50, 50, 50, 50),
                                          fn_doble_click=self.agregar_punto)
-        self.frame_tabla.grid(column=0, row=0)
+        self.frame_tabla.grid(column=0, row=0, sticky='nsew')
 
         self.frame_tabla.agregar_boton(text="Agregar punto",
-                                       width=14,
-                                       command=self.agregar_punto)
+                                       command=self.agregar_punto,
+                                       padx=(0,5))
 
         self.frame_tabla.agregar_boton(text="Borrar punto",
-                                       width=14,
                                        command=self.borrar_punto,
-                                       activo_en_seleccion=True)
+                                       activo_en_seleccion=True,
+                                       padx=(10,15))
 
         self.frame_tabla.agregar_boton(text="Limpiar",
-                                       width=10,
                                        command=self.limpiar,
-                                       rojo=True)
+                                       rojo=True,
+                                       padx=(5,0))
 
         # Guardar/Cargar lista de puntos
         frame_guardar = ttk.Frame(self)
