@@ -98,14 +98,10 @@ class TablaYBotones(ttk.Frame):
         self._definir_elementos()
 
     def _definir_elementos(self):
-        
-        frame_tabla = ttk.Frame(self)
-        frame_tabla.pack(fill='both', expand='yes')
 
-        self.tabla = ttk.Treeview(frame_tabla, columns=self.columnas[1:], 
+        self.tabla = ttk.Treeview(self, columns=self.columnas[1:], 
                                   show=('tree','headings'))
-        # self.tabla.grid(column=0, row=0, sticky='nsew')
-        self.tabla.pack(side='left', fill='both', expand='yes')
+        self.tabla.grid(column=0, row=0, sticky='nsew')
 
         self.tabla.column('#0', width=self.anchos[0], anchor='w')
         self.tabla.heading('#0', text=self.columnas[0], anchor='w')
@@ -119,12 +115,18 @@ class TablaYBotones(ttk.Frame):
             self.tabla.bind('<Double-1>', self._dobleClickTabla)
 
         # Scrollbar de tabla
-        vscroll = ttk.Scrollbar(frame_tabla, command=self.tabla.yview)
+        vscroll = ttk.Scrollbar(self, command=self.tabla.yview)
         self.tabla.config(yscrollcommand=vscroll.set)
-        vscroll.pack(side='right', fill='both')
+        vscroll.grid(column=1, row=0, sticky='ns')
 
         self.frame_botones = ttk.Frame(self)
-        self.frame_botones.pack(side='top' if self.botones_abajo else 'left')
+        if self.botones_abajo:
+            self.frame_botones.grid(column=0, row=1, columnspan=2, sticky='nsew')
+        else:
+            self.frame_botones.grid(column=2, row=0, sticky='nsew')
+
+        self.rowconfigure(0, weight=2)
+        self.columnconfigure(0, weight=2)
 
     def _clickTabla(self, event):
         if self.tabla.focus() != '':
@@ -175,5 +177,8 @@ class TablaYBotones(ttk.Frame):
         if activo_en_seleccion:
             boton['state'] = 'disabled'
             self.botones_vinculados.append(boton)
-        boton.pack(side='left' if self.botones_abajo else 'top',
-                   padx=padx, pady=pady)
+
+        n_botones = len(self.frame_botones.winfo_children())
+
+        c, r = (n_botones, 0) if self.botones_abajo else (0, n_botones)
+        boton.grid(column=c, row=r, padx=padx, pady=pady)
