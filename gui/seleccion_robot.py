@@ -3,7 +3,7 @@ from tkinter import ttk
 
 from gui.nuevo_robot import Popup_agregar_robot
 from gui.gui_utils import Label_Entry, TablaYBotones
-from gui.robot_database import RobotDatabase
+from gui.robot_database import UIController
 
 save_dir = 'gui/app_data/robotRegs'
 
@@ -19,7 +19,7 @@ class PantallaSelecRobot(ttk.Frame):
         self.parent.rowconfigure(0, weight=1)
         self.parent.title("Seleccionar robot")
 
-        self.robots = RobotDatabase(save_dir)
+        self.controlador = UIController()
 
         self.definir_elementos()
 
@@ -29,6 +29,7 @@ class PantallaSelecRobot(ttk.Frame):
         style.map('Red.TButton', background=[('active', '#F66')])
 
         # Tabla principal
+        # columnas = reg.__repr__
         columnas = (' nombre', '# de modelos', '# de actuadores')
         self.tabla = TablaYBotones(self, columnas=columnas,
                                    anchos=(200, 120, 120),
@@ -36,14 +37,14 @@ class PantallaSelecRobot(ttk.Frame):
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
-        for robot in self.robots:
-            self.tabla.tabla.insert('','end', text=robot.nombre, 
-                                    values=(len(robot.model_ids), robot.robot.n))
+        for robot in self.controlador.robots:
+            self.tabla.agregar_entrada(robot.nombre,
+                                       len(robot.model_ids), robot.robot.n)
 
         # Botones de tabla
         self.tabla.agregar_boton(text="Nuevo...",
                                  width=20,
-                                 command=self.dialogo_agregar_robot)
+                                 command=self.agregar_robot)
 
         self.tabla.agregar_boton(text="Seleccionar",
                                  width=20,
@@ -52,7 +53,7 @@ class PantallaSelecRobot(ttk.Frame):
 
         self.tabla.agregar_boton(text="Copiar",
                                  width=20,
-                                 command=self.dialogo_copiar_robot,
+                                 command=self.copiar_robot,
                                  activo_en_seleccion=True)
 
         self.tabla.agregar_boton(text="Ver modelos",
@@ -82,48 +83,48 @@ class PantallaSelecRobot(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-    def agregar_robot(self, nombre, robot):
-        agregado = self.parent.agregar_robot(nombre, robot)
-        # if agregado:
-        #     self.tabla.insert('', 'end', text=nombre,
-        #                     values=('No', 'n = ?'))
-        return agregado
+    def agregar_robot(self, *args):
+        def callback(nombre, robot):
+            agregado = self.controlador.robots.agregar(nombre, robot)
+            print(f"callback: {agregado}")
+            if agregado:
+                self.tabla.agregar_entrada(nombre, "No",
+                                           f"n = {robot.n}")
+            return agregado
+        Popup_agregar_robot(self, callback)
 
-    def copiar_robot(self, nombre):
-        indice_actual = self.tabla.index(self.tabla.focus())
-        agregado = self.parent.copiar_robot(indice_actual, nombre)
-        return agregado
+    def seleccionar_robot(self, indice):
+        self.controlador.robots.seleccionar(indice)
 
-    def dialogo_agregar_robot(self, *args):
-        Popup_agregar_robot(self)
+    def copiar_robot(self, indice):
+        def callback(nombre):
+            agregado = self.controlador.robots.copiar(indice, nombre)
+            return agregado
+        Popup_copiar_robot(self, callback)
 
-    def dialogo_copiar_robot(self, *args):
-        Popup_copiar_robot(self)
-
-    def seleccionar_robot(self, idx):
-        self.parent.seleccionar_robot(idx)
-
-    def ver_modelos(self, idx):
+    def ver_modelos(self, indice):
         pass
 
-    def configurar_robot(self, idx):
+    def configurar_robot(self, indice):
         # Abrir interfaz de calibración
         pass
 
-    def eliminar_robot(self, idx):
+    def eliminar_robot(self, indice):
         #del self.robots[indice_actual]
-        self.parent.eliminar_robot(idx)
+        self.controlador.robots.eliminar(indice)
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def regresar(self):
+        # self.controlador.save() # Mejor en cada método
         self.destroy()
 
 
 class Popup_copiar_robot(tk.Toplevel):
 
-    def __init__(self, parent):
+    def __init__(self, parent, callback):
         super().__init__()
         self.parent = parent
+        self.callback = callback
 
         self.wm_title("Copiar robot")
         self.definir_elementos()
@@ -154,7 +155,7 @@ class Popup_copiar_robot(tk.Toplevel):
     def copiar_robot(self):
         nombre = self.nom_entry.get()
         if nombre != '':
-            agregado = self.parent.copiar_robot(nombre)
+            agregado = self.callback(nombre)
             if agregado:
                 self.destroy()
 
