@@ -13,9 +13,10 @@ class Popup_agregar_robot(tk.Toplevel):
                    "Sim. RTB" : RTBrobot.from_name,
                    "Sim. SOFA" : SofaRobot}
 
-    def __init__(self, parent):
+    def __init__(self, parent, callback):
         super().__init__()
         self.parent = parent
+        self.callback = callback
 
         self.wm_title("Nuevo robot")
 
@@ -119,11 +120,14 @@ class Popup_agregar_robot(tk.Toplevel):
             robot_kwargs = self.get_robot_kwargs()
             if not (None in robot_kwargs.values()):
                 robot = robot_cls(**robot_kwargs)
-                agregado = self.parent.agregar_robot(nombre, robot)
+
+                agregado = self.callback(nombre, robot)
+
                 if agregado:
                     self.destroy()
                 else:
-                    self.label_error.config(text='Nombre en uso')
+                    pass
+                    #self.label_error.config(text='Nombre en uso')
 
 
 
