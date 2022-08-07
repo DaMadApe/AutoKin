@@ -1,20 +1,26 @@
 import tkinter as tk
+from tkinter import ttk
 
 from gui.menu_principal import PantallaMenuPrincipal
 from gui.seleccion_robot import PantallaSelecRobot
+from gui.seleccion_modelo import PantallaSelecModelo
 from gui.config_ajuste import PantallaConfigAjuste
 from gui.config_muestreo import PantallaConfigMuestreo
 from gui.seleccion_puntos import PantallaSelecPuntos
 from gui.resultados_pos import PantallaResultadosPosicion
 from gui.progreso_ajuste import PantallaProgresoAjuste
 
-from autokin import modelos
-
 
 class Interfaz(tk.Tk):
 
     def __init__(self):
         super().__init__()
+
+        style= ttk.Style()
+        style.configure('Red.TEntry', foreground='red')
+        style.configure('Red.TButton', background='#FAA')
+        style.map('Red.TButton', background=[('active', '#F66')])
+
         self.minsize(550,330)
         self.maxsize(1200,800)
 
@@ -33,24 +39,20 @@ class Interfaz(tk.Tk):
         self.reset()
 
     def seleccionar_robot(self):
-        self.frame_stack.append(PantallaSelecRobot(self))
+        self.ruta = [PantallaSelecRobot,
+                     PantallaSelecModelo]
+        self.frame_stack.append(self.ruta[0](self))
 
     def controlar_robot(self):
         self.ruta = [PantallaSelecPuntos,
                      PantallaResultadosPosicion]
-        self.frame_stack.append(PantallaSelecPuntos(self))
+        self.frame_stack.append(self.ruta[0](self))
 
     def entrenar_robot(self):
         self.ruta = [PantallaConfigAjuste,
                      PantallaConfigMuestreo,
                      PantallaProgresoAjuste]
-        self.frame_stack.append(PantallaConfigAjuste(self))
-
-    def set_model(self, model_cls, model_kwargs, train_kwargs):
-        model = model_cls(input_dim=self.selected_robot.n,
-                          output_dim=3, **model_kwargs)
-        # TODO: Rehacer sin pseudocódigo
-        self.configs['train_kwargs'] = train_kwargs
+        self.frame_stack.append(self.ruta[0](self))
 
     def avanzar(self, caller):
         idx = self.ruta.index(caller)
