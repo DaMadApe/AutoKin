@@ -108,9 +108,9 @@ class ExternRobot(Robot):
     Para conectar otro robot o usar conjuntos disintos de
     sensores, se debe definir otra interfaz como esta.
     """
-    def __init__(self, n, name):
-        super().__init__(n)
-        self.name = name
+    def __init__(self, n):
+        super().__init__(n, out_n=3)
+        self.config = None
 
     def fkine(self, q):
         # cam.start()
@@ -121,8 +121,16 @@ class ExternRobot(Robot):
         # return q, p # Para poder devolver q más grande que la de entrada
         pass
 
+    def config(self, *q_limits):
+        """
+        Hacer parámetro de init?
+        """
+        self.config = []
+        pass
+
 
 class ModelRobot(Robot):
+    # Meter métodos a un mixin?
     """
     Interfaz para operar una red neuronal que aproxima
     la cinemática de otro robot.
