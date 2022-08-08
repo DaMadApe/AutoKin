@@ -93,11 +93,11 @@ class PantallaSelecPuntos(ttk.Frame):
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
-                                    command=self.destroy)
+                                    command=self.parent.regresar)
         boton_regresar.grid(column=0, row=3, sticky='w')
 
         boton_ejecutar = ttk.Button(self, text="Ejecutar",
-            command=lambda: self.parent.avanzar(self.__class__))
+            command=self.parent.avanzar)
         boton_ejecutar.grid(column=1, row=3, sticky='e')
 
         # Agregar pad a todos los widgets

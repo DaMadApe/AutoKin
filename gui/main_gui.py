@@ -41,22 +41,31 @@ class Interfaz(tk.Tk):
     def seleccionar_robot(self):
         self.ruta = [PantallaSelecRobot,
                      PantallaSelecModelo]
-        self.frame_stack.append(self.ruta[0](self))
+        self.avanzar()
 
     def controlar_robot(self):
         self.ruta = [PantallaSelecPuntos,
                      PantallaResultadosPosicion]
-        self.frame_stack.append(self.ruta[0](self))
+        self.avanzar()
 
     def entrenar_robot(self):
         self.ruta = [PantallaConfigAjuste,
                      PantallaConfigMuestreo,
                      PantallaProgresoAjuste]
-        self.frame_stack.append(self.ruta[0](self))
+        self.avanzar()
 
-    def avanzar(self, caller):
-        idx = self.ruta.index(caller)
-        self.frame_stack.append(self.ruta[idx+1](self))
+    def regresar(self):
+        """
+        Destruir el frame actual y enfocar el frame anterior en la ruta
+        """
+        self.frame_stack.pop().destroy()
+
+    def avanzar(self):
+        """
+        Ir a la siguiente pantalla en la ruta actual
+        """
+        next_frame = self.ruta[len(self.frame_stack)-1]
+        self.frame_stack.append(next_frame(self))
 
     def reset(self):
         for frame in self.frame_stack:

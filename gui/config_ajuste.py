@@ -55,8 +55,8 @@ class PantallaConfigAjuste(ttk.Frame):
 
         # Botones inferiores
         boton_cancelar = ttk.Button(self, text="Cancelar",
-                                   command=self.destroy)
-        boton_cancelar.grid(column=0, row=2)
+                                   command=self.parent.regresar)
+        boton_cancelar.grid(column=0, row=2, sticky='w')
 
         boton_cancelar = ttk.Button(self, text="Ejecutar",
                                     command=self.ejecutar)
@@ -75,8 +75,8 @@ class PantallaConfigAjuste(ttk.Frame):
     def ejecutar(self):
             train_kwargs = self.get_train_kwargs()
             if not (None in train_kwargs.values()):
-                self.parent.set_train_params(train_kwargs)
-                self.parent.avanzar(self.__class__)
+                self.controlador.set_train_kwargs(train_kwargs)
+                self.parent.avanzar()
 
     def get_train_kwargs(self):
         train_kwargs = {}

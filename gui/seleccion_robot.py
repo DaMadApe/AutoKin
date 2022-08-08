@@ -58,7 +58,7 @@ class PantallaSelecRobot(ttk.Frame):
 
         self.tabla.agregar_boton(text="Ver modelos",
                                  width=20,
-                                 command=self.ver_modelos,
+                                 command=self.parent.avanzar,
                                  activo_en_seleccion=True)
 
         self.tabla.agregar_boton(text="Configurar",
@@ -116,7 +116,7 @@ class PantallaSelecRobot(ttk.Frame):
 
     def regresar(self):
         # self.controlador.save() # Mejor en cada método
-        self.destroy()
+        self.parent.regresar()
 
 
 class Popup_copiar_robot(tk.Toplevel):
@@ -142,7 +142,7 @@ class Popup_copiar_robot(tk.Toplevel):
         self.check_copia.grid(column=0, row=1, columnspan=2)
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
-                                   command=self.destroy)
+                                   command=self.parent.regresar)
         boton_cancelar.grid(column=0, row=2)
 
         boton_aceptar = ttk.Button(self, text="Agregar",

@@ -19,7 +19,7 @@ class PantallaProgresoAjuste(ttk.Frame):
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
-                                    command=self.destroy)
+                                    command=self.parent.regresar)
         boton_regresar.grid(column=0, row=2, sticky='w')
 
         boton_continuar = ttk.Button(self, text="Aceptar",
