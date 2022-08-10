@@ -29,13 +29,10 @@ class Popup_agregar_robot(tk.Toplevel):
         self.geometry(f'+{x_pos}+{y_pos}')
 
     def definir_elementos(self):
-        style= ttk.Style()
-        style.configure('Red.TLabel', foreground='#A11')
-
         # Entrada para el nombre del robot
         self.nom_entry = Label_Entry(self, label="Nombre", 
                                 var_type='str', width=20)
-        self.nom_entry.grid(column=0, row=0, )
+        self.nom_entry.grid(column=0, row=0)
 
         # Selección de tipo de robot
         robot_cls_label = ttk.Label(self, text="Tipo de robot")
