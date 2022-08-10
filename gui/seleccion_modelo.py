@@ -3,6 +3,7 @@ from tkinter import ttk
 
 from gui.gui_utils import TablaYBotones
 from gui.robot_database import UIController
+from gui.nuevo_modelo import Popup_agregar_modelo
 
 
 class PantallaSelecModelo(ttk.Frame):
@@ -21,23 +22,18 @@ class PantallaSelecModelo(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
-        style= ttk.Style()
-        style.configure('Red.TButton', background='#FAA')
-        style.map('Red.TButton', background=[('active', '#F66')])
-
         # Tabla principal
-        # TODO: Cambiar por modelos
-        columnas = (' nombre', '# de modelos', '# de actuadores')
+        columnas = (' nombre',
+                    ' tipo',
+                    ' épocas')
         self.tabla = TablaYBotones(self, columnas=columnas,
                                    anchos=(200, 120, 120),
-                                   fn_doble_click=self.configurar_robot)
+                                   fn_doble_click=self.seleccionar_modelo)
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
-        # TODO: Cambiar por modelos
-        for robot in self.controlador.robots:
-            self.tabla.agregar_entrada(robot.nombre,
-                                       len(robot.model_ids), robot.robot.n)
+        for modelo in self.controlador.modelos():
+            self.agregar_modelo_tabla(modelo)
 
         # Botones de self.tabla
         self.tabla.agregar_boton(text="Nuevo...",
@@ -64,3 +60,49 @@ class PantallaSelecModelo(ttk.Frame):
                                  command=self.eliminar_modelo,
                                  activo_en_seleccion=True,
                                  rojo=True)
+
+        # Botón de regresar pantalla
+        self.boton_regresar = ttk.Button(self, text="Regresar",
+                                         width=20,
+                                         command=self.parent.regresar)
+        self.boton_regresar.grid(column=0, row=1, sticky='e',
+                                 padx=(0,10))
+
+        # Comportamiento al cambiar de tamaño
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+    def agregar_modelo_tabla(self, modelo):
+        self.tabla.agregar_entrada(modelo.nombre,
+                                   modelo.modelo.__class__.__name__,
+                                   modelo.quick_log['epocs'])
+
+    def seleccionar_modelo(self, indice):
+        self.controlador.modelos().seleccionar(indice)
+        self.controlador.guardar()
+
+    def agregar_modelo(self, *args):
+        def callback(nombre, modelo):
+            agregado = self.controlador.agregar_modelo(nombre, modelo)
+            if agregado:
+                self.controlador.guardar()
+                self.agregar_modelo_tabla(self.controlador.modelos()[-1])
+            return agregado
+        Popup_agregar_modelo(self, callback)
+
+    def copiar_modelo(self, indice):
+        def callback(nombre):
+            agregado = self.controlador.modelos().copiar(indice, nombre)
+            if agregado:
+                self.controlador.guardar()
+                self.agregar_modelo_tabla(self.controlador.modelos()[-1])
+            return agregado
+        # Popup_copiar_modelo(self, callback)
+
+    def ver_log(self, indice):
+        pass
+
+    def eliminar_modelo(self, indice):
+        self.controlador.modelos().eliminar(indice)
+        self.controlador.guardar()
+        self.tabla.tabla.delete(self.tabla.tabla.focus())
