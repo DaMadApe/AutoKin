@@ -120,6 +120,51 @@ class UIController:
         with open(self.pickle_path, 'wb') as f:
             pickle.dump(self.robots, f)
 
+    def agregar_robot(self, nombre: str, robot: Robot):
+        nuevo = RoboReg(nombre, robot)
+        agregado = self.robots.agregar(nuevo)
+        if agregado:
+            self._update_datafile()
+        return agregado
+
+    def seleccionar_robot(self, idx: int):
+        self.robots.seleccionar(idx)
+        self._update_datafile()
+
+    def copiar_robot(self, origen: int, nuevo_nombre: str):
+        agregado = self.robots.copiar(origen, nuevo_nombre)
+        if agregado:
+            self._update_datafile()
+        return agregado
+
+    def eliminar_robot(self, idx: int):
+        self.robots.eliminar(idx)
+        self._update_datafile()
+
+    def agregar_modelo(self, nombre: str, modelo: FKModel):
+        seleccionado = self.robots.selec()
+        agregado = seleccionado.modelos.agregar(ModelReg(nombre, modelo))
+        if agregado:
+            self._update_datafile()
+        return agregado
+
+    def seleccionar_modelo(self, idx: int):
+        seleccionado = self.robots.selec()
+        seleccionado.modelos.seleccionar(idx)
+        self._update_datafile()
+
+    def copiar_modelo(self, origen: int, nuevo_nombre: str):
+        seleccionado = self.robots.selec()
+        agregado = seleccionado.modelos.copiar(origen, nuevo_nombre)
+        if agregado:
+            self._update_datafile()
+        return agregado
+
+    def eliminar_modelo(self, idx: int):
+        seleccionado = self.robots.selec()
+        seleccionado.modelos.eliminar(idx)
+        self._update_datafile()
+
 
 if __name__ == "__main__":
     database = RobotDatabase()
