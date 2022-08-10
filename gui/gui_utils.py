@@ -4,14 +4,6 @@ import tkinter as tk
 from tkinter import ttk
 
 
-def validate_float(x):
-    try:
-        float(x)
-        return True
-    except:
-        return False
-
-
 class Label_Entry:
     """
     Composición de ttk.Label y ttk.Entry con validación
@@ -45,10 +37,17 @@ class Label_Entry:
             assert type(default_val)==self.var_fun
             self.entry.insert(0, default_val)
 
+    def _validate_float(self, x):
+        try:
+            float(x)
+            return True
+        except:
+            return False
+
     def valid(self, x:str):
         valid = True
         if self.var_type == 'float':
-            valid &= validate_float(x)
+            valid &= self._validate_float(x)
         elif self.var_type == 'int':
             valid &= x.isnumeric()
         if valid:
@@ -82,10 +81,15 @@ class Label_Entry:
 class TablaYBotones(ttk.Frame):
     """
     Widget compuesto de tabla + botones
+
+    Parent (Widget): Objeto sobre el que se dibuja el Frame
+    Columnas (Tuple[Str]) : Encabezados de la tabla
+    anchos (Tuple[Int]) : Lista de ancho en pix para cada columna
+    botones_abajo (Bool) : Activar para botones horizontales bajo
+        la tabla, desactivar para botones verticales al lado
+    fn_doble_click (Callable) : Función llamada cuando se hace
+        doble click a un elemento de la tabla
     """
-    # Tabla de puntos xyz
-    # Tabla de robots () 
-    # Tabla de modelos () 
 
     def __init__(self, parent, columnas, anchos,
                  botones_abajo=False, fn_doble_click=None):
@@ -121,7 +125,8 @@ class TablaYBotones(ttk.Frame):
 
         self.frame_botones = ttk.Frame(self)
         if self.botones_abajo:
-            self.frame_botones.grid(column=0, row=1, columnspan=2, sticky='nsew')
+            self.frame_botones.grid(column=0, row=1,
+                                    columnspan=2, sticky='nsew')
         else:
             self.frame_botones.grid(column=2, row=0, sticky='nsew')
 
@@ -169,8 +174,11 @@ class TablaYBotones(ttk.Frame):
         self.tabla.delete(*self.tabla.get_children())
 
     def agregar_boton(self, rojo=False, activo_en_seleccion=False,
-                      padx=5, pady=5, **btn_kwargs):
-        btn_kwargs['command'] = self._incluir_indice(btn_kwargs['command'])
+                      incluir_indice=True, padx=5, pady=5,
+                      **btn_kwargs):
+        if incluir_indice:
+            btn_kwargs['command'] = self._incluir_indice(btn_kwargs['command'])
+
         boton = ttk.Button(self.frame_botones, **btn_kwargs)
         if rojo:
             boton['style'] = 'Red.TButton'
@@ -182,3 +190,7 @@ class TablaYBotones(ttk.Frame):
 
         c, r = (n_botones, 0) if self.botones_abajo else (0, n_botones)
         boton.grid(column=c, row=r, padx=padx, pady=pady)
+
+    def agregar_entrada(self, *entrada):
+        self.tabla.insert('', 'end', text=entrada[0],
+                          values=entrada[1:])
