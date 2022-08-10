@@ -1,11 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.nuevo_robot import Popup_agregar_robot
 from gui.gui_utils import Label_Entry, TablaYBotones
 from gui.robot_database import UIController
-
-save_dir = 'gui/app_data/robotRegs'
+from gui.nuevo_robot import Popup_agregar_robot
 
 
 class PantallaSelecRobot(ttk.Frame):
@@ -24,22 +22,20 @@ class PantallaSelecRobot(ttk.Frame):
         self.definir_elementos()
 
     def definir_elementos(self):
-        style= ttk.Style()
-        style.configure('Red.TButton', background='#FAA')
-        style.map('Red.TButton', background=[('active', '#F66')])
-
         # Tabla principal
         # columnas = reg.__repr__
-        columnas = (' nombre', '# de modelos', '# de actuadores')
+        columnas = (' nombre',
+                    ' tipo',
+                    ' # de modelos',
+                    ' # de actuadores')
         self.tabla = TablaYBotones(self, columnas=columnas,
-                                   anchos=(200, 120, 120),
-                                   fn_doble_click=self.configurar_robot)
+                                   anchos=(160, 120, 120, 120),
+                                   fn_doble_click=self.seleccionar_robot)
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
         for robot in self.controlador.robots:
-            self.tabla.agregar_entrada(robot.nombre,
-                                       len(robot.model_ids), robot.robot.n)
+            self.agregar_robot_tabla(robot)
 
         # Botones de tabla
         self.tabla.agregar_boton(text="Nuevo...",
@@ -75,7 +71,7 @@ class PantallaSelecRobot(ttk.Frame):
         # Botón de regresar pantalla
         self.boton_regresar = ttk.Button(self, text="Regresar",
                                          width=20,
-                                         command=self.regresar)
+                                         command=self.parent.regresar)
         self.boton_regresar.grid(column=0, row=1, sticky='e',
                                  padx=(0,10))
 
@@ -83,40 +79,42 @@ class PantallaSelecRobot(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
+    def agregar_robot_tabla(self, robot):
+        self.tabla.agregar_entrada(robot.nombre,
+                                   robot.robot.__class__.__name__,
+                                   len(robot.modelos),
+                                   f"q = {robot.robot.n}")
+
     def agregar_robot(self, *args):
         def callback(nombre, robot):
-            agregado = self.controlador.robots.agregar(nombre, robot)
-            print(f"callback: {agregado}")
+            agregado = self.controlador.agregar_robot(nombre, robot)
             if agregado:
-                self.tabla.agregar_entrada(nombre, "No",
-                                           f"n = {robot.n}")
+                self.controlador.guardar()
+                self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_agregar_robot(self, callback)
 
     def seleccionar_robot(self, indice):
         self.controlador.robots.seleccionar(indice)
+        self.controlador.guardar()
 
     def copiar_robot(self, indice):
         def callback(nombre):
             agregado = self.controlador.robots.copiar(indice, nombre)
+            if agregado:
+                self.controlador.guardar()
+                self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_copiar_robot(self, callback)
-
-    def ver_modelos(self, indice):
-        pass
 
     def configurar_robot(self, indice):
         # Abrir interfaz de calibración
         pass
 
     def eliminar_robot(self, indice):
-        #del self.robots[indice_actual]
         self.controlador.robots.eliminar(indice)
+        self.controlador.guardar()
         self.tabla.tabla.delete(self.tabla.tabla.focus())
-
-    def regresar(self):
-        # self.controlador.save() # Mejor en cada método
-        self.parent.regresar()
 
 
 class Popup_copiar_robot(tk.Toplevel):
@@ -142,7 +140,7 @@ class Popup_copiar_robot(tk.Toplevel):
         self.check_copia.grid(column=0, row=1, columnspan=2)
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
-                                   command=self.parent.regresar)
+                                   command=self.destroy)
         boton_cancelar.grid(column=0, row=2)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
@@ -161,7 +159,6 @@ class Popup_copiar_robot(tk.Toplevel):
 
 
 if __name__ == '__main__':
-
     root = tk.Tk()
     root.minsize(550,330)
     root.maxsize(1200,800)
