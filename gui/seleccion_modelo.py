@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import TablaYBotones
+from gui.gui_utils import TablaYBotones, Label_Entry
 from gui.robot_database import UIController
 from gui.nuevo_modelo import Popup_agregar_modelo
 
@@ -15,9 +15,11 @@ class PantallaSelecModelo(ttk.Frame):
         self.parent = parent
         self.parent.columnconfigure(0, weight=1)
         self.parent.rowconfigure(0, weight=1)
-        self.parent.title("Seleccionar modelo")
 
         self.controlador = UIController()
+
+        robot_selec = self.controlador.robot_selec().nombre
+        self.parent.title(f"Seleccionar modelo: {robot_selec}")
 
         self.definir_elementos()
 
@@ -75,7 +77,7 @@ class PantallaSelecModelo(ttk.Frame):
     def agregar_modelo_tabla(self, modelo):
         self.tabla.agregar_entrada(modelo.nombre,
                                    modelo.modelo.__class__.__name__,
-                                   modelo.quick_log['epocs'])
+                                   modelo.epocs)
 
     def seleccionar_modelo(self, indice):
         self.controlador.modelos().seleccionar(indice)
@@ -97,7 +99,7 @@ class PantallaSelecModelo(ttk.Frame):
                 self.controlador.guardar()
                 self.agregar_modelo_tabla(self.controlador.modelos()[-1])
             return agregado
-        # Popup_copiar_modelo(self, callback)
+        Popup_copiar_modelo(self, callback)
 
     def ver_log(self, indice):
         pass
@@ -106,3 +108,41 @@ class PantallaSelecModelo(ttk.Frame):
         self.controlador.modelos().eliminar(indice)
         self.controlador.guardar()
         self.tabla.tabla.delete(self.tabla.tabla.focus())
+
+
+class Popup_copiar_modelo(tk.Toplevel):
+
+    def __init__(self, parent, callback):
+        super().__init__()
+        self.parent = parent
+        self.callback = callback
+
+        self.wm_title("Copiar modelo")
+        self.definir_elementos()
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
+
+    def definir_elementos(self):
+        self.nom_entry = Label_Entry(self, label="Nombre", 
+                                var_type='str', width=20)
+        self.nom_entry.grid(column=0, row=0)
+
+        boton_cancelar = ttk.Button(self, text="Cancelar",
+                                   command=self.destroy)
+        boton_cancelar.grid(column=0, row=2)
+
+        boton_aceptar = ttk.Button(self, text="Agregar",
+                                   command=self.copiar_modelo)
+        boton_aceptar.grid(column=1, row=2, sticky='e')
+
+        for child in self.winfo_children():
+            child.grid_configure(padx=5, pady=3)
+
+    def copiar_modelo(self):
+        nombre = self.nom_entry.get()
+        if nombre != '':
+            agregado = self.callback(nombre)
+            if agregado:
+                self.destroy()
