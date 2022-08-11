@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 
+from gui.robot_database import UIController
+
 
 class PantallaMenuPrincipal(ttk.Frame):
 
@@ -13,6 +15,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         parent.title("AutoKin")
 
         self.parent = parent
+        self.controlador = UIController()
 
         self.definir_elementos()
 
@@ -23,7 +26,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         style.configure('Red.TLabel', foreground='#A11')
 
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=(20,10))
+        frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=(50,10))
 
         # Botones izquierdos
         boton_seleccionar = ttk.Button(frame_botones, text="Seleccionar",
@@ -35,53 +38,63 @@ class PantallaMenuPrincipal(ttk.Frame):
                                           width=20,
                                           command=self.entrenar)
         self.boton_entrenar.grid(column=0, row=1)
-        # self.boton_entrenar['state'] = 'disabled'
 
         self.boton_controlar = ttk.Button(frame_botones, text="Controlar",
                                           width=20,
                                           command=self.controlar)
         self.boton_controlar.grid(column=0, row=2)
-        # self.boton_controlar['state'] = 'disabled'
 
         for child in frame_botones.winfo_children():
-            child.grid_configure(padx=5, pady=5)
+            child.grid_configure(padx=10, pady=15)
 
         # Panel de información derecho
         frame_status = ttk.Frame(self)
         frame_status.grid(column=2, row=1, sticky='ns')
 
+        # Datos de robot (y modelo) seleccionado
         titulo_robot = ttk.Label(frame_status, text="Robot",
                                  font=(13))
         titulo_robot.grid(column=0, row=0, columnspan=2)
 
-        self.label_robot = ttk.Label(frame_status, text="Sin seleccionar")
-        self.label_robot.grid(column=0, row=1)
+        self.label_robot = ttk.Label(frame_status)
+        self.label_robot.grid(column=0, row=1, sticky='w')
 
-        self.boton_config = ttk.Button(frame_status, text="config...",
-                                       command=self.config_robot)
+        self.boton_config = ttk.Button(frame_status, text="Config...",
+                                       command=self.config_robot,
+                                       width=12)
         self.boton_config.grid(column=1, row=1, sticky='e')
-        self.boton_config['state'] = 'disabled'
 
+        self.label_modelo = ttk.Label(frame_status)
+        self.label_modelo.grid(column=0, row=2, sticky='w')
+
+        self.boton_modelos = ttk.Button(frame_status, text="Ver modelos",
+                                       command=self.parent.ver_modelos,
+                                       width=12)
+        self.boton_modelos.grid(column=1, row=2, sticky='e')
+
+        # Estado de componentes
         titulo_estado = ttk.Label(frame_status, text="Estado",
                                   font=(13))
-        titulo_estado.grid(column=0, row=2, columnspan=2)
+        titulo_estado.grid(column=0, row=3, columnspan=2)
 
         self.label_sys1 = ttk.Label(frame_status, text="Medición posición")
-        self.label_sys1.grid(column=0, row=3)
+        self.label_sys1.grid(column=0, row=4)
 
-        self.label_status1 = ttk.Label(frame_status, text="  conectado ")
-        self.label_status1.grid(column=1, row=3)
-        self.label_status1['style'] = 'Green.TLabel'
+        self.label_status1 = ttk.Label(frame_status)
+        self.label_status1.grid(column=1, row=4)
 
         self.label_sys2 = ttk.Label(frame_status, text="Controlador robot")
-        self.label_sys2.grid(column=0, row=4)
+        self.label_sys2.grid(column=0, row=5)
 
-        self.label_status2 = ttk.Label(frame_status, text="desconectado")
-        self.label_status2.grid(column=1, row=4)
-        self.label_status2['style'] = 'Red.TLabel'
+        self.label_status2 = ttk.Label(frame_status)
+        self.label_status2.grid(column=1, row=5)
+
+        self.actualizar_status()
+        # self.bind("<FocusIn>", self.actualizar_status)
+        # self.bind("<FocusOut>", self.actualizar_status)
 
         for child in frame_status.winfo_children():
-            child.grid_configure(padx=5, pady=5)
+            child.grid_configure(padx=10, pady=10)
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
@@ -102,6 +115,41 @@ class PantallaMenuPrincipal(ttk.Frame):
 
     def config_robot(self):
         pass
+
+    def actualizar_status(self, *args):
+        self.controlador.cargar()
+        robot_selec = self.controlador.robot_selec()
+        modelo_selec = self.controlador.modelo_selec()
+
+        if modelo_selec is not None:
+            model_nom = modelo_selec.nombre
+            model_cls = modelo_selec.modelo.__class__.__name__
+            self.label_modelo.config(text=f"{model_nom}({model_cls})")
+            self.boton_entrenar['state'] = 'normal'
+            self.boton_controlar['state'] = 'normal'
+        else:
+            self.label_modelo.config(text="Modelo: Sin seleccionar")
+            self.boton_entrenar['state'] = 'disabled'
+            self.boton_controlar['state'] = 'disabled'
+
+        if robot_selec is not None:
+            robot_nom = robot_selec.nombre
+            robot_cls = robot_selec.robot.__class__.__name__
+            self.label_robot.config(text=f"{robot_nom}  ({robot_cls})")
+            self.boton_config['state'] = 'normal'
+            self.boton_modelos['state'] = 'normal'
+        else:
+            self.label_robot.config(text="Sin seleccionar")
+            self.label_modelo.config(text=" ")
+            self.boton_config['state'] = 'disabled'
+            self.boton_modelos['state'] = 'disabled'
+
+        # TODO: if self.controlador.get_status():
+        self.label_status1.config(text="  conectado ")
+        self.label_status1['style'] = 'Green.TLabel'
+
+        self.label_status2.config(text="desconectado")
+        self.label_status2['style'] = 'Red.TLabel'
 
 
 if __name__ == '__main__':
