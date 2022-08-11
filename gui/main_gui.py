@@ -54,18 +54,25 @@ class Interfaz(tk.Tk):
                      PantallaProgresoAjuste]
         self.avanzar()
 
-    def regresar(self):
+    def ver_modelos(self):
+        self.ruta = [PantallaSelecModelo]
+        self.avanzar()
+
+    def regresar(self, *args):
         """
         Destruir el frame actual y enfocar el frame anterior en la ruta
         """
         self.frame_stack.pop().destroy()
+        # TODO: Hacer más elegante esto
+        self.frame_stack[0].actualizar_status()
 
-    def avanzar(self):
+    def avanzar(self, *args):
         """
         Ir a la siguiente pantalla en la ruta actual
         """
         next_frame = self.ruta[len(self.frame_stack)-1]
         self.frame_stack.append(next_frame(self))
+        self.frame_stack[0].actualizar_status()
 
     def reset(self):
         for frame in self.frame_stack:

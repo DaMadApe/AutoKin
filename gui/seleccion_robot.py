@@ -54,7 +54,7 @@ class PantallaSelecRobot(ttk.Frame):
 
         self.tabla.agregar_boton(text="Ver modelos",
                                  width=20,
-                                 command=self.parent.avanzar,
+                                 command=self.ver_modelos,
                                  activo_en_seleccion=True)
 
         self.tabla.agregar_boton(text="Configurar",
@@ -106,6 +106,11 @@ class PantallaSelecRobot(ttk.Frame):
                 self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_copiar_robot(self, callback)
+
+    def ver_modelos(self, indice):
+        self.controlador.robots.seleccionar(indice)
+        self.controlador.guardar()
+        self.parent.avanzar()
 
     def configurar_robot(self, indice):
         # Abrir interfaz de calibración
