@@ -152,7 +152,7 @@ class PantallaSelecPuntos(ttk.Frame):
         self.tabla.limpiar_tabla()
         for i, point in enumerate(self.puntos):
             punto_trunco = tuple((round(x, ndigits=4) for x in point))
-            self.tabla.agregar_entrada(text=str(i), *punto_trunco)
+            self.tabla.agregar_entrada(str(i), *punto_trunco)
 
         self.tabla.desactivar_botones()
 
