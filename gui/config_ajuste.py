@@ -1,6 +1,7 @@
 import tkinter as tk
-from tkinter import Label, ttk
+from tkinter import ttk
 
+from gui.robot_database import UIController
 from gui.gui_utils import Label_Entry
 
 
@@ -41,12 +42,14 @@ class PantallaConfigAjuste(ttk.Frame):
 
         self.arg_getters = {}
 
+        self.controlador = UIController()
+
         self.definir_elementos()
 
     def definir_elementos(self):
         # Parámetros de ajuste
         frame_t_params = ttk.LabelFrame(self, text='Parámetros de ajuste')
-        frame_t_params.grid(column=1, row=1, sticky='nsew')
+        frame_t_params.grid(column=0, row=1, columnspan=2, sticky='nsew')
 
         for i, (arg_name, entry_kwargs) in enumerate(self.train_args.items()):
             entry = Label_Entry(frame_t_params, **entry_kwargs)
@@ -60,7 +63,7 @@ class PantallaConfigAjuste(ttk.Frame):
 
         boton_cancelar = ttk.Button(self, text="Ejecutar",
                                     command=self.ejecutar)
-        boton_cancelar.grid(column=1, row=2)
+        boton_cancelar.grid(column=1, row=2, sticky='e')
 
         for child in self.winfo_children():
             child.grid_configure(padx=10, pady=5)
@@ -69,7 +72,7 @@ class PantallaConfigAjuste(ttk.Frame):
             child.grid_configure(padx=5, pady=5)
 
         # Comportamiento al cambiar de tamaño
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
 
     def ejecutar(self):
