@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.gui_utils import Label_Entry
+from autokin import modelos
 
 
 class Popup_agregar_modelo(tk.Toplevel):
@@ -48,9 +49,10 @@ class Popup_agregar_modelo(tk.Toplevel):
         }
     }
 
-    def __init__(self, parent):
+    def __init__(self, parent, callback):
         super().__init__()
         self.parent = parent
+        self.callback = callback
 
         self.wm_title("Nuevo modelo")
 
@@ -64,18 +66,23 @@ class Popup_agregar_modelo(tk.Toplevel):
         self.resizable(False, False)
 
     def definir_elementos(self):
+        # Entrada para el nombre del modelo
+        self.nom_entry = Label_Entry(self, label="Nombre", 
+                                var_type='str', width=20)
+        self.nom_entry.grid(column=0, row=0)
+
         # Selección tipo de modelo
         label_tipo = ttk.Label(self, text="Tipo de modelo")
-        label_tipo.grid(column=0, row=0)
+        label_tipo.grid(column=0, row=1)
 
         self.combo_model_cls = ttk.Combobox(self, state='readonly')
-        self.combo_model_cls.grid(column=1, row=0)
+        self.combo_model_cls.grid(column=1, row=1)
         self.combo_model_cls['values'] = list(self.model_args.keys())
         self.combo_model_cls.bind('<<ComboboxSelected>>', self.definir_panel_hparams)
 
         # Parámetros de modelo
         self.frame_mod_params = ttk.LabelFrame(self, text='Parámetros')
-        self.frame_mod_params.grid(column=0, row=1,
+        self.frame_mod_params.grid(column=0, row=2,
                                    sticky='nsew', columnspan=2)
         # Para que el labelframe no esté vacío y sí aparezca
         place_label = ttk.Label(self.frame_mod_params,
@@ -85,11 +92,11 @@ class Popup_agregar_modelo(tk.Toplevel):
         # Botones de abajo
         boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.destroy)
-        boton_cancelar.grid(column=0, row=2)
+        boton_cancelar.grid(column=0, row=3)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
-                                   command=self.destroy)
-        boton_aceptar.grid(column=1, row=2)
+                                   command=self.ejecutar)
+        boton_aceptar.grid(column=1, row=3)
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
@@ -130,12 +137,18 @@ class Popup_agregar_modelo(tk.Toplevel):
         return model_kwargs
 
     def ejecutar(self):
-        if self.arg_getters is not None:
-            model_cls = self.combo_model_cls.get()
+        nombre = self.nom_entry.get()
+        if self.arg_getters is not None and nombre != '':
+            model_cls_name = self.combo_model_cls.get()
+            model_cls = getattr(modelos, model_cls_name)
             model_kwargs = self.get_model_kwargs()
             if not (None in model_kwargs.values()):
-                self.parent.agregar_modelo(model_cls, model_kwargs)
-                self.destroy()
+                modelo = model_cls
+
+                agregado = self.callback(nombre, modelo)
+
+                if agregado:
+                    self.destroy()
 
 
 if __name__ == '__main__':
@@ -152,5 +165,5 @@ if __name__ == '__main__':
     geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
     root.geometry(geom)
 
-    Popup_agregar_modelo(root)
+    Popup_agregar_modelo(root, lambda x,y: True)
     root.mainloop()
