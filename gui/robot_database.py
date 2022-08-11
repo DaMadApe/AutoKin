@@ -25,9 +25,9 @@ class ModelReg(Reg):
     """
     Registro de modelo 
     """
-    modelo : FKModel
+    modelo: FKModel
     train_kwargs: dict = field(default_factory=dict)
-    quick_log: dict = field(default_factory=dict)
+    epocs: int = 0
 
 
 class SelectionList:
@@ -78,6 +78,8 @@ class SelectionList:
         self._data.pop(idx)
         if self._select is not None and idx < self._select:
             self._select -=1
+        elif self._select == idx:
+            self._select = None
 
 
 @dataclass
@@ -109,10 +111,13 @@ class UIController:
     def __init__(self) -> None:
         self.pickle_path = DB_SAVE_DIR + '.pkl'
         if os.path.isfile(self.pickle_path):
-            with open(self.pickle_path, 'rb') as f:
-                self.robots = pickle.load(f)
+            self.cargar()
         else:
             self.robots = SelectionList()
+
+    def cargar(self):
+        with open(self.pickle_path, 'rb') as f:
+            self.robots = pickle.load(f)
 
     def guardar(self):
         with open(self.pickle_path, 'wb') as f:
@@ -141,9 +146,9 @@ class UIController:
 
 if __name__ == "__main__":
     from autokin.robot import RTBrobot
+
     robot = RTBrobot.from_name('Cobra600')
 
     controlador = UIController()
-    print(list(controlador.robots))
-    controlador.agregar_robot("qwe", robot)
-    print(list(controlador.robots))
+    # controlador.agregar_robot("qwe", robot)
+    print(controlador.robot_selec())
