@@ -38,6 +38,7 @@ class HparamsMixin():
 
 
 class DataFitMixin():
+    # TODO: Transferir funcionalidad a una clase Trainer
     def __init__(self):
         super().__init__()
         self.checkpoint = {}
@@ -58,6 +59,16 @@ class DataFitMixin():
         out_mean /= len(reference_set)
 
         self.layers[-1].bias = nn.Parameter(out_mean)
+
+    def _train_step(self, batch):
+        X, Y = batch
+        pred = self(X)
+        train_loss = self.criterion(pred, Y)
+        self.optimizer.zero_grad()
+        train_loss.backward()
+        self.optimizer.step()
+
+        return train_loss
 
 
     def fit(self, train_set, val_set=None,
@@ -89,6 +100,8 @@ class DataFitMixin():
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+        self.criterion = criterion
+
         self.train()
 
         if preadjust_bias:
@@ -100,12 +113,12 @@ class DataFitMixin():
             # else:
             #     self.writer.open()
 
-        optimizer = optim(self.parameters(), lr=lr)
+        self.optimizer = optim(self.parameters(), lr=lr)
         if use_checkpoint and self.checkpoint:
-            optimizer.load_state_dict(self.checkpoint['optimizer_state_dict'])
+            self.optimizer.load_state_dict(self.checkpoint['optimizer_state_dict'])
 
         if lr_scheduler:
-            scheduler = ReduceLROnPlateau(optimizer)#, patience=5)
+            scheduler = ReduceLROnPlateau(self.optimizer)#, patience=5)
             if use_checkpoint and self.checkpoint:
                 scheduler.load_state_dict(self.checkpoint['sheduler_state_dict'])
 
@@ -119,13 +132,8 @@ class DataFitMixin():
             epoch_iter = tqdm(range(epochs), desc='Training')
 
         for epoch in epoch_iter:
-            # Train step
-            for X, Y in train_loader:
-                pred = self(X)
-                train_loss = criterion(pred, Y)
-                optimizer.zero_grad()
-                train_loss.backward()
-                optimizer.step()
+            for batch in train_loader:
+                train_loss = self._train_step(batch)
 
                 if log_dir is not None:
                     self.writer.add_scalar('Loss/train', train_loss.item(),
@@ -164,7 +172,7 @@ class DataFitMixin():
             self.writer.close()
 
         self.trained_epochs += epochs
-        self.checkpoint.update({'optimizer_state_dict': optimizer.state_dict()})
+        self.checkpoint.update({'optimizer_state_dict': self.optimizer.state_dict()})
 
         if lr_scheduler:
             self.checkpoint.update({'sheduler_state_dict': scheduler.state_dict()})
