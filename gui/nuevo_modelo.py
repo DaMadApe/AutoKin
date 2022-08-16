@@ -143,7 +143,8 @@ class Popup_agregar_modelo(tk.Toplevel):
             model_cls = getattr(modelos, model_cls_name)
             model_kwargs = self.get_model_kwargs()
             if not (None in model_kwargs.values()):
-                modelo = model_cls
+
+                modelo = model_cls(**model_kwargs)
 
                 agregado = self.callback(nombre, modelo)
 
