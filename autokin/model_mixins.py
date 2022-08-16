@@ -17,9 +17,12 @@ class HparamsMixin():
     """
     def __init__(self):
         super().__init__()
+        # Conseguir los argumentos con los que se definió el modelo
         frame = inspect.currentframe()
         frame = frame.f_back.f_back
         hparams = inspect.getargvalues(frame).locals
+
+        # Quitar valor inecesario
         hparams.pop('self')
 
         # Si el argumento es una función o módulo, usar su nombre
@@ -27,6 +30,9 @@ class HparamsMixin():
         for key, val in hparams.items():
             if not isinstance(val, primitive_types):
                 hparams[key] = val.__name__
+
+        # Renombrar atributo __class__ por conveniencia
+        hparams['tipo'] = hparams.pop('__class__')
 
         self.hparams = hparams
 
