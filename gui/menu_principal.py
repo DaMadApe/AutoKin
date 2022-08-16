@@ -123,7 +123,7 @@ class PantallaMenuPrincipal(ttk.Frame):
 
         if modelo_selec is not None:
             model_nom = modelo_selec.nombre
-            model_cls = modelo_selec.modelo.__class__.__name__
+            model_cls = modelo_selec.modelo.hparams['tipo']
             self.label_modelo.config(text=f"{model_nom}({model_cls})")
             self.boton_entrenar['state'] = 'normal'
             self.boton_controlar['state'] = 'normal'

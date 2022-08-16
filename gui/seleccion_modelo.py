@@ -76,7 +76,7 @@ class PantallaSelecModelo(ttk.Frame):
 
     def agregar_modelo_tabla(self, modelo):
         self.tabla.agregar_entrada(modelo.nombre,
-                                   modelo.modelo.__class__.__name__,
+                                   modelo.modelo.hparams['tipo'],
                                    modelo.epocs)
 
     def seleccionar_modelo(self, indice):
