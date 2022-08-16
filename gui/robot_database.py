@@ -110,14 +110,14 @@ class UIController:
     """
     def __init__(self) -> None:
         self.pickle_path = DB_SAVE_DIR + '.pkl'
-        if os.path.isfile(self.pickle_path):
-            self.cargar()
-        else:
-            self.robots = SelectionList()
+        self.cargar()
 
     def cargar(self):
-        with open(self.pickle_path, 'rb') as f:
-            self.robots = pickle.load(f)
+        if os.path.isfile(self.pickle_path):
+            with open(self.pickle_path, 'rb') as f:
+                self.robots = pickle.load(f)
+        else:
+            self.robots = SelectionList()
 
     def guardar(self):
         with open(self.pickle_path, 'wb') as f:
