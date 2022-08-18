@@ -13,7 +13,7 @@ Conjuntos de datos
 """
 robot_name = 'Cobra600' #
 exp_name = ''
-n_samples = 5000
+n_samples = 500
 full_pose = False
 
 robot = RTBrobot.from_name(robot_name, full_pose=full_pose)
@@ -35,7 +35,7 @@ def experim_ajuste():
                 activation='tanh')
 
     model.fit(train_set, val_set=val_set,
-              epochs=1000,
+              epochs=100,
               lr=1e-3,
               batch_size=256,
               # optim=partial(torch.optim.Adam, weight_decay=5e-5),
@@ -51,5 +51,5 @@ n_reps = 5
 
 ejecutar_experimento(n_reps, experim_ajuste,
                      log_all_products=False,
-                     model_save_dir=f'models/{robot_name}_{exp_name}.pt'
+                     #model_save_dir=f'models/{robot_name}_{exp_name}.pt'
                     )
