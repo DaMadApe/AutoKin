@@ -9,7 +9,13 @@ class PantallaConfigAjuste(ttk.Frame):
 
     args_etapas = {
         'Meta ajuste': {
-
+            'epochs': {
+                'label': '# de épocas',
+                'var_type': 'int',
+                'default_val': 1000,
+                'restr_positiv': True,
+                'non_zero': True
+            },
         },
 
         'Ajuste inicial': {
@@ -143,14 +149,20 @@ class PantallaConfigAjuste(ttk.Frame):
 
     def ejecutar(self):
             train_kwargs = self.get_train_kwargs()
-            if not (None in train_kwargs.values()):
-                self.controlador.set_train_kwargs(train_kwargs)
+            if train_kwargs is not None:
+                # self.controlador.set_train_kwargs(train_kwargs)
                 self.parent.avanzar()
 
     def get_train_kwargs(self):
-        train_kwargs = {}
-        for arg_name, get_fn in self.arg_getters.items():
-            train_kwargs[arg_name] = get_fn()
+        train_kwargs = {etapa: {} for etapa in self.args_etapas.keys()}
+        for etapa, args in self.arg_getters.items():
+            for arg_name, get_fn in args.items():
+                arg_value = get_fn()
+                train_kwargs[etapa][arg_name] = get_fn()
+
+                if not bool(arg_value):
+                    return None
+
         return train_kwargs
 
 
