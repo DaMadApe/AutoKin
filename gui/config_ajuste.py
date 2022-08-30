@@ -79,30 +79,40 @@ class PantallaConfigAjuste(ttk.Frame):
                                   font=(12))
         titulo_checks.grid(column=0, row=0, padx=5, pady=5)
 
-        self.checks = {}
+        self.check_vars = []
         for i, etapa in enumerate(self.args_etapas.keys()):
-            check_but = ttk.Checkbutton(frame_checks, text=etapa)
+            check_var = tk.IntVar()
+            check_but = ttk.Checkbutton(frame_checks, text=etapa,
+                                        variable=check_var,
+                                        command=self.actualizar_tabs)
             check_but.grid(column=0, row=i+1,
                            padx=5, pady=5, sticky='w')
-            self.checks[etapa] = check_but
+            self.check_vars.append(check_var)
 
         # Configuración de cada etapa
-        tabs_config = ttk.Notebook(self)
-        tabs_config.grid(column=0, row=1, sticky='nsew')
+        self.tabs_config = ttk.Notebook(self)
+        self.tabs_config.grid(column=0, row=1, sticky='nsew')
 
         for etapa, args in self.args_etapas.items():
-            frame = ttk.Frame(tabs_config)
+            frame = ttk.Frame(self.tabs_config)
 
             for i, (arg_name, entry_kwargs) in enumerate(args.items()):
                 entry = Label_Entry(frame, **entry_kwargs)
                 entry.grid(column=0, row=i, padx=5, pady=5)
                 self.arg_getters[etapa][arg_name] = entry.get
 
-            tabs_config.add(frame, text=etapa)
+            self.tabs_config.add(frame, text=etapa)
 
         # Comportamiento default: Check de a. inicial bloqueado en True
         #                         Tab de a. inicial por default
         #                         Desactivar tabs no usadas
+        # tabs_config.select(1)
+        # tabs_config.tab(0, state='hidden')
+        # tabs_config.tab(2, state='hidden')
+
+        # Ajuste inicial checado por default
+        self.check_vars[1].set(1)
+        self.actualizar_tabs()
 
         # Botones inferiores
         frame_botones = ttk.Frame(self)
@@ -125,6 +135,11 @@ class PantallaConfigAjuste(ttk.Frame):
         # Comportamiento al cambiar de tamaño
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
+
+    def actualizar_tabs(self):
+        for i, var in enumerate(self.check_vars):
+            state = 'normal' if var.get()==1 else 'hidden'
+            self.tabs_config.tab(i, state=state)
 
     def ejecutar(self):
             train_kwargs = self.get_train_kwargs()
