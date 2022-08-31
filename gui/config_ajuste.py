@@ -150,18 +150,21 @@ class PantallaConfigAjuste(ttk.Frame):
     def ejecutar(self):
             train_kwargs = self.get_train_kwargs()
             if train_kwargs is not None:
-                # self.controlador.set_train_kwargs(train_kwargs)
+                self.controlador.set_train_kwargs(train_kwargs)
                 self.parent.avanzar()
 
     def get_train_kwargs(self):
-        train_kwargs = {etapa: {} for etapa in self.args_etapas.keys()}
-        for etapa, args in self.arg_getters.items():
-            for arg_name, get_fn in args.items():
-                arg_value = get_fn()
-                train_kwargs[etapa][arg_name] = get_fn()
+        train_kwargs = {} # etapa: {} for etapa in self.args_etapas.keys()}
+        for i, (etapa, args) in enumerate(self.arg_getters.items()):
+            # Sólo añadir params de etapas seleccionadas
+            if self.check_vars[i].get() == 1:
+                train_kwargs[etapa] = {}
+                for arg_name, get_fn in args.items():
+                    arg_value = get_fn()
+                    train_kwargs[etapa][arg_name] = get_fn()
 
-                if not bool(arg_value):
-                    return None
+                    if not bool(arg_value):
+                        return None
 
         return train_kwargs
 
