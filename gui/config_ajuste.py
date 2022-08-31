@@ -170,10 +170,8 @@ class PantallaConfigAjuste(ttk.Frame):
 
 
 if __name__ == '__main__':
+    from gui_utils import MockInterfaz
 
-    root = tk.Tk()
-    root.geometry('800x450+100+100')
-    root.minsize(550,330)
-    root.maxsize(1200,800)
+    root = MockInterfaz()
     pant1 = PantallaConfigAjuste(root)
     root.mainloop()

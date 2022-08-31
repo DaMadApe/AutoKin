@@ -4,6 +4,8 @@ import webbrowser
 
 from tensorboard import program
 
+from gui.robot_database import UIController
+
 
 class PantallaProgresoAjuste(ttk.Frame):
 
@@ -16,18 +18,24 @@ class PantallaProgresoAjuste(ttk.Frame):
         self.parent.rowconfigure(0, weight=1)
         self.parent.title("Progreso de entrenamiento")
 
+        self.controlador = UIController()
+
         self.definir_elementos()
 
     def definir_elementos(self):
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
-                                    command=self.parent.regresar)
+                                    command=self.regresar)
         boton_regresar.grid(column=0, row=2, sticky='w')
 
         boton_continuar = ttk.Button(self, text="Aceptar",
-                                    command=self.parent.reset)
+                                     command=self.parent.reset)
         boton_continuar.grid(column=1, row=2, sticky='e')
+
+    def regresar(self, *args):
+        # TODO: Pedir confirmación, cancelar entrenamiento?
+        self.parent.regresar()
 
 
 def abrir_tensorboard():
@@ -36,19 +44,8 @@ def abrir_tensorboard():
 
 
 if __name__ == '__main__':
+    from gui_utils import MockInterfaz
 
-    root = tk.Tk()
-    root.minsize(550,330)
-    root.maxsize(1200,800)
-
-    win_width = 800
-    win_height = 450
-    x_pos = int(root.winfo_screenwidth()/2 - win_width/2)
-    y_pos = int(root.winfo_screenheight()/2 - win_height/2)
-
-    geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
-    root.geometry(geom)
-
-    pant = PantallaProgresoAjuste(root)
-    pant.abrir_tensorboard()
+    root = MockInterfaz()
+    PantallaProgresoAjuste(root)
     #root.mainloop()

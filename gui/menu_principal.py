@@ -153,18 +153,8 @@ class PantallaMenuPrincipal(ttk.Frame):
 
 
 if __name__ == '__main__':
+    from gui_utils import MockInterfaz
 
-    root = tk.Tk()
-    root.minsize(550,330)
-    root.maxsize(1200,800)
-
-    win_width = 800
-    win_height = 450
-    x_pos = int(root.winfo_screenwidth()/2 - win_width/2)
-    y_pos = int(root.winfo_screenheight()/2 - win_height/2)
-
-    geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
-    root.geometry(geom)
-
-    pant1 = PantallaMenuPrincipal(root)
+    root = MockInterfaz()
+    PantallaMenuPrincipal(root)
     root.mainloop()

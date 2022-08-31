@@ -90,7 +90,6 @@ class TablaYBotones(ttk.Frame):
     fn_doble_click (Callable) : Función llamada cuando se hace
         doble click a un elemento de la tabla
     """
-
     def __init__(self, parent, columnas, anchos,
                  botones_abajo=False, fn_doble_click=None):
         super().__init__(parent)
@@ -194,3 +193,50 @@ class TablaYBotones(ttk.Frame):
     def agregar_entrada(self, *entrada):
         self.tabla.insert('', 'end', text=entrada[0],
                           values=entrada[1:])
+
+
+class MockInterfaz(tk.Tk):
+    """
+    Sustituto de Interfaz de main_gui.py para probar pantallas individualmente
+    """
+    def __init__(self):
+        super().__init__()
+
+        style= ttk.Style()
+        style.configure('Red.TEntry', foreground='red')
+        style.configure('Red.TButton', background='#FAA')
+        style.map('Red.TButton', background=[('active', '#F66')])
+
+        self.minsize(550,330)
+        self.maxsize(1200,800)
+
+        win_width = 800
+        win_height = 450
+        x_pos = int(self.winfo_screenwidth()/2 - win_width/2)
+        y_pos = int(self.winfo_screenheight()/2 - win_height/2)
+        geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
+        self.geometry(geom)
+
+        # style= ttk.Style()
+        # style.theme_use('clam')
+
+    def seleccionar_robot(self):
+        print("seleccionar_robot")
+
+    def controlar_robot(self):
+        print("controlar_robot")
+
+    def entrenar_robot(self):
+        print("entrenar_robot")
+
+    def ver_modelos(self):
+        print("ver_modelos")
+
+    def regresar(self, *args):
+        print("regresar")
+
+    def avanzar(self, *args):
+        print("avanzar")
+
+    def reset(self):
+        print("reset")
