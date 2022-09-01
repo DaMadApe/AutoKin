@@ -109,13 +109,6 @@ class PantallaConfigAjuste(ttk.Frame):
 
             self.tabs_config.add(frame, text=etapa)
 
-        # Comportamiento default: Check de a. inicial bloqueado en True
-        #                         Tab de a. inicial por default
-        #                         Desactivar tabs no usadas
-        # tabs_config.select(1)
-        # tabs_config.tab(0, state='hidden')
-        # tabs_config.tab(2, state='hidden')
-
         # Ajuste inicial checado por default
         self.check_vars[1].set(1)
         self.actualizar_tabs()
