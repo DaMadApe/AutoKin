@@ -146,3 +146,11 @@ class Popup_copiar_modelo(tk.Toplevel):
             agregado = self.callback(nombre)
             if agregado:
                 self.destroy()
+
+
+if __name__ == '__main__':
+    from gui_utils import MockInterfaz
+
+    root = MockInterfaz()
+    PantallaSelecModelo(root)
+    root.mainloop()
