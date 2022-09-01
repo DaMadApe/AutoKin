@@ -104,11 +104,23 @@ class RoboReg(Reg):
         return torch.load(self._model_filename(idx))
 
 
-class UIController:
+class Singleton(type):
+    """
+    Metaclase para asegurar que cada incialización de la clase
+    devuelva la misma instancia en lugar de crear una nueva
+    """
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class UIController(metaclass=Singleton):
     """
     Controlador para acoplar GUI con lógica del programa.
     """
-    def __init__(self) -> None:
+    def __init__(self):
         self.pickle_path = DB_SAVE_DIR + '.pkl'
         self.cargar()
 
