@@ -3,6 +3,7 @@ import pickle
 
 from autokin.robot import Robot
 from autokin.modelos import FKModel
+from autokin.muestreo import FKset
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
 
@@ -28,6 +29,7 @@ class UIController(metaclass=Singleton):
     def __init__(self):
         self.pickle_path = DB_SAVE_DIR + '.pkl'
         self.train_kwargs = {}
+        self.datasets = {}
         self.cargar()
 
     def cargar(self):
@@ -64,5 +66,20 @@ class UIController(metaclass=Singleton):
     def set_train_kwargs(self, train_kwargs):
         self.train_kwargs = train_kwargs
 
+    def set_sample(self, sample, sample_split):
+        self.sample = sample
+        self.split = list(sample_split.values())
+
     def entrenar(self):
-        pass
+        modelo = self.modelo_selec()
+        robot = self.robot_selec()
+
+        dataset = FKset(robot.robot, self.sample)
+
+        trainset, valset, testset = dataset.rand_split(self.split)
+
+        fit_kwargs = self.train_kwargs['Ajuste inicial']
+
+        modelo.modelo.fit(train_set=trainset, val_set=valset,
+                   log_dir=f'gui/app_data/tb_logs/{robot.nombre}_{modelo.nombre}',
+                   **fit_kwargs)

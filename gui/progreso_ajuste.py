@@ -9,7 +9,7 @@ from gui.gui_control import UIController
 
 class PantallaProgresoAjuste(ttk.Frame):
 
-    def __init__(self, parent, train_kwargs):
+    def __init__(self, parent):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
 
@@ -20,11 +20,11 @@ class PantallaProgresoAjuste(ttk.Frame):
 
         self.controlador = UIController()
 
-        self.train_kwargs = train_kwargs
-
         self.definir_elementos()
 
     def definir_elementos(self):
+
+        train_kwargs = self.controlador.train_kwargs
 
         # Frame etapas + status
         frame_etapas = ttk.Frame(self)
@@ -32,7 +32,7 @@ class PantallaProgresoAjuste(ttk.Frame):
 
         ttk.Label(frame_etapas, text="Etapas de ajuste", font=(13)).grid(column=0, row=0)
 
-        for i, etapa in enumerate(self.train_kwargs.keys()):# controlador.get_train_kwargs().keys():
+        for i, etapa in enumerate(self.controlador.train_kwargs.keys()):
             ttk.Label(frame_etapas, text=etapa).grid(column=0, row=i+1, sticky='w')
 
             status_label = ttk.Label(frame_etapas, text="Pendiente")
@@ -45,10 +45,10 @@ class PantallaProgresoAjuste(ttk.Frame):
         frame_progreso.columnconfigure(0, weight=1)
 
         self.label_prog = ttk.Label(frame_progreso, text="Progreso: ")
-        self.label_prog.grid(column=0, row=0)#, pady=10)
+        self.label_prog.grid(column=0, row=0, sticky='w')
         self.progreso = ttk.Progressbar(frame_progreso, orient='horizontal',
                                         mode='indeterminate')
-        self.progreso.grid(column=0, row=1, sticky='ew')#, padx=10, pady=5)
+        self.progreso.grid(column=0, row=1, sticky='ew')
     
         boton_tb = ttk.Button(frame_progreso, text="Abrir Tensorboard",
                               command=self.abrir_tensorboard)
@@ -60,7 +60,7 @@ class PantallaProgresoAjuste(ttk.Frame):
         boton_regresar.grid(column=0, row=3, sticky='sw')
 
         boton_continuar = ttk.Button(self, text="Aceptar",
-                                     command=self.paso_progreso) #parent.reset)
+                                     command=self.continuar)
         boton_continuar.grid(column=1, row=3, sticky='se')
 
         # Adaptar tamaño de componentes
@@ -73,17 +73,25 @@ class PantallaProgresoAjuste(ttk.Frame):
             for child in frame.winfo_children():
                 child.grid_configure(padx=10, pady=5)
 
+        self.iniciar_entrenamiento()
+
+    def iniciar_entrenamiento(self):
+        self.progreso.start()
+        self.controlador.entrenar()
+
     def regresar(self, *args):
         # TODO: Pedir confirmación, cancelar entrenamiento?
         # self.parent.regresar()
         self.progreso.stop()
 
-    def paso_progreso(self, *args):
-        self.progreso.start()
-
+    def continuar(self, *args):
+        # self.progreso.step()
+        self.parent.reset()
 
     def abrir_tensorboard(self):
-        log_path = 'autokin/experimentos/tb_logs/p_ajuste'
+        nom_robot = self.controlador.robot_selec().nombre
+        nom_modelo = self.controlador.modelo_selec().nombre
+        log_path = f'gui/app_data/tb_logs/{nom_robot}_{nom_modelo}'
 
         self.tb = program.TensorBoard()
         self.tb.configure(argv=[None, '--logdir', log_path])
@@ -100,9 +108,12 @@ if __name__ == '__main__':
 
     root = MockInterfaz()
 
+    train_kwargs = {'Meta ajuste': {'epochs': 1000},
+                    'Ajuste inicial': {'epochs': 1000, 'lr': 0.001, 'batch_size': 256},
+                    'Ajuste dirigido': {'query_steps': 5, 'n_queries': 5}}
 
-    train_kwargs = {'Meta ajuste': {'epochs': 1000}, 'Ajuste inicial': {'epochs': 1000, 'lr': 0.001, 'batch_size': 256}, 'Ajuste dirigido': {'query_steps': 5, 'n_queries': 5}}
+    UIController().set_train_kwargs(train_kwargs)
 
-    PantallaProgresoAjuste(root, train_kwargs)
+    PantallaProgresoAjuste(root)
 
     root.mainloop()
