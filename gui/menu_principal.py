@@ -21,14 +21,10 @@ class PantallaMenuPrincipal(ttk.Frame):
 
     def definir_elementos(self):
 
-        style= ttk.Style()
-        style.configure('Green.TLabel', foreground='#3A2')
-        style.configure('Red.TLabel', foreground='#A11')
-
+        # Botones izquierdos
         frame_botones = ttk.Frame(self)
         frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=(50,10))
 
-        # Botones izquierdos
         boton_seleccionar = ttk.Button(frame_botones, text="Seleccionar",
                                        width=20,
                                        command=self.seleccionar_robot)

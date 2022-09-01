@@ -17,6 +17,8 @@ class Interfaz(tk.Tk):
         super().__init__()
 
         style= ttk.Style()
+        style.configure('Green.TLabel', foreground='#3A2')
+        style.configure('Red.TLabel', foreground='#A11')
         style.configure('Red.TEntry', foreground='red')
         style.configure('Red.TButton', background='#FAA')
         style.map('Red.TButton', background=[('active', '#F66')])
