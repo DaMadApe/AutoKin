@@ -124,8 +124,8 @@ class PantallaConfigAjuste(ttk.Frame):
         boton_cancelar.grid(column=0, row=0, sticky='w')
 
         boton_ejecutar = ttk.Button(frame_botones,
-                                    text="Ejecutar",
-                                    command=self.ejecutar)
+                                    text="Aceptar",
+                                    command=self.aceptar)
         boton_ejecutar.grid(column=1, row=0, sticky='e')
 
         for child in self.winfo_children():
@@ -140,7 +140,7 @@ class PantallaConfigAjuste(ttk.Frame):
             state = 'normal' if var.get()==1 else 'hidden'
             self.tabs_config.tab(i, state=state)
 
-    def ejecutar(self):
+    def aceptar(self):
             train_kwargs = self.get_train_kwargs()
             if train_kwargs is not None:
                 self.controlador.set_train_kwargs(train_kwargs)
@@ -166,5 +166,5 @@ if __name__ == '__main__':
     from gui_utils import MockInterfaz
 
     root = MockInterfaz()
-    pant1 = PantallaConfigAjuste(root)
+    PantallaConfigAjuste(root)
     root.mainloop()
