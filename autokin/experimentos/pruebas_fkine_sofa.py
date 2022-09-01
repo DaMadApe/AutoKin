@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from autokin.robot import ModelRobot, SofaRobot
-from autokin.utils import coprime_sines, restringir
+from autokin.trayectorias import coprime_sines
+from autokin.utils import restringir
 from autokin.experimentos.experim import setup_logging, ejecutar_experimento
 
 # def static_point(robot, q: torch.Tensor):

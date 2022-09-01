@@ -1,6 +1,4 @@
-from re import M
 import torch
-import numpy as np
 
 import roboticstoolbox as rtb
 
@@ -49,33 +47,6 @@ def random_robot(min_DH=None, max_DH=None, p_P=0.5, min_n=2, max_n=9, n=None):
             links.append(rtb.DHLink(d=d, alpha=alpha, a=a, sigma=0))
                          #qlim=np.array([0, 1.5*max_DH[0]])))
     return rtb.DHRobot(links)
-
-
-def coprime_sines(n_dim, n_points, densidad=0, base_frec=0):
-    # https://www.desmos.com/calculator/m4pjhqjgz6
-    """
-    Genera trayectoria paramétrica explorando cada dimensión
-    con sinusoides de frecuencias coprimas.
-
-    El muestreo de estas curvas suele concentrarse en los
-    límites del espacio, y pasa por múltiples
-    coordenadas con valor 0, por lo que podría atinarle a
-    las singularidades de un robot si se usan las curvas
-    en el espacio de parámetros.
-    """
-    coefs = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
-             31, 37, 41, 43, 47, 53, 59, 61, 67]
-    coefs = torch.tensor(coefs) * 2*torch.pi
-    points = torch.zeros((n_points, n_dim))
-
-    t = torch.linspace(0, 1, n_points)
-    t += 0.5 * torch.rand((n_points)) / n_points
-    #points = 0.3*torch.rand((n_dim, n_points))
-
-    for i in range(n_dim):
-        frec = base_frec + coefs[i+densidad]
-        points[:, i] = torch.sin(frec*t) /2 + 0.5
-    return points
 
 
 def restringir(q):

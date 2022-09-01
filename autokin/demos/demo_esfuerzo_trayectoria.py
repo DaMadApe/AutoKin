@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from robot import SofaRobot
-from utils import coprime_sines
+from trayectorias import coprime_sines
 
 n_samples = 10000
 

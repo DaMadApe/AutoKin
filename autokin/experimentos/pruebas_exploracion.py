@@ -3,7 +3,7 @@ import torch
 from autokin.modelos import MLP
 from autokin.robot import RTBrobot
 from autokin.muestreo import FKset
-from autokin.utils import coprime_sines
+from autokin.trayectorias import coprime_sines
 from autokin.experimentos.experim import setup_logging, ejecutar_experimento
 
 """

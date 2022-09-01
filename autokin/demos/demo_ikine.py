@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from robot import ModelRobot, RTBrobot
-from utils import coprime_sines
+from trayectorias import coprime_sines
 
 robot = RTBrobot.from_name('Cobra600')
 model = ModelRobot.load('models/Cobra600_.pt')

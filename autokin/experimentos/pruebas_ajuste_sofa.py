@@ -7,7 +7,8 @@ import numpy as np
 from autokin.modelos import MLP
 from autokin.robot import SofaRobot
 from autokin.muestreo import FKset
-from autokin.utils import coprime_sines, restringir
+from autokin.trayectorias import coprime_sines
+from autokin.utils import restringir
 from autokin.experimentos.experim import ejecutar_experimento
 
 """

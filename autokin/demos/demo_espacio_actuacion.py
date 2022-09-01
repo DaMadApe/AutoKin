@@ -1,9 +1,10 @@
-from turtle import width
 import numpy as np
 from matplotlib import pyplot as plt
 
-from utils import coprime_sines, restringir
-from robot import SofaRobot
+from autokin.robot import SofaRobot
+from autokin.trayectorias import coprime_sines
+from autokin.utils import restringir
+
 
 n_samples = 5000
 

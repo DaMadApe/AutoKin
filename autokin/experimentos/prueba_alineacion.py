@@ -5,7 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from autokin.robot import SofaRobot
-from autokin.utils import coprime_sines, linterp
+from autokin.trayectorias import coprime_sines
+from autokin.utils import linterp
 
 robot = SofaRobot(config='LL')
 
