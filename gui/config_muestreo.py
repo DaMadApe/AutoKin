@@ -89,8 +89,7 @@ class PantallaConfigMuestreo(ttk.Frame):
                                 default_val=default_split[label],
                                 restr_positiv=True)
             entry.grid(column=0, row=i)
-            
-        self.split_arg_getters[label] = entry.get
+            self.split_arg_getters[label] = entry.get
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
@@ -157,17 +156,19 @@ class PantallaConfigMuestreo(ttk.Frame):
         return split
 
     def ejecutar(self):
-        n_inputs = self.controlador.robot_selec().n
+        n_inputs = self.controlador.robot_selec().robot.n
 
-        traj_cls = getattr(trayectorias, self.traj_combo.get())
-        traj_kwargs = self.get_traj_kwargs()
-        split = self.get_split()
+        traj_cls = self.traj_combo.get()
 
-        if not (None in traj_kwargs.values() or split is None):
-            
-            sample = traj_cls(n_inputs, **traj_kwargs)
-            self.controlador.set_sample(sample, split)
-            self.parent.avanzar()
+        if traj_cls:
+            traj_kwargs = self.get_traj_kwargs()
+            split = self.get_split()
+
+            if not (None in traj_kwargs.values() or split is None):
+                traj_cls = getattr(trayectorias, traj_cls)
+                sample = traj_cls(n_inputs, **traj_kwargs)
+                self.controlador.set_sample(sample, split)
+                self.parent.avanzar()
 
 
 if __name__ == '__main__':
