@@ -1,16 +1,10 @@
 import torch
 
-import os
-import pickle
 from copy import deepcopy
 from dataclasses import dataclass, field
 
 from autokin.robot import Robot
 from autokin.modelos import FKModel
-"""
-TODO: Renombrar a "app_state.py", "control.py" o algo así?
-"""
-DB_SAVE_DIR = 'gui/app_data/robotRegs'
 
 
 @dataclass
@@ -102,65 +96,3 @@ class RoboReg(Reg):
 
     def load_model(self, idx):
         return torch.load(self._model_filename(idx))
-
-
-class Singleton(type):
-    """
-    Metaclase para asegurar que cada incialización de la clase
-    devuelva la misma instancia en lugar de crear una nueva
-    """
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class UIController(metaclass=Singleton):
-    """
-    Controlador para acoplar GUI con lógica del programa.
-    """
-    def __init__(self):
-        self.pickle_path = DB_SAVE_DIR + '.pkl'
-        self.cargar()
-
-    def cargar(self):
-        if os.path.isfile(self.pickle_path):
-            with open(self.pickle_path, 'rb') as f:
-                self.robots = pickle.load(f)
-        else:
-            self.robots = SelectionList()
-
-    def guardar(self):
-        with open(self.pickle_path, 'wb') as f:
-            pickle.dump(self.robots, f)
-
-    def robot_selec(self):
-        return self.robots.selec()
-
-    def modelos(self):
-        return self.robots.selec().modelos
-
-    def modelo_selec(self):
-        robot_selec = self.robots.selec()
-        if robot_selec is None:
-            return None
-        else:
-            return robot_selec.modelos.selec()
-
-    def agregar_robot(self, nombre: str, robot: Robot):
-        nuevo = RoboReg(nombre, robot)
-        return self.robots.agregar(nuevo)
-
-    def agregar_modelo(self, nombre: str, modelo: FKModel):
-        return self.modelos().agregar(ModelReg(nombre, modelo))
-
-
-if __name__ == "__main__":
-    from autokin.robot import RTBrobot
-
-    robot = RTBrobot.from_name('Cobra600')
-
-    controlador = UIController()
-    # controlador.agregar_robot("qwe", robot)
-    print(controlador.robot_selec())

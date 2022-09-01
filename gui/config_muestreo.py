@@ -4,7 +4,7 @@ from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.robot_database import UIController
+from gui.gui_control import UIController
 
 
 class PantallaConfigMuestreo(ttk.Frame):

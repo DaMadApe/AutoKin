@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.gui_utils import Label_Entry, TablaYBotones
-from gui.robot_database import UIController
+from gui.gui_control import UIController
 from gui.nuevo_robot import Popup_agregar_robot
 
 

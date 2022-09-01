@@ -4,7 +4,7 @@ import webbrowser
 
 from tensorboard import program
 
-from gui.robot_database import UIController
+from gui.gui_control import UIController
 
 
 class PantallaProgresoAjuste(ttk.Frame):

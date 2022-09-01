@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.robot_database import UIController
+from gui.gui_control import UIController
 
 
 class PantallaMenuPrincipal(ttk.Frame):
