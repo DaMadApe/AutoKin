@@ -81,13 +81,11 @@ class PantallaSelecModelo(ttk.Frame):
 
     def seleccionar_modelo(self, indice):
         self.controlador.modelos().seleccionar(indice)
-        self.controlador.guardar()
 
     def agregar_modelo(self, *args):
         def callback(nombre, model_args):
             agregado = self.controlador.agregar_modelo(nombre, model_args)
             if agregado:
-                self.controlador.guardar()
                 self.agregar_modelo_tabla(self.controlador.modelos()[-1])
             return agregado
         Popup_agregar_modelo(self, callback)
@@ -96,7 +94,6 @@ class PantallaSelecModelo(ttk.Frame):
         def callback(nombre):
             agregado = self.controlador.modelos().copiar(indice, nombre)
             if agregado:
-                self.controlador.guardar()
                 self.agregar_modelo_tabla(self.controlador.modelos()[-1])
             return agregado
         Popup_copiar_modelo(self, callback)
@@ -106,8 +103,15 @@ class PantallaSelecModelo(ttk.Frame):
 
     def eliminar_modelo(self, indice):
         self.controlador.modelos().eliminar(indice)
-        self.controlador.guardar()
         self.tabla.tabla.delete(self.tabla.tabla.focus())
+
+    def actualizar(self):
+        self.tabla.limpiar_tabla()
+        for modelo in self.controlador.modelos():
+            self.agregar_modelo_tabla(modelo)
+
+    def en_cierre(self):
+        self.controlador.guardar()
 
 
 class Popup_copiar_modelo(tk.Toplevel):

@@ -67,6 +67,10 @@ class Interfaz(tk.Tk):
         """
         Destruir el frame actual, enfocar el frame anterior y actualizarlo
         """
+        # Ejecutar rutina de cierre del frame que se destruirá
+        if hasattr(self.frame_stack[-1], 'en_cierre'):
+            self.frame_stack[-1].en_cierre()
+
         self.frame_stack.pop().destroy()
         if hasattr(self.frame_stack[-1], 'actualizar'):
             self.frame_stack[-1].actualizar()

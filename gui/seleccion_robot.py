@@ -89,27 +89,23 @@ class PantallaSelecRobot(ttk.Frame):
         def callback(nombre, robot_args):
             agregado = self.controlador.agregar_robot(nombre, robot_args)
             if agregado:
-                self.controlador.guardar()
                 self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_agregar_robot(self, callback)
 
     def seleccionar_robot(self, indice):
         self.controlador.robots.seleccionar(indice)
-        self.controlador.guardar()
 
     def copiar_robot(self, indice):
         def callback(nombre):
             agregado = self.controlador.robots.copiar(indice, nombre)
             if agregado:
-                self.controlador.guardar()
                 self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_copiar_robot(self, callback)
 
     def ver_modelos(self, indice):
-        self.controlador.robots.seleccionar(indice)
-        self.controlador.guardar()
+        self.seleccionar_robot(indice)
         self.parent.avanzar()
 
     def configurar_robot(self, indice):
@@ -118,8 +114,15 @@ class PantallaSelecRobot(ttk.Frame):
 
     def eliminar_robot(self, indice):
         self.controlador.robots.eliminar(indice)
-        self.controlador.guardar()
         self.tabla.tabla.delete(self.tabla.tabla.focus())
+
+    def actualizar(self):
+        self.tabla.limpiar_tabla()
+        for robot in self.controlador.robots:
+            self.agregar_robot_tabla(robot)
+
+    def en_cierre(self):
+        self.controlador.guardar()
 
 
 class Popup_copiar_robot(tk.Toplevel):
@@ -141,6 +144,7 @@ class Popup_copiar_robot(tk.Toplevel):
                                 var_type='str', width=20)
         self.nom_entry.grid(column=0, row=0)
 
+        # TODO: Arreglar ubicación y comportamiento de check
         self.check_copia = ttk.Checkbutton(self, text="Copiar modelos")
         self.check_copia.grid(column=0, row=1, columnspan=2)
 
