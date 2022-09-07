@@ -1,8 +1,8 @@
 import os
 import pickle
 
-from autokin.robot import Robot
-from autokin.modelos import FKModel
+from autokin.robot import ExternRobot, RTBrobot, SofaRobot
+from autokin import modelos
 from autokin.muestreo import FKset
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
@@ -56,12 +56,30 @@ class UIController(metaclass=Singleton):
         else:
             return robot_selec.modelos.selec()
 
-    def agregar_robot(self, nombre: str, robot: Robot):
-        nuevo = RoboReg(nombre, robot)
-        return self.robots.agregar(nuevo)
+    def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
+        robot_inits = {"Externo" : ExternRobot,
+                       "Sim. RTB" : RTBrobot.from_name,
+                       "Sim. SOFA" : SofaRobot}
 
-    def agregar_modelo(self, nombre: str, modelo: FKModel):
-        return self.modelos().agregar(ModelReg(nombre, modelo))
+        cls_id = robot_args.pop('cls_id')
+        robot_cls = robot_inits[cls_id]
+        robot = robot_cls(**robot_args)
+
+        agregado = self.robots.agregar(RoboReg(nombre, robot))
+        self.guardar()
+        return agregado
+
+    def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
+        cls_id = model_args.pop('cls_id')
+        model_cls = getattr(modelos, cls_id)
+
+        model_args.update(input_dim=self.robot_selec().robot.n,
+                          output_dim=3)
+        modelo = model_cls(**model_args)
+
+        agregado = self.modelos().agregar(ModelReg(nombre, modelo))
+        self.guardar()
+        return agregado
 
     def set_train_kwargs(self, train_kwargs):
         self.train_kwargs = train_kwargs

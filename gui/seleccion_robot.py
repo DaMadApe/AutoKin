@@ -86,8 +86,8 @@ class PantallaSelecRobot(ttk.Frame):
                                    f"q = {robot.robot.n}")
 
     def agregar_robot(self, *args):
-        def callback(nombre, robot):
-            agregado = self.controlador.agregar_robot(nombre, robot)
+        def callback(nombre, robot_args):
+            agregado = self.controlador.agregar_robot(nombre, robot_args)
             if agregado:
                 self.controlador.guardar()
                 self.agregar_robot_tabla(self.controlador.robots[-1])

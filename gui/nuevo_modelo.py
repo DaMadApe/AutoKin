@@ -139,15 +139,10 @@ class Popup_agregar_modelo(tk.Toplevel):
     def ejecutar(self):
         nombre = self.nom_entry.get()
         if self.arg_getters is not None and nombre != '':
-            model_cls_name = self.combo_model_cls.get()
-            model_cls = getattr(modelos, model_cls_name)
             model_kwargs = self.get_model_kwargs()
             if not (None in model_kwargs.values()):
-
-                modelo = model_cls(**model_kwargs)
-
-                agregado = self.callback(nombre, modelo)
-
+                model_kwargs.update(cls_id=self.combo_model_cls.get())
+                agregado = self.callback(nombre, model_kwargs)
                 if agregado:
                     self.destroy()
 

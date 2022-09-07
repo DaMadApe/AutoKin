@@ -84,8 +84,8 @@ class PantallaSelecModelo(ttk.Frame):
         self.controlador.guardar()
 
     def agregar_modelo(self, *args):
-        def callback(nombre, modelo):
-            agregado = self.controlador.agregar_modelo(nombre, modelo)
+        def callback(nombre, model_args):
+            agregado = self.controlador.agregar_modelo(nombre, model_args)
             if agregado:
                 self.controlador.guardar()
                 self.agregar_modelo_tabla(self.controlador.modelos()[-1])
