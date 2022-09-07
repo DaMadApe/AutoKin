@@ -60,6 +60,7 @@ class PantallaConfigMuestreo(ttk.Frame):
         self.traj_combo.grid(column=0, row=0, sticky='w')
         self.traj_combo['values'] = list(self.samp_args.keys())
         self.traj_combo.bind('<<ComboboxSelected>>', self.definir_panel_config)
+        self.traj_combo.set('coprime_sines')
 
         # Gráfica
         self.fig = Figure(figsize=(4,4), dpi=90)
@@ -73,6 +74,7 @@ class PantallaConfigMuestreo(ttk.Frame):
         # Frame configs
         self.frame_configs = ttk.LabelFrame(self, text='Parámetros')
         self.frame_configs.grid(column=1, row=1, sticky='nw')
+        self.definir_panel_config()
 
         # Frame config de split train-val-test
         self.frame_split = ttk.LabelFrame(self, text='Reparto de datos')
@@ -110,7 +112,7 @@ class PantallaConfigMuestreo(ttk.Frame):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
 
-    def definir_panel_config (self, event):
+    def definir_panel_config (self, *args):
         # Producir automáticamente entries según selección de trayectoria
         for widget in self.frame_configs.winfo_children():
             widget.destroy()
