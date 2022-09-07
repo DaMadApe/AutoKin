@@ -33,6 +33,9 @@ class Interfaz(tk.Tk):
         geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
         self.geometry(geom)
 
+        # Rutina para cerrar programa
+        self.protocol("WM_DELETE_WINDOW", self.cierre_app)
+
         # style= ttk.Style()
         # style.theme_use('clam')
 
@@ -62,11 +65,11 @@ class Interfaz(tk.Tk):
 
     def regresar(self, *args):
         """
-        Destruir el frame actual y enfocar el frame anterior en la ruta
+        Destruir el frame actual, enfocar el frame anterior y actualizarlo
         """
         self.frame_stack.pop().destroy()
-        # TODO: Hacer más elegante esto
-        self.frame_stack[0].actualizar_status()
+        if hasattr(self.frame_stack[-1], 'actualizar'):
+            self.frame_stack[-1].actualizar()
 
     def avanzar(self, *args):
         """
@@ -74,7 +77,6 @@ class Interfaz(tk.Tk):
         """
         next_frame = self.ruta[len(self.frame_stack)-1]
         self.frame_stack.append(next_frame(self))
-        self.frame_stack[0].actualizar_status()
 
     def reset(self):
         for frame in self.frame_stack:
@@ -83,6 +85,15 @@ class Interfaz(tk.Tk):
         self.frame_stack = []
         self.ruta = []
         self.frame_stack.append(PantallaMenuPrincipal(self))
+
+    def cierre_app(self):
+        """
+        Rutina llamada al cerrar el programa
+        """
+        if tk.messagebox.askokcancel("Cerrar", "Cerrar programa?"):
+            if hasattr(self.frame_stack[-1], 'en_cierre'):
+                self.frame_stack[-1].en_cierre()
+            self.destroy()
 
 
 if __name__ == "__main__":
