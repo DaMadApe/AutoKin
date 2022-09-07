@@ -85,7 +85,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         self.label_status2 = ttk.Label(frame_status)
         self.label_status2.grid(column=1, row=5)
 
-        self.actualizar_status()
+        self.actualizar()
         # self.bind("<FocusIn>", self.actualizar_status)
         # self.bind("<FocusOut>", self.actualizar_status)
 
@@ -112,7 +112,7 @@ class PantallaMenuPrincipal(ttk.Frame):
     def config_robot(self):
         pass
 
-    def actualizar_status(self, *args):
+    def actualizar(self, *args):
         self.controlador.cargar()
         robot_selec = self.controlador.robot_selec()
         modelo_selec = self.controlador.modelo_selec()
