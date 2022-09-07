@@ -4,12 +4,11 @@ from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.gui_control import UIController
-from gui.gui_utils import Label_Entry
+from gui.gui_utils import Pantalla, Label_Entry
 from autokin import trayectorias
 
 
-class PantallaConfigMuestreo(ttk.Frame):
+class PantallaConfigMuestreo(Pantalla):
 
     samp_args = {
         'coprime_sines': {
@@ -38,20 +37,10 @@ class PantallaConfigMuestreo(ttk.Frame):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        self.parent = parent
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        self.parent.title("Configurar muestreo")
-
-        self.controlador = UIController()
-
         self.arg_getters = None
         self.split_arg_getters = {}
 
-        self.definir_elementos()
+        super().__init__(parent, titulo="Configurar muestreo")
 
     def definir_elementos(self):
 

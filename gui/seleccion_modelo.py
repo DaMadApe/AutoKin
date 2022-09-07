@@ -1,27 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import TablaYBotones, Label_Entry
-from gui.gui_control import UIController
+from gui.gui_utils import Pantalla, TablaYBotones, Label_Entry
 from gui.nuevo_modelo import Popup_agregar_modelo
 
 
-class PantallaSelecModelo(ttk.Frame):
+class PantallaSelecModelo(Pantalla):
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        self.parent = parent
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-
-        self.controlador = UIController()
-
-        robot_selec = self.controlador.robot_selec().nombre
-        self.parent.title(f"Seleccionar modelo: {robot_selec}")
-
-        self.definir_elementos()
+        super().__init__(parent, titulo="Seleccionar modelo")
 
     def definir_elementos(self):
         # Tabla principal
@@ -106,6 +93,7 @@ class PantallaSelecModelo(ttk.Frame):
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def actualizar(self):
+        super().actualizar()
         self.tabla.limpiar_tabla()
         for modelo in self.controlador.modelos():
             self.agregar_modelo_tabla(modelo)

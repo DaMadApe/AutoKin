@@ -1,23 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_control import UIController
+from gui.gui_utils import Pantalla
 
 
-class PantallaMenuPrincipal(ttk.Frame):
+class PantallaMenuPrincipal(Pantalla):
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(0, weight=1)
-        parent.title("AutoKin")
-
-        self.parent = parent
-        self.controlador = UIController()
-
-        self.definir_elementos()
+        super().__init__(parent, titulo="AutoKin")
 
     def definir_elementos(self):
 
@@ -86,8 +76,6 @@ class PantallaMenuPrincipal(ttk.Frame):
         self.label_status2.grid(column=1, row=5)
 
         self.actualizar()
-        # self.bind("<FocusIn>", self.actualizar_status)
-        # self.bind("<FocusOut>", self.actualizar_status)
 
         for child in frame_status.winfo_children():
             child.grid_configure(padx=10, pady=10)
@@ -113,7 +101,7 @@ class PantallaMenuPrincipal(ttk.Frame):
         pass
 
     def actualizar(self, *args):
-        self.controlador.cargar()
+        super().actualizar()
         robot_selec = self.controlador.robot_selec()
         modelo_selec = self.controlador.modelo_selec()
 

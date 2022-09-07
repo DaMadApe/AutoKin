@@ -1,25 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Label_Entry, TablaYBotones
-from gui.gui_control import UIController
+from gui.gui_utils import Pantalla, Label_Entry, TablaYBotones
 from gui.nuevo_robot import Popup_agregar_robot
 
 
-class PantallaSelecRobot(ttk.Frame):
+class PantallaSelecRobot(Pantalla):
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        self.parent = parent
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        self.parent.title("Seleccionar robot")
-
-        self.controlador = UIController()
-
-        self.definir_elementos()
+        super().__init__(parent, titulo="Seleccionar robot")
 
     def definir_elementos(self):
         # Tabla principal
@@ -117,6 +106,7 @@ class PantallaSelecRobot(ttk.Frame):
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def actualizar(self):
+        super().actualizar()
         self.tabla.limpiar_tabla()
         for robot in self.controlador.robots:
             self.agregar_robot_tabla(robot)

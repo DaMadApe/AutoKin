@@ -7,26 +7,18 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.gui_utils import Label_Entry, TablaYBotones
+from gui.gui_utils import Pantalla, Label_Entry, TablaYBotones
 
 # TODO: No tiene por qué ir aquí
 save_dir = 'gui/app_data/trayec'
 
 
-class PantallaSelecPuntos(ttk.Frame):
+class PantallaSelecPuntos(Pantalla):
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        self.parent = parent
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        self.parent.title("Selección de puntos")
-
         self.puntos = []
 
-        self.definir_elementos()
+        super().__init__(parent, titulo="Selección de puntos")
 
     def definir_elementos(self):
         columnas = ('i', 'x', 'y', 'z', 'tt', 'ts')

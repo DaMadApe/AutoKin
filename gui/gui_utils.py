@@ -3,6 +3,47 @@ import builtins
 import tkinter as tk
 from tkinter import ttk
 
+from gui.gui_control import UIController
+
+
+class Pantalla(ttk.Frame):
+    """
+    Clase base para cada pantalla del programa
+    """
+    def __init__(self, parent, titulo):
+        super().__init__(parent, padding="16 16 16 16")
+        self.grid(column=0, row=0, sticky='nsew')
+
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+        parent.title(titulo)
+
+        self.parent = parent
+        self.titulo = titulo
+        self.controlador = UIController()
+
+        self.definir_elementos()
+
+    def definir_elementos(self):
+        """
+        Definición de los widgets contenidos
+        """
+        pass
+
+    def actualizar(self):
+        """
+        Método llamado cada vez que regresa la pantalla
+        al enfoque
+        """
+        self.parent.title(self.titulo)
+
+    def en_cierre(self):
+        """
+        Método llamado si se intenta cerrar el programa
+        con la ventana activa
+        """
+        pass
+
 
 class Label_Entry:
     """

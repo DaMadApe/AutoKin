@@ -1,22 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
 
+from gui.gui_utils import Pantalla
 
-class PantallaResultadosPosicion(ttk.Frame):
+
+class PantallaResultadosPosicion(Pantalla):
 
     def __init__(self, parent):
-        super().__init__(parent, padding="16 16 16 16")
-        self.grid(column=0, row=0, sticky='nsew')
-
-        self.parent = parent
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        self.parent.title("Resultados en espacio de tareas")
-
-        self.definir_elementos()
+        super().__init__(parent, titulo="Resultados en espacio de tareas")
 
     def definir_elementos(self):
-
         # Botones
         boton_aceptar = ttk.Button(self, text="Aceptar",
                                     command=self.parent.reset)
