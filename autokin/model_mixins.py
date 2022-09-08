@@ -42,7 +42,6 @@ class DataFitMixin():
     def __init__(self):
         super().__init__()
         self.checkpoint = {}
-        self.writer = None
         self.trained_epochs = 0
 
     def set_out_bias(self, reference_set=None):
@@ -75,7 +74,8 @@ class DataFitMixin():
             epochs=10, lr=1e-3, batch_size=32,
             criterion=nn.MSELoss(), optim=torch.optim.Adam,
             lr_scheduler=False, silent=False, log_dir=None,
-            use_checkpoint=True, preadjust_bias=True):
+            use_checkpoint=True, preadjust_bias=True,
+            loggers: list["Logger"] = None):
         """
         Rutina de entrenamiento para ajustar a un conjunto de datos
         
@@ -95,23 +95,22 @@ class DataFitMixin():
 
         returns:
         
-        checkpoint : Estado del optimizador y lr_scheduler, para reanudar entrenamiento
+        checkpoint : Estado del optimizador y lr_scheduler, para reanudar
+        entrenamiento
         """
+        self.loggers = loggers if loggers is not None else []
+        # Loggers automáticos según argumentos (retrocompatibilidad)
+        if not silent:
+            self.loggers.append(TqdmDisplay(epochs))
+        if log_dir is not None:
+            self.loggers.append(TBLogger(log_dir))
+
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
         self.criterion = criterion
-
-        self.train()
 
         if preadjust_bias:
             self.set_out_bias(train_set)
-
-        if log_dir is not None:
-            if self.writer is None or not os.path.samefile(self.writer.log_dir, log_dir):
-                self.writer = SummaryWriter(log_dir=log_dir)
-            # else:
-            #     self.writer.open()
 
         self.optimizer = optim(self.parameters(), lr=lr)
         if use_checkpoint and self.checkpoint:
@@ -120,31 +119,25 @@ class DataFitMixin():
         if lr_scheduler:
             scheduler = ReduceLROnPlateau(self.optimizer)#, patience=5)
             if use_checkpoint and self.checkpoint:
-                scheduler.load_state_dict(self.checkpoint['sheduler_state_dict'])
+                scheduler.load_state_dict(
+                    self.checkpoint['sheduler_state_dict'])
 
-        train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(train_set, batch_size=batch_size,
+                                  shuffle=True)
         if val_set is not None:
             val_loader = DataLoader(val_set, batch_size=len(val_set))
 
-        if silent:
-            epoch_iter = range(epochs)
-        else:
-            epoch_iter = tqdm(range(epochs), desc='Training')
-
-        for epoch in epoch_iter:
+        for epoch in range(epochs):
+            self.train()
             for batch in train_loader:
                 train_loss = self._train_step(batch)
 
-                if log_dir is not None:
-                    self.writer.add_scalar('Loss/train', train_loss.item(),
-                                           epoch + self.trained_epochs)
-
-            progress_info = {'Loss': train_loss.item()}
+            progress_info = {'Loss/train': train_loss.item()}
 
             # Val step
             if val_set is not None:
+                self.eval()
                 with torch.no_grad():
-                    self.eval()
                     for X, Y in val_loader:
                         pred = self(X)
                         val_loss = criterion(pred, Y)
@@ -152,30 +145,31 @@ class DataFitMixin():
                         if lr_scheduler:
                             scheduler.step(val_loss)
 
-                        if log_dir is not None:
-                            self.writer.add_scalar('Loss/val', val_loss.item(),
-                                                   epoch + self.trained_epochs)
+                progress_info.update({'Loss/val': val_loss.item()})
 
-                progress_info.update({'Val': val_loss.item()})
+            for logger in self.loggers:
+                logger.log_step(progress_info, epoch+self.trained_epochs)
 
-            if not silent:
-                epoch_iter.set_postfix(progress_info)
+        # Métricas para almacenar junto a hiperparámetros
+        if val_set is not None:
+            metrics = {'Last val loss': val_loss.item()}
+        else:
+            metrics = {'Last train loss': train_loss.item()}
 
-        if log_dir is not None:
-            if val_set is not None:
-                metrics = {'Last val loss': val_loss.item()}
-            else:
-                metrics = {'Last train loss': train_loss.item()}
+        self.hparams.update({'lr':lr, 'batch_size':batch_size})
 
-            self.writer.add_hparams({**self.hparams, 'lr':lr, 'batch_size':batch_size},
-                            metric_dict=metrics, run_name='.')
-            self.writer.close()
-
+        for logger in self.loggers:
+            logger.log_hparams(self.hparams, metrics)
+            logger.close()
+        
         self.trained_epochs += epochs
-        self.checkpoint.update({'optimizer_state_dict': self.optimizer.state_dict()})
 
+        # Guardar estado de los optimizadores en el checkpoint
+        self.checkpoint.update(
+            {'optimizer_state_dict': self.optimizer.state_dict()})
         if lr_scheduler:
-            self.checkpoint.update({'sheduler_state_dict': scheduler.state_dict()})
+            self.checkpoint.update(
+                {'sheduler_state_dict': scheduler.state_dict()})
 
 
     def test(self, test_set, criterion=nn.MSELoss()):
@@ -187,3 +181,88 @@ class DataFitMixin():
                 test_loss = criterion(pred, Y)
 
         return test_loss
+
+
+class Logger:
+    """
+    Interfaz para clases que observan el entrenamiento
+    """
+    def __init__(self):
+        pass
+
+    def log_step(self, progress_info: dict, epoch: int):
+        pass
+
+    def log_hparams(self, hparams: dict, metrics: dict):
+        pass
+
+    def close(self):
+        pass
+
+
+class TBLogger(Logger):
+    """
+    Logger de Tensorboard
+    """
+    def __init__(self, log_dir: str):
+        self.writer = SummaryWriter(log_dir=log_dir)
+
+    def log_step(self, progress_info: dict, epoch: int):
+        for key, val in progress_info.items():
+            self.writer.add_scalar(key, val,
+                                   epoch) #+ self.trained_epochs)
+
+    def log_hparams(self, hparams: dict, metrics: dict):
+        self.writer.add_hparams(hparams, 
+                                metric_dict=metrics,
+                                run_name='.')
+
+    def close(self):
+        self.writer.flush()
+
+
+class TqdmDisplay(Logger):
+    """
+    Barra de progreso en stdout (terminal)
+    """
+    def __init__(self, epochs):
+        self.bar = tqdm(range(epochs), desc='Training')
+
+    def log_step(self, progress_info: dict, epoch: int):
+        self.bar.set_postfix(progress_info)
+        self.bar.update(1)
+
+    def close(self):
+        self.bar.close()
+
+
+class GUIprogress(Logger):
+    """
+    Interacción con barra de progreso de Tkinter
+    """
+    def __init__(self, step_callback, close_callback):
+        self.step_callback = step_callback
+        self.close_callback = close_callback
+
+    def log_step(self, progress_info: dict, epoch: int):
+        self.step_callback()
+
+    def close(self):
+        self.close_callback()
+
+
+class TxtLogger(Logger):
+    """
+    Logger para crear archivos de texto .log (ver experimentos/experimento.py)
+    """
+    def __init__(self):
+        pass
+
+    def log_step(self, progress_info: dict, epoch: int):
+        pass
+
+    def log_hparams(self, hparams: dict):
+        pass
+
+    def close(self):
+        pass
