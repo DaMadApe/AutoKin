@@ -21,7 +21,7 @@ class PantallaSelecModelo(Pantalla):
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
-        for modelo in self.controlador.modelos():
+        for modelo in self.controlador.modelos:
             self.agregar_modelo_tabla(modelo)
 
         # Botones de self.tabla
@@ -64,24 +64,24 @@ class PantallaSelecModelo(Pantalla):
     def agregar_modelo_tabla(self, modelo):
         self.tabla.agregar_entrada(modelo.nombre,
                                    modelo.modelo.hparams['tipo'],
-                                   modelo.epocs)
+                                   modelo.epochs)
 
     def seleccionar_modelo(self, indice):
-        self.controlador.modelos().seleccionar(indice)
+        self.controlador.modelos.seleccionar(indice)
 
     def agregar_modelo(self, *args):
         def callback(nombre, model_args):
             agregado = self.controlador.agregar_modelo(nombre, model_args)
             if agregado:
-                self.agregar_modelo_tabla(self.controlador.modelos()[-1])
+                self.agregar_modelo_tabla(self.controlador.modelos[-1])
             return agregado
         Popup_agregar_modelo(self, callback)
 
     def copiar_modelo(self, indice):
         def callback(nombre):
-            agregado = self.controlador.modelos().copiar(indice, nombre)
+            agregado = self.controlador.modelos.copiar(indice, nombre)
             if agregado:
-                self.agregar_modelo_tabla(self.controlador.modelos()[-1])
+                self.agregar_modelo_tabla(self.controlador.modelos[-1])
             return agregado
         Popup_copiar_modelo(self, callback)
 
@@ -89,13 +89,13 @@ class PantallaSelecModelo(Pantalla):
         pass
 
     def eliminar_modelo(self, indice):
-        self.controlador.modelos().eliminar(indice)
+        self.controlador.modelos.eliminar(indice)
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def actualizar(self):
         super().actualizar()
         self.tabla.limpiar_tabla()
-        for modelo in self.controlador.modelos():
+        for modelo in self.controlador.modelos:
             self.agregar_modelo_tabla(modelo)
 
     def en_cierre(self):
