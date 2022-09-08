@@ -102,8 +102,8 @@ class PantallaMenuPrincipal(Pantalla):
 
     def actualizar(self, *args):
         super().actualizar()
-        robot_selec = self.controlador.robot_selec()
-        modelo_selec = self.controlador.modelo_selec()
+        robot_selec = self.controlador.robot_selec
+        modelo_selec = self.controlador.modelo_selec
 
         if modelo_selec is not None:
             model_nom = modelo_selec.nombre

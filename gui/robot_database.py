@@ -21,7 +21,7 @@ class ModelReg(Reg):
     """
     modelo: FKModel
     train_kwargs: dict = field(default_factory=dict)
-    epocs: int = 0
+    epochs: int = 0
 
 
 class SelectionList:
