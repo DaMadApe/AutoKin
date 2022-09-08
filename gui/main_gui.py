@@ -67,9 +67,7 @@ class Interfaz(tk.Tk):
         """
         Destruir el frame actual, enfocar el frame anterior y actualizarlo
         """
-        # Ejecutar rutina de cierre del frame que se destruirá
         self.frame_stack[-1].en_cierre()
-
         self.frame_stack.pop().destroy()
         self.frame_stack[-1].actualizar()
 
@@ -92,8 +90,6 @@ class Interfaz(tk.Tk):
         """
         Rutina llamada al cerrar el programa
         """
-        # Agregar confirmación?
-        # if tk.messagebox.askokcancel("Cerrar", "Cerrar programa?"):
         self.frame_stack[-1].en_cierre()
         self.destroy()
 
