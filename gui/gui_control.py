@@ -1,9 +1,11 @@
 import os
 import pickle
+import time
 
 import numpy as np
+import torch
 
-from autokin.robot import ExternRobot, RTBrobot, SofaRobot
+from autokin.robot import ExternRobot, RTBrobot, SofaRobot, ModelRobot
 from autokin import modelos
 from autokin.muestreo import FKset
 from autokin.loggers import GUIprogress
@@ -35,6 +37,7 @@ class UIController(metaclass=Singleton):
         self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
         self.train_kwargs = {}
         self.datasets = {}
+        self.puntos = None
         self.cargar()
 
     """
@@ -156,3 +159,18 @@ class UIController(metaclass=Singleton):
             return np.load(load_path).tolist()
         else:
             return None
+
+    def set_trayec(self, puntos):
+        self.puntos = puntos
+
+    def ejecutar_trayec(self, reg_callback):
+        model_robot = ModelRobot(self.modelo_selec.modelo)
+        q_prev = torch.zeros(model_robot.n)
+        for x, y, z, t_t, t_s in self.puntos:
+            target = torch.Tensor([x,y,z])
+            q = model_robot.ikine_pi_jacob(q_start=q_prev,
+                                           p_target=target)
+            _, p = self.robot_selec.robot.fkine(q)
+            q_prev = q
+            time.sleep(t_s)
+            reg_callback(p.tolist())
