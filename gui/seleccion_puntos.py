@@ -1,9 +1,6 @@
-import os
-
 import tkinter as tk
 from tkinter import ttk
 
-import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -86,7 +83,7 @@ class PantallaSelecPuntos(Pantalla):
         boton_regresar.grid(column=0, row=3, sticky='w')
 
         boton_ejecutar = ttk.Button(self, text="Ejecutar",
-            command=self.parent.avanzar)
+                                    command=self.ejecutar)
         boton_ejecutar.grid(column=1, row=3, sticky='e')
 
         # Agregar pad a todos los widgets
@@ -131,6 +128,11 @@ class PantallaSelecPuntos(Pantalla):
             self.puntos = puntos
             self.recargar_grafica()
             self.recargar_tabla()
+
+    def ejecutar(self):
+        if self.puntos:
+            self.controlador.set_trayec(self.puntos)
+            self.parent.avanzar()
 
     def recargar_tabla(self):
         # Sería ideal sólo insertar el punto en lugar de rehacer la
