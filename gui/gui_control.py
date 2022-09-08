@@ -4,10 +4,11 @@ import pickle
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin import modelos
 from autokin.muestreo import FKset
+from autokin.loggers import GUIprogress
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
 
-DB_SAVE_DIR = 'gui/app_data/robotRegs'
+SAVE_DIR = 'gui/app_data'
 
 
 class Singleton(type):
@@ -27,34 +28,37 @@ class UIController(metaclass=Singleton):
     Controlador para acoplar GUI con lógica del programa.
     """
     def __init__(self):
-        self.pickle_path = DB_SAVE_DIR + '.pkl'
+        self.pickle_dir = os.path.join(SAVE_DIR, 'robotRegs.pkl')
+        self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
         self.train_kwargs = {}
         self.datasets = {}
         self.cargar()
 
     def cargar(self):
-        if os.path.isfile(self.pickle_path):
-            with open(self.pickle_path, 'rb') as f:
+        if os.path.isfile(self.pickle_dir):
+            with open(self.pickle_dir, 'rb') as f:
                 self.robots = pickle.load(f)
         else:
             self.robots = SelectionList()
 
     def guardar(self):
-        with open(self.pickle_path, 'wb') as f:
+        with open(self.pickle_dir, 'wb') as f:
             pickle.dump(self.robots, f)
 
+    @property
     def robot_selec(self):
         return self.robots.selec()
 
+    @property
     def modelos(self):
         return self.robots.selec().modelos
 
+    @property
     def modelo_selec(self):
-        robot_selec = self.robots.selec()
-        if robot_selec is None:
+        if self.robot_selec is None:
             return None
         else:
-            return robot_selec.modelos.selec()
+            return self.robot_selec.modelos.selec()
 
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
         robot_inits = {"Externo" : ExternRobot,
@@ -73,7 +77,7 @@ class UIController(metaclass=Singleton):
         cls_id = model_args.pop('cls_id')
         model_cls = getattr(modelos, cls_id)
 
-        model_args.update(input_dim=self.robot_selec().robot.n,
+        model_args.update(input_dim=self.robot_selec.robot.n,
                           output_dim=3)
         modelo = model_cls(**model_args)
 
@@ -88,16 +92,39 @@ class UIController(metaclass=Singleton):
         self.sample = sample
         self.split = list(sample_split.values())
 
-    def entrenar(self):
-        modelo = self.modelo_selec()
-        robot = self.robot_selec()
+    def entrenar(self, stage_callback, step_callback, close_callback):
+        # if(muestreo_activo):
+        #     modelo = ensemble(modelo)
 
-        dataset = FKset(robot.robot, self.sample)
+        train_set, val_set, test_set = self._muestreo_inicial()
+        stage_callback() 
 
-        trainset, valset, testset = dataset.rand_split(self.split)
+        self._ajuste_inicial(self.modelo_selec,
+                             train_set, val_set,
+                             step_callback, close_callback)
+        stage_callback()
 
+        # if(muestreo_activo):
+        #     modelo = max(ensemble, max_score)
+
+
+    def _meta_ajuste(self):
+        pass
+
+    def _muestreo_inicial(self):
+        # Generar dataset y repartirlo
+        dataset = FKset(self.robot_selec.robot, self.sample)
+        return dataset.rand_split(self.split)
+
+    def _ajuste_inicial(self, model_reg, train_set, val_set,
+                        step_callback, close_callback):
         fit_kwargs = self.train_kwargs['Ajuste inicial']
+        epocas = fit_kwargs['epochs']
+        log_dir = f'{self.tb_dir}/{self.robot_selec.nombre}_{model_reg.nombre}'
 
-        modelo.modelo.fit(train_set=trainset, val_set=valset,
-                   log_dir=f'gui/app_data/tb_logs/{robot.nombre}_{modelo.nombre}',
-                   **fit_kwargs)
+        model_reg.modelo.fit(train_set=train_set, val_set=val_set,
+                             log_dir=log_dir,
+                             loggers=[GUIprogress(epocas, step_callback,
+                                                  close_callback)],
+                             # silent=True,
+                             **fit_kwargs)
