@@ -64,7 +64,6 @@ class PantallaResultadosPosicion(Pantalla):
     def reg_callback(self, punto):
         self.parent.after(100)
         self.medidas.append([*punto])
-        print(self.medidas)
         self.recargar_tabla()
         self.recargar_grafica()
         self.parent.after(100)
@@ -98,7 +97,6 @@ class PantallaResultadosPosicion(Pantalla):
             self.ax.plot(*meds_transpuesto, color='orange',
                          linewidth=1.5)
             self.ax.scatter(*meds_transpuesto, color='darkorange')
-            print(meds_transpuesto)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
