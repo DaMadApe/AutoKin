@@ -91,7 +91,7 @@ class UIController(metaclass=Singleton):
                           output_dim=3)
         modelo = model_cls(**model_args)
 
-        agregado = self.modelos().agregar(ModelReg(nombre, modelo))
+        agregado = self.modelos.agregar(ModelReg(nombre, modelo))
         self.guardar()
         return agregado
 
