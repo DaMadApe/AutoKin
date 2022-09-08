@@ -9,9 +9,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.gui_utils import Pantalla, Label_Entry, TablaYBotones
 
-# TODO: No tiene por qué ir aquí
-save_dir = 'gui/app_data/trayec'
-
 
 class PantallaSelecPuntos(Pantalla):
 
@@ -120,21 +117,18 @@ class PantallaSelecPuntos(Pantalla):
         self.recargar_grafica()
 
     def cargar_listas(self):
-        self.listas['values'] = [os.path.splitext(n)[0] for n in os.listdir(save_dir)]
+        self.listas['values'] = self.controlador.listas_puntos() 
 
     def guardar_puntos(self):
         if self.puntos:
             nombre = self.listas.get()
-            save_path =  os.path.join(save_dir, nombre)
-            np.save(save_path, np.array(self.puntos))
+            self.controlador.guardar_puntos(nombre, self.puntos)
             self.cargar_listas()
 
     def cargar_puntos(self):
-        nombre = self.listas.get() + '.npy'
-        load_path = os.path.join(save_dir, nombre)
-
-        if nombre and os.path.exists(load_path):
-            self.puntos = np.load(load_path).tolist()
+        puntos = self.controlador.cargar_puntos(self.listas.get())
+        if puntos:
+            self.puntos = puntos
             self.recargar_grafica()
             self.recargar_tabla()
 

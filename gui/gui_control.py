@@ -1,6 +1,8 @@
 import os
 import pickle
 
+import numpy as np
+
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin import modelos
 from autokin.muestreo import FKset
@@ -30,10 +32,15 @@ class UIController(metaclass=Singleton):
     def __init__(self):
         self.pickle_dir = os.path.join(SAVE_DIR, 'robotRegs.pkl')
         self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
+        self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
         self.train_kwargs = {}
         self.datasets = {}
         self.cargar()
 
+    """
+    Bases de datos robots/modelos
+    TODO: Separar en 3 controladores según responsabilidad?
+    """
     def cargar(self):
         if os.path.isfile(self.pickle_dir):
             with open(self.pickle_dir, 'rb') as f:
@@ -85,6 +92,9 @@ class UIController(metaclass=Singleton):
         self.guardar()
         return agregado
 
+    """
+    Entrenamiento
+    """
     def set_train_kwargs(self, train_kwargs):
         self.train_kwargs = train_kwargs
 
@@ -107,7 +117,6 @@ class UIController(metaclass=Singleton):
         # if(muestreo_activo):
         #     modelo = max(ensemble, max_score)
 
-
     def _meta_ajuste(self):
         pass
 
@@ -128,3 +137,22 @@ class UIController(metaclass=Singleton):
                                                   close_callback)],
                              # silent=True,
                              **fit_kwargs)
+
+    """
+    Control
+    """
+    def listas_puntos(self):
+        return [os.path.splitext(n)[0] for n in os.listdir(self.trayec_dir)]
+
+    def guardar_puntos(self, nombre, puntos):
+        save_path = os.path.join(self.trayec_dir, nombre)
+        np.save(save_path, np.array(puntos))
+
+    def cargar_puntos(self, nombre):
+        nombre = nombre + '.npy'
+        load_path = os.path.join(self.trayec_dir, nombre)
+
+        if nombre and os.path.exists(load_path):
+            return np.load(load_path).tolist()
+        else:
+            return None
