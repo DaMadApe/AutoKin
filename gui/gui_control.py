@@ -27,48 +27,37 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class UIController(metaclass=Singleton):
+class CtrlRobotDB:
     """
-    Controlador para acoplar GUI con lógica del programa.
+    Métodos para la selección y carga de robots y modelos
     """
     def __init__(self):
-        self.pickle_dir = os.path.join(SAVE_DIR, 'robotRegs.pkl')
-        self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
-        self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
-        self.train_kwargs = {}
-        self.datasets = {}
-        self.puntos = None
-        self.cargar()
-
-    """
-    Bases de datos robots/modelos
-    TODO: Separar en 3 controladores según responsabilidad?
-    """
-    def cargar(self):
-        if os.path.isfile(self.pickle_dir):
-            with open(self.pickle_dir, 'rb') as f:
-                self.robots = pickle.load(f)
-        else:
-            self.robots = SelectionList()
+        super().__init__()
+        self.pickle_dir = os.path.join(SAVE_DIR, 'robotDB.pkl')
+        self._robots = None
+        self._modelos = None
 
     def guardar(self):
         with open(self.pickle_dir, 'wb') as f:
-            pickle.dump(self.robots, f)
+            pickle.dump(self._robots, f)
+
+    """ Robots """
+    @property
+    def robots(self):
+        if self._robots is None:
+            if os.path.isfile(self.pickle_dir):
+                with open(self.pickle_dir, 'rb') as f:
+                    self._robots = pickle.load(f)
+            else:
+                self._robots = SelectionList()
+        return self._robots
 
     @property
     def robot_selec(self):
         return self.robots.selec()
 
-    @property
-    def modelos(self):
-        return self.robots.selec().modelos
-
-    @property
-    def modelo_selec(self):
-        if self.robot_selec is None:
-            return None
-        else:
-            return self.robot_selec.modelos.selec()
+    def seleccionar_robot(self, indice: int):
+        self.robots.seleccionar(indice)
 
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
         robot_inits = {"Externo" : ExternRobot,
@@ -80,24 +69,74 @@ class UIController(metaclass=Singleton):
         robot = robot_cls(**robot_args)
 
         agregado = self.robots.agregar(RoboReg(nombre, robot))
+        # 
         self.guardar()
         return agregado
 
+    def copiar_robot(self,
+                     origen: int,
+                     nombre: str,
+                     copiar_modelos: bool) -> bool:
+        agregado = self.robots.copiar(origen, nombre)
+        if agregado and copiar_modelos:
+            pass # self.robots[-1].modelos = copy()
+        return agregado
+
+    def eliminar_robot(self, indice: int):
+        self.robots.eliminar(indice)
+
+    """ Modelos """
+    @property
+    def modelos(self):
+        # if self._modelos is not None:
+        #     return self._modelos
+        # else:
+        #     for robot in self.robots:
+        #         for model in robot.models:
+        #             init(model.kwargs)
+        return self.robots.selec().modelos
+
+    @property
+    def modelo_selec(self):
+        if self.robot_selec is None:
+            return None
+        else:
+            return self.robot_selec.modelos.selec()
+
+    def seleccionar_modelo(self, indice: int):
+        self.modelos.seleccionar(indice)
+
     def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
+        # TODO: Hacer método self._init_obj para hacer esto
+        model_args.update(input_dim=self.robot_selec.robot.n,
+                          output_dim=3)
+
         cls_id = model_args.pop('cls_id')
         model_cls = getattr(modelos, cls_id)
 
-        model_args.update(input_dim=self.robot_selec.robot.n,
-                          output_dim=3)
         modelo = model_cls(**model_args)
 
         agregado = self.modelos.agregar(ModelReg(nombre, modelo))
         self.guardar()
         return agregado
 
+    def copiar_modelo(self, indice: int, nombre: str) -> bool:
+        return self.modelos.copiar(indice, nombre)
+
+    def eliminar_modelo(self, indice: int):
+        self.modelos.eliminar(indice)
+
+
+class CtrlEntrenamiento:
     """
-    Entrenamiento
+    Métodos para coordinar el entrenamiento de los modelos con GUI
     """
+    def __init__(self):
+        super().__init__()
+        self.train_kwargs = {}
+        self.datasets = {}
+        self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
+
     def set_train_kwargs(self, train_kwargs):
         self.train_kwargs = train_kwargs
 
@@ -141,9 +180,16 @@ class UIController(metaclass=Singleton):
                              # silent=True,
                              **fit_kwargs)
 
+
+class CtrlEjecucion:
     """
-    Control
+    Métodos para coordinar control punto a punto del robot.
     """
+    def __init__(self):
+        super().__init__()
+        self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
+        self.puntos = None
+
     def listas_puntos(self):
         return [os.path.splitext(n)[0] for n in os.listdir(self.trayec_dir)]
 
@@ -168,9 +214,21 @@ class UIController(metaclass=Singleton):
         q_prev = torch.zeros(model_robot.n)
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
+            print(x,y,z)
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
                                            p_target=target)
             _, p = self.robot_selec.robot.fkine(q)
             q_prev = q
-            time.sleep(t_s)
+            # time.sleep(t_s)
             reg_callback(p.tolist())
+
+
+class UIController(CtrlRobotDB,
+                   CtrlEntrenamiento,
+                   CtrlEjecucion,
+                   metaclass=Singleton):
+    """
+    Controlador para acoplar GUI con lógica del programa.
+    """
+    def __init__(self):
+        super().__init__()
