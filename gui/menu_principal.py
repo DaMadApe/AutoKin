@@ -63,17 +63,16 @@ class PantallaMenuPrincipal(Pantalla):
                                   font=(13))
         titulo_estado.grid(column=0, row=3, columnspan=2)
 
-        self.label_sys1 = ttk.Label(frame_status, text="Medición posición")
-        self.label_sys1.grid(column=0, row=4)
+        self.status_labels = []
 
-        self.label_status1 = ttk.Label(frame_status)
-        self.label_status1.grid(column=1, row=4)
+        for i, sis in enumerate(["Medición posición",
+                                 "Controlador robot"]):
+            sys_label = ttk.Label(frame_status, text=sis)
+            sys_label.grid(column=0, row=4+i)
 
-        self.label_sys2 = ttk.Label(frame_status, text="Controlador robot")
-        self.label_sys2.grid(column=0, row=5)
-
-        self.label_status2 = ttk.Label(frame_status)
-        self.label_status2.grid(column=1, row=5)
+            status_label = ttk.Label(frame_status)
+            status_label.grid(column=1, row=4+i)
+            self.status_labels.append(status_label)
 
         self.actualizar()
 
@@ -108,7 +107,7 @@ class PantallaMenuPrincipal(Pantalla):
         if modelo_selec is not None:
             model_nom = modelo_selec.nombre
             model_cls = modelo_selec.modelo.hparams['tipo']
-            self.label_modelo.config(text=f"{model_nom}({model_cls})")
+            self.label_modelo.config(text=f"{model_nom}  ({model_cls})")
             self.boton_entrenar['state'] = 'normal'
             self.boton_controlar['state'] = 'normal'
         else:
@@ -128,12 +127,14 @@ class PantallaMenuPrincipal(Pantalla):
             self.boton_config['state'] = 'disabled'
             self.boton_modelos['state'] = 'disabled'
 
-        # TODO: if self.controlador.get_status():
-        self.label_status1.config(text="  conectado ")
-        self.label_status1['style'] = 'Green.TLabel'
-
-        self.label_status2.config(text="desconectado")
-        self.label_status2['style'] = 'Red.TLabel'
+        status = self.controlador.get_ext_status()
+        for i, label in enumerate(self.status_labels):
+            if status[i]:
+                label.config(text="  conectado ")
+                label['style'] = 'Green.TLabel'
+            else:
+                label.config(text="desconectado ")
+                label['style'] = 'Red.TLabel'
 
 
 if __name__ == '__main__':
