@@ -67,7 +67,7 @@ class PantallaSelecModelo(Pantalla):
                                    modelo.epochs)
 
     def seleccionar_modelo(self, indice):
-        self.controlador.modelos.seleccionar(indice)
+        self.controlador.seleccionar_modelo(indice)
 
     def agregar_modelo(self, *args):
         def callback(nombre, model_args):
@@ -79,7 +79,7 @@ class PantallaSelecModelo(Pantalla):
 
     def copiar_modelo(self, indice):
         def callback(nombre):
-            agregado = self.controlador.modelos.copiar(indice, nombre)
+            agregado = self.controlador.copiar_modelo(indice, nombre)
             if agregado:
                 self.agregar_modelo_tabla(self.controlador.modelos[-1])
             return agregado
@@ -89,7 +89,7 @@ class PantallaSelecModelo(Pantalla):
         pass
 
     def eliminar_modelo(self, indice):
-        self.controlador.modelos.eliminar(indice)
+        self.controlador.eliminar_modelo(indice)
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def actualizar(self):

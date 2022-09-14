@@ -19,7 +19,7 @@ class PantallaSelecRobot(Pantalla):
                     ' # de actuadores')
         self.tabla = TablaYBotones(self, columnas=columnas,
                                    anchos=(160, 120, 120, 120),
-                                   fn_doble_click=self.seleccionar_robot)
+                                   fn_doble_click=self.controlador.seleccionar_robot)
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
@@ -33,7 +33,7 @@ class PantallaSelecRobot(Pantalla):
 
         self.tabla.agregar_boton(text="Seleccionar",
                                  width=20,
-                                 command=self.seleccionar_robot,
+                                 command=self.controlador.seleccionar_robot,
                                  activo_en_seleccion=True)
 
         self.tabla.agregar_boton(text="Copiar",
@@ -82,19 +82,16 @@ class PantallaSelecRobot(Pantalla):
             return agregado
         Popup_agregar_robot(self, callback)
 
-    def seleccionar_robot(self, indice):
-        self.controlador.robots.seleccionar(indice)
-
     def copiar_robot(self, indice):
-        def callback(nombre):
-            agregado = self.controlador.robots.copiar(indice, nombre)
+        def callback(nombre, copiar_modelos):
+            agregado = self.controlador.copiar_robot(indice, nombre, copiar_modelos)
             if agregado:
                 self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
         Popup_copiar_robot(self, callback)
 
     def ver_modelos(self, indice):
-        self.seleccionar_robot(indice)
+        self.controlador.seleccionar_robot(indice)
         self.parent.avanzar()
 
     def configurar_robot(self, indice):
@@ -102,7 +99,7 @@ class PantallaSelecRobot(Pantalla):
         pass
 
     def eliminar_robot(self, indice):
-        self.controlador.robots.eliminar(indice)
+        self.controlador.eliminar_robot(indice)
         self.tabla.tabla.delete(self.tabla.tabla.focus())
 
     def actualizar(self):
@@ -134,9 +131,11 @@ class Popup_copiar_robot(tk.Toplevel):
                                 var_type='str', width=20)
         self.nom_entry.grid(column=0, row=0)
 
-        # TODO: Arreglar ubicación y comportamiento de check
-        self.check_copia = ttk.Checkbutton(self, text="Copiar modelos")
-        self.check_copia.grid(column=0, row=1, columnspan=2)
+        self.check_var = tk.IntVar(value=0)
+        check_copia = ttk.Checkbutton(self,
+                                      text="Copiar modelos",
+                                      variable=self.check_var)
+        check_copia.grid(column=0, row=1, columnspan=2)
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.destroy)
@@ -151,8 +150,9 @@ class Popup_copiar_robot(tk.Toplevel):
 
     def copiar_robot(self):
         nombre = self.nom_entry.get()
+        copiar_modelos = bool(self.check_var.get())
         if nombre != '':
-            agregado = self.callback(nombre)
+            agregado = self.callback(nombre, copiar_modelos)
             if agregado:
                 self.destroy()
 
