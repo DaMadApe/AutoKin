@@ -95,19 +95,20 @@ class ResNet(FKModel):
         
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.blocks = nn.ModuleList()
-        self.blocks.append(nn.Linear(input_dim,
+        self.layers = nn.ModuleList()
+        self.layers.append(nn.Linear(input_dim,
                                      block_width))
         for _ in range(depth):
-            self.blocks.append(ResBlock(block_depth, block_width,
+            self.layers.append(ResBlock(block_depth,
+                                        block_width,
                                         self.activation))
         
-        self.blocks.append(nn.Linear(block_width,
+        self.layers.append(nn.Linear(block_width,
                                      output_dim))
 
     def forward(self, x):
-        for block in self.blocks:
-            x = block(x)
+        for layer in self.layers:
+            x = layer(x)
         return x
 
 
