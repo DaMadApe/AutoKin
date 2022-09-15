@@ -96,12 +96,12 @@ class DataFitMixin():
         checkpoint : Estado del optimizador y lr_scheduler, para reanudar
         entrenamiento
         """
-        self.loggers = loggers if loggers is not None else []
+        loggers = loggers if loggers is not None else []
         # Loggers automáticos según argumentos (retrocompatibilidad)
         if not silent:
-            self.loggers.append(TqdmDisplay(epochs))
+            loggers.append(TqdmDisplay(epochs))
         if log_dir is not None:
-            self.loggers.append(TBLogger(log_dir))
+            loggers.append(TBLogger(log_dir))
 
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -145,7 +145,7 @@ class DataFitMixin():
 
                 progress_info.update({'Loss/val': val_loss.item()})
 
-            for logger in self.loggers:
+            for logger in loggers:
                 logger.log_step(progress_info, epoch+self.trained_epochs)
 
         # Métricas para almacenar junto a hiperparámetros
@@ -156,7 +156,7 @@ class DataFitMixin():
 
         self.hparams.update({'lr':lr, 'batch_size':batch_size})
 
-        for logger in self.loggers:
+        for logger in loggers:
             logger.log_hparams(self.hparams, metrics)
             logger.close()
         
