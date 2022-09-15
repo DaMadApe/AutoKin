@@ -70,9 +70,9 @@ class PantallaSelecRobot(Pantalla):
 
     def agregar_robot_tabla(self, robot):
         self.tabla.agregar_entrada(robot.nombre,
-                                   robot.robot.__class__.__name__,
+                                   robot.cls_id,
                                    len(robot.modelos),
-                                   f"q = {robot.robot.n}")
+                                   f"q = {robot.init_obj().n}")
 
     def agregar_robot(self, *args):
         def callback(nombre, robot_args):
@@ -105,6 +105,7 @@ class PantallaSelecRobot(Pantalla):
     def actualizar(self):
         super().actualizar()
         self.tabla.limpiar_tabla()
+        self.tabla.desactivar_botones()
         for robot in self.controlador.robots:
             self.agregar_robot_tabla(robot)
 

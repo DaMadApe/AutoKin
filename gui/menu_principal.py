@@ -106,7 +106,7 @@ class PantallaMenuPrincipal(Pantalla):
 
         if modelo_selec is not None:
             model_nom = modelo_selec.nombre
-            model_cls = modelo_selec.modelo.hparams['tipo']
+            model_cls = modelo_selec.cls_id
             self.label_modelo.config(text=f"{model_nom}  ({model_cls})")
             self.boton_entrenar['state'] = 'normal'
             self.boton_controlar['state'] = 'normal'
@@ -117,7 +117,7 @@ class PantallaMenuPrincipal(Pantalla):
 
         if robot_selec is not None:
             robot_nom = robot_selec.nombre
-            robot_cls = robot_selec.robot.__class__.__name__
+            robot_cls = robot_selec.cls_id
             self.label_robot.config(text=f"{robot_nom}  ({robot_cls})")
             self.boton_config['state'] = 'normal'
             self.boton_modelos['state'] = 'normal'

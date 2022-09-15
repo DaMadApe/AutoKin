@@ -63,7 +63,7 @@ class PantallaSelecModelo(Pantalla):
 
     def agregar_modelo_tabla(self, modelo):
         self.tabla.agregar_entrada(modelo.nombre,
-                                   modelo.modelo.hparams['tipo'],
+                                   modelo.cls_id,
                                    modelo.epochs)
 
     def seleccionar_modelo(self, indice):
@@ -95,6 +95,7 @@ class PantallaSelecModelo(Pantalla):
     def actualizar(self):
         super().actualizar()
         self.tabla.limpiar_tabla()
+        self.tabla.desactivar_botones()
         for modelo in self.controlador.modelos:
             self.agregar_modelo_tabla(modelo)
 

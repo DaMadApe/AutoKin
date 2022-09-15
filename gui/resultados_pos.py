@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
     controlador = UIController()
 
-    q_demo = coprime_sines(controlador.robot_selec.robot.n, 80)[:10]
-    _, p_demo = controlador.robot_selec.robot.fkine(q_demo)
+    q_demo = coprime_sines(controlador.robot_s.n, 80)[:5]
+    _, p_demo = controlador.robot_s.fkine(q_demo)
     puntos = torch.concat([p_demo,
                            torch.zeros((len(p_demo),1)),
                            0.1*torch.ones((len(p_demo),1))], dim=1)

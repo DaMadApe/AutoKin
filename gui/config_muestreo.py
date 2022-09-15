@@ -147,7 +147,7 @@ class PantallaConfigMuestreo(Pantalla):
         return split
 
     def ejecutar(self):
-        n_inputs = self.controlador.robot_selec.robot.n
+        n_inputs = self.controlador.robot_s.n
 
         traj_cls = self.traj_combo.get()
 
