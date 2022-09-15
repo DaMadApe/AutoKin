@@ -1,27 +1,24 @@
-import torch
-
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from autokin.robot import Robot
-from autokin.modelos import FKModel
+from autokin.robot import *
+from autokin.modelos import *
 
 
 @dataclass
 class Reg:
     """
-    Base de registro
+    Base de registro de un objeto preinicializado
     """
-    nombre: str
+    inits = {} # {cls_id1 : Cls1, ...}
 
-@dataclass
-class ModelReg(Reg):
-    """
-    Registro de modelo 
-    """
-    modelo: FKModel
-    train_kwargs: dict = field(default_factory=dict)
-    epochs: int = 0
+    nombre: str
+    cls_id : str
+    kwargs : dict
+
+    def init_obj(self):
+        cls = self.inits[self.cls_id]
+        return cls(**self.kwargs)
 
 
 class SelectionList:
@@ -77,22 +74,25 @@ class SelectionList:
 
 
 @dataclass
+class ModelReg(Reg):
+    """
+    Registro de modelo 
+    """
+    inits = {cls.__name__ : cls for cls in [MLP, ResNet]}
+
+    epochs: int = 0
+
+
+@dataclass
 class RoboReg(Reg):
     """
     Registro de cada robot guardado junto con sus modelos.
 
-    Cada entrada se identifica con un nombre y corresponde a un
-    objeto Robot, con una lista de modelos asociados, almacenados
-    como identificadores textuales únicos
+    Se guardan los parámetros de inicialización del robot y
+    su lista de modelos
     """
-    robot: Robot
+    inits = {"Externo" : ExternRobot,
+             "Sim. RTB" : RTBrobot.from_name,
+             "Sim. SOFA" : SofaRobot}
+
     modelos: SelectionList = field(default_factory=SelectionList)
-
-    def _model_filename(self, idx):
-        return f'{self.nombre}_m{self.model_regs[idx].nombre}.pt'
-
-    def _log_filename(self, idx):
-        return f'{self.nombre}_m{self.model_regs[idx]}.log'
-
-    def load_model(self, idx):
-        return torch.load(self._model_filename(idx))

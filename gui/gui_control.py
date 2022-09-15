@@ -5,8 +5,7 @@ import time
 import numpy as np
 import torch
 
-from autokin.robot import ExternRobot, RTBrobot, SofaRobot, ModelRobot
-from autokin import modelos
+from autokin.robot import ModelRobot
 from autokin.muestreo import FKset
 from autokin.loggers import GUIprogress
 from gui.robot_database import SelectionList, ModelReg, RoboReg
@@ -34,8 +33,11 @@ class CtrlRobotDB:
     def __init__(self):
         super().__init__()
         self.pickle_dir = os.path.join(SAVE_DIR, 'robotDB.pkl')
+        self.model_dir = os.path.join(SAVE_DIR, 'modelos')
         self._robots = None
         self._modelos = None
+        self._robot_s = None
+        self._modelo_s = None
 
     def guardar(self):
         with open(self.pickle_dir, 'wb') as f:
@@ -54,22 +56,28 @@ class CtrlRobotDB:
 
     @property
     def robot_selec(self):
+        """
+        Registro de datos del robot seleccionado
+        """
         return self.robots.selec()
+
+    @property
+    def robot_s(self):
+        """
+        Robot seleccionado
+        """
+        if self._robot_s is None:
+            self._robot_s = self.robot_selec.init_obj()
+        return self._robot_s
 
     def seleccionar_robot(self, indice: int):
         self.robots.seleccionar(indice)
+        self._robot_s = None
+        self._modelo_s = None
 
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
-        robot_inits = {"Externo" : ExternRobot,
-                       "Sim. RTB" : RTBrobot.from_name,
-                       "Sim. SOFA" : SofaRobot}
-
         cls_id = robot_args.pop('cls_id')
-        robot_cls = robot_inits[cls_id]
-        robot = robot_cls(**robot_args)
-
-        agregado = self.robots.agregar(RoboReg(nombre, robot))
-        # 
+        agregado = self.robots.agregar(RoboReg(nombre, cls_id, robot_args))
         self.guardar()
         return agregado
 
@@ -78,45 +86,57 @@ class CtrlRobotDB:
                      nombre: str,
                      copiar_modelos: bool) -> bool:
         agregado = self.robots.copiar(origen, nombre)
-        if agregado and copiar_modelos:
-            pass # self.robots[-1].modelos = copy()
+        if agregado and not copiar_modelos:
+            self.robots[-1].modelos = SelectionList()
         return agregado
 
     def eliminar_robot(self, indice: int):
         self.robots.eliminar(indice)
 
     """ Modelos """
+    def _model_filename(self):
+        robot_nom = self.robot_selec.nombre
+        model_nom = self.modelo_selec.nombre
+        return f'{robot_nom}_{model_nom}.pt'
+
     @property
     def modelos(self):
-        # if self._modelos is not None:
-        #     return self._modelos
-        # else:
-        #     for robot in self.robots:
-        #         for model in robot.models:
-        #             init(model.kwargs)
         return self.robots.selec().modelos
 
     @property
     def modelo_selec(self):
+        """
+        Registo de datos del modelo seleccionado
+        """
         if self.robot_selec is None:
             return None
         else:
             return self.robot_selec.modelos.selec()
 
+    @property
+    def modelo_s(self):
+        """
+        Modelo seleccionado
+        """
+        if self._modelo_s is None:
+            model_path = os.path.join(self.model_dir, self._model_filename())
+            if os.path.isfile(model_path):
+                self._modelo_s = torch.load(model_path)
+            else:
+                self._modelo_s = self.modelo_selec.init_obj()
+        return self._modelo_s
+        
     def seleccionar_modelo(self, indice: int):
         self.modelos.seleccionar(indice)
+        self._model_s = None
 
     def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
-        # TODO: Hacer método self._init_obj para hacer esto
-        model_args.update(input_dim=self.robot_selec.robot.n,
+        model_args.update(input_dim=self.robot_s.n,
                           output_dim=3)
 
         cls_id = model_args.pop('cls_id')
-        model_cls = getattr(modelos, cls_id)
 
-        modelo = model_cls(**model_args)
-
-        agregado = self.modelos.agregar(ModelReg(nombre, modelo))
+        agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
         self.guardar()
         return agregado
 
@@ -125,6 +145,10 @@ class CtrlRobotDB:
 
     def eliminar_modelo(self, indice: int):
         self.modelos.eliminar(indice)
+
+    def guardar_modelo(self):
+        if self._modelo_s is not None:
+            torch.save(self._modelo_s, self._model_filename())
 
 
 class CtrlEntrenamiento:
@@ -151,8 +175,7 @@ class CtrlEntrenamiento:
         train_set, val_set, test_set = self._muestreo_inicial()
         stage_callback() 
 
-        self._ajuste_inicial(self.modelo_selec,
-                             train_set, val_set,
+        self._ajuste_inicial(train_set, val_set,
                              step_callback, close_callback)
         stage_callback()
 
@@ -164,21 +187,23 @@ class CtrlEntrenamiento:
 
     def _muestreo_inicial(self):
         # Generar dataset y repartirlo
-        dataset = FKset(self.robot_selec.robot, self.sample)
+        dataset = FKset(self.robot_s, self.sample)
         return dataset.rand_split(self.split)
 
-    def _ajuste_inicial(self, model_reg, train_set, val_set,
+    def _ajuste_inicial(self, train_set, val_set,
                         step_callback, close_callback):
         fit_kwargs = self.train_kwargs['Ajuste inicial']
         epocas = fit_kwargs['epochs']
-        log_dir = f'{self.tb_dir}/{self.robot_selec.nombre}_{model_reg.nombre}'
+        log_dir = os.path.join(self.tb_dir, self._model_filename())
 
-        model_reg.modelo.fit(train_set=train_set, val_set=val_set,
-                             log_dir=log_dir,
-                             loggers=[GUIprogress(epocas, step_callback,
-                                                  close_callback)],
-                             # silent=True,
-                             **fit_kwargs)
+        self.modelo_s.fit(train_set=train_set, val_set=val_set,
+                          log_dir=log_dir,
+                          loggers=[GUIprogress(epocas, step_callback,
+                                               close_callback)],
+                          # silent=True,
+                          **fit_kwargs)
+        
+        self.guardar_modelo()
 
 
 class CtrlEjecucion:
@@ -210,14 +235,14 @@ class CtrlEjecucion:
         self.puntos = puntos
 
     def ejecutar_trayec(self, reg_callback):
-        model_robot = ModelRobot(self.modelo_selec.modelo)
+        model_robot = ModelRobot(self.modelo_s)
         q_prev = torch.zeros(model_robot.n)
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
             print(x,y,z)
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
                                            p_target=target)
-            _, p = self.robot_selec.robot.fkine(q)
+            _, p = self.robot_s.fkine(q)
             q_prev = q
             # time.sleep(t_s)
             reg_callback(p.tolist())
