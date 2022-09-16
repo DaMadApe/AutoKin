@@ -240,7 +240,6 @@ class CtrlEjecucion:
         q_prev = torch.zeros(model_robot.n)
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
-            print(x,y,z)
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
                                            p_target=target)
             _, p = self.robot_s.fkine(q)
