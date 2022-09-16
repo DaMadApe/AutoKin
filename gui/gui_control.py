@@ -149,6 +149,7 @@ class CtrlRobotDB:
     def guardar_modelo(self):
         if self._modelo_s is not None:
             torch.save(self._modelo_s, self._model_filename())
+            self.guardar()
 
 
 class CtrlEntrenamiento:
@@ -198,11 +199,11 @@ class CtrlEntrenamiento:
 
         self.modelo_s.fit(train_set=train_set, val_set=val_set,
                           log_dir=log_dir,
-                          loggers=[GUIprogress(epocas, step_callback,
+                          loggers=[GUIprogress(step_callback,
                                                close_callback)],
-                          # silent=True,
+                          silent=True,
                           **fit_kwargs)
-        
+        self.modelo_selec.epochs += epocas
         self.guardar_modelo()
 
 
