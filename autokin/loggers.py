@@ -60,7 +60,7 @@ class GUIprogress(Logger):
     """
     Interacción con barra de progreso de Tkinter
     """
-    def __init__(self, epochs, step_callback, close_callback):
+    def __init__(self, step_callback, close_callback):
         self.step_callback = step_callback
         self.close_callback = close_callback
 
