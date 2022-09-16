@@ -22,8 +22,7 @@ class PantallaResultadosPosicion(Pantalla):
         self.ax = self.fig.add_subplot(projection='3d')
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=self)
-        self.grafica.get_tk_widget().grid(column=0, row=0, sticky='nw')
-        self.recargar_grafica()
+        self.grafica.get_tk_widget().grid(column=0, row=0, sticky='nw', padx=5, pady=35)
 
         # Tabla de puntos
         columnas = ('i', 'x*', 'y*', 'z*', 'x_r', 'y_r', 'z_r', 'e')
@@ -31,29 +30,22 @@ class PantallaResultadosPosicion(Pantalla):
                                    columnas=columnas,
                                    anchos=(30, 50, 50, 50,
                                            50, 50, 50, 50))
-        self.tabla.grid(column=1, row=0, rowspan=2, sticky='nse')
-
-        # Check si mostrar objetivos
-        check_var = tk.IntVar(value=1)
-        self.check_objs = ttk.Checkbutton(self,
-                                          text="Mostrar objetivos",
-                                          variable=check_var,
-                                          command=self.recargar_grafica)
-        self.check_objs .grid(column=0, row=1, sticky='w')
+        self.tabla.grid(column=1, row=0, 
+                        padx=10, pady=35, sticky='nse')
 
         # Botones
         boton_aceptar = ttk.Button(self, text="Aceptar",
                                     command=self.parent.reset)
-        boton_aceptar.grid(column=1, row=2, sticky='e')
-
-        for child in self.winfo_children():
-            child.grid_configure(padx=10, pady=5)
+        boton_aceptar.grid(column=1, row=2,
+                           padx=10, pady=5, sticky='e')
 
         # Comportamiento al cambiar de tamaño
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-    
-        self.parent.after(100, self.iniciar)
+
+        self.recargar_tabla()
+        self.recargar_grafica()
+        self.iniciar()
 
     def _errorL2(self, x1, y1, z1, x2, y2, z2):
         return ((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)**0.5
@@ -62,11 +54,9 @@ class PantallaResultadosPosicion(Pantalla):
         return tuple((round(x, ndigits=3) for x in punto))
 
     def reg_callback(self, punto):
-        self.parent.after(100)
         self.medidas.append([*punto])
         self.recargar_tabla()
         self.recargar_grafica()
-        self.parent.after(100)
 
     def iniciar(self):
         self.controlador.ejecutar_trayec(self.reg_callback)
@@ -101,6 +91,7 @@ class PantallaResultadosPosicion(Pantalla):
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
         self.grafica.draw()
+        self.update_idletasks()
 
 
 if __name__ == '__main__':

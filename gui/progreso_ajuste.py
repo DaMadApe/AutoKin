@@ -76,13 +76,15 @@ class PantallaProgresoAjuste(Pantalla):
 
     def iniciar_entrenamiento(self):
         epochs = self.controlador.train_kwargs['Ajuste inicial']['epochs']
-        self.progreso.config(maximum=epochs)
+        self.progreso.config(maximum=epochs+1)
         def step_callback(progress_info, epoch):
-            self.label_prog.config(text=f"Progreso: {epoch}")
+            self.label_prog.config(text=f"Progreso: {epoch+1}/{epochs} épocas")
             self.label_info.config(text=self._format_prog_info(progress_info))
-            self.parent.after(50, self.progreso.step)
+            self.progreso.step(1.0)
+            self.update_idletasks()
         def close_callback():
-            self.progreso.stop()
+            # self.progreso.stop()
+            pass
         def stage_callback():
             label = self.status_labels[self.etapas[self.etapa_actual]]
             label.config(text="Completado")
@@ -102,7 +104,6 @@ class PantallaProgresoAjuste(Pantalla):
             self.progreso.stop()
 
     def continuar(self, *args):
-        # self.progreso.step()
         self.parent.reset()
 
     def abrir_tensorboard(self):
