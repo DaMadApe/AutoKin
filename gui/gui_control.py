@@ -42,6 +42,11 @@ class CtrlRobotDB:
     def guardar(self):
         with open(self.pickle_dir, 'wb') as f:
             pickle.dump(self._robots, f)
+        
+        if self._modelo_s is not None:
+            model_path = self._model_path(self.robot_selec,
+                                          self.modelo_selec)
+            torch.save(self._modelo_s, model_path)
 
     """ Robots """
     @property
@@ -86,18 +91,27 @@ class CtrlRobotDB:
                      nombre: str,
                      copiar_modelos: bool) -> bool:
         agregado = self.robots.copiar(origen, nombre)
-        if agregado and not copiar_modelos:
-            self.robots[-1].modelos = SelectionList()
+        if agregado:
+            if copiar_modelos:
+                for modelo in self.robots[origen].modelos:
+                    obj = torch.load(self._model_path(self.robots[origen],
+                                                      modelo))
+                    torch.save(obj, self._model_path(self.robots[-1],
+                                                     modelo))
+
+            else:
+                self.robots[-1].modelos = SelectionList()
         return agregado
 
     def eliminar_robot(self, indice: int):
         self.robots.eliminar(indice)
 
     """ Modelos """
-    def _model_filename(self):
-        robot_nom = self.robot_selec.nombre
-        model_nom = self.modelo_selec.nombre
-        return f'{robot_nom}_{model_nom}.pt'
+    def _model_path(self, robot, modelo):
+        robot_nom = robot.nombre
+        model_nom = modelo.nombre
+        filename = f'{robot_nom}_{model_nom}.pt'
+        return os.path.join(self.model_dir, filename)
 
     @property
     def modelos(self):
@@ -119,8 +133,9 @@ class CtrlRobotDB:
         Modelo seleccionado
         """
         if self._modelo_s is None:
-            model_path = os.path.join(self.model_dir, self._model_filename())
-            if os.path.isfile(model_path):
+            model_path = self._model_path(self.robot_selec,
+                                          self.modelo_selec)
+            if os.path.isfile(model_path):      
                 self._modelo_s = torch.load(model_path)
             else:
                 self._modelo_s = self.modelo_selec.init_obj()
@@ -140,16 +155,17 @@ class CtrlRobotDB:
         self.guardar()
         return agregado
 
-    def copiar_modelo(self, indice: int, nombre: str) -> bool:
-        return self.modelos.copiar(indice, nombre)
+    def copiar_modelo(self, origen: int, nombre: str) -> bool:
+        agregado = self.modelos.copiar(origen, nombre)
+        if agregado:
+            obj = torch.load(self._model_path(self.robot_selec,
+                                              self.modelos[origen]))
+            torch.save(obj, self._model_path(self.robot_selec,
+                                             self.modelos[-1]))
+        return agregado
 
     def eliminar_modelo(self, indice: int):
         self.modelos.eliminar(indice)
-
-    def guardar_modelo(self):
-        if self._modelo_s is not None:
-            torch.save(self._modelo_s, self._model_filename())
-            self.guardar()
 
 
 class CtrlEntrenamiento:
@@ -195,7 +211,8 @@ class CtrlEntrenamiento:
                         step_callback, close_callback):
         fit_kwargs = self.train_kwargs['Ajuste inicial']
         epocas = fit_kwargs['epochs']
-        log_dir = os.path.join(self.tb_dir, self._model_filename())
+        log_name = f'{self.robot_selec.nombre}_{self.modelo_selec.nombre}'
+        log_dir = os.path.join(self.tb_dir, log_name)
 
         self.modelo_s.fit(train_set=train_set, val_set=val_set,
                           log_dir=log_dir,
@@ -204,7 +221,7 @@ class CtrlEntrenamiento:
                           silent=True,
                           **fit_kwargs)
         self.modelo_selec.epochs += epocas
-        self.guardar_modelo()
+        self.guardar()
 
 
 class CtrlEjecucion:
@@ -245,6 +262,7 @@ class CtrlEjecucion:
             _, p = self.robot_s.fkine(q)
             q_prev = q
             # time.sleep(t_s)
+            # after_fn(t_s*1000)
             reg_callback(p.tolist())
 
 
