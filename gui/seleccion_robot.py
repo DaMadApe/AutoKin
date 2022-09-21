@@ -101,6 +101,7 @@ class PantallaSelecRobot(Pantalla):
     def eliminar_robot(self, indice):
         self.controlador.eliminar_robot(indice)
         self.tabla.tabla.delete(self.tabla.tabla.focus())
+        self.tabla.desactivar_botones()
 
     def actualizar(self):
         super().actualizar()
