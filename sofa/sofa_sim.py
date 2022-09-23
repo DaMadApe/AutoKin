@@ -1,3 +1,4 @@
+import os
 import logging
 from math import cos
 from math import sin
@@ -9,9 +10,9 @@ import Sofa.constants.Key as Key
 from splib3.numerics import Vec3, Quat
 from splib3.animation import animate, AnimationManager
 
-import os
-path = os.path.dirname(os.path.abspath(__file__))+'/model_files/'
-dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
+
+path = os.path.dirname(__file__)+'/model_files/'
+dirPath = os.path.dirname(__file__)+'/'
 
 class TrunkController(Sofa.Core.Controller):
     def __init__(self, trunk, L=4, S=4, *args, **kwargs):
@@ -66,9 +67,9 @@ class TrunkController(Sofa.Core.Controller):
             # print(f'cable{i}.value: {cable.value[0]}, {dq}')
 
     def onAnimateBeginEvent(self, event): # called at each begin of animation step
-        self.step +=1
         if self.step < len(self.q) - 1:
             self.update_q(self.q_diff[self.step])
+            self.step += 1
         # print(self.step)
 
     def onAnimateEndEvent(self, event):
@@ -78,7 +79,7 @@ class TrunkController(Sofa.Core.Controller):
         self.forces[self.step] = forces
         # print(f'Efector final: {pos}')
         # print(self.p)
-        if self.step == len(self.q)-1:
+        if self.step == len(self.q)-2:
             self.p *= 0.1
             np.save(os.path.join(dirPath, 'p_out.npy'), self.p[1:])
             np.save(os.path.join(dirPath, 'forces_out.npy'), self.forces)
@@ -214,10 +215,6 @@ class Trunk():
 
 
 def createScene(rootNode):
-
-    import sys
-
-    print(sys.argv)
     # logging.getLogger().setLevel(logging.ERROR)
 
     rootNode.addObject('RequiredPlugin', pluginName=['SoftRobots',
@@ -250,7 +247,7 @@ def createScene(rootNode):
     with open('config.txt', 'r') as f:
         config = f.read()
 
-    print(config)
+    print(f'Config: {config}')
 
     configs = {'LLLL': ([0, np.pi/2, np.pi, np.pi*3/2],[]),
                'LSLS': ([0, np.pi],[np.pi/2, np.pi*3/2]),
@@ -270,4 +267,4 @@ def createScene(rootNode):
 
 # export PYTHONPATH="/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH"
 # export SOFA_ROOT="/home/damadape/SOFA_robosoft"
-# ~/SOFA_robosoft/bin/runSofa '/home/damadape/Documents/Autokin/sofa_tst.py'
+# ~/SOFA_robosoft/bin/runSofa '/home/damadape/Documents/Proyectos/Autokin/sofa/sofa_sim.py'
