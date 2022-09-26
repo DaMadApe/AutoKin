@@ -42,14 +42,16 @@ class PantallaConfigMuestreo(Pantalla):
         self.arg_getters = None
         self.split_arg_getters = {}
 
+        self.axis_combos = {}
+
         super().__init__(parent, titulo="Configurar muestreo")
 
     def definir_elementos(self):
-
         self.n_inputs = self.controlador.robot_s.n
 
         frame_grafica = ttk.Frame(self)
         frame_grafica.grid(column=0, row=0, sticky='nsew')
+
         # Opciones de trayectoria
         self.traj_combo = ttk.Combobox(frame_grafica, state='readonly')
         self.traj_combo.grid(column=0, row=0, sticky='w')
@@ -65,33 +67,38 @@ class PantallaConfigMuestreo(Pantalla):
         self.grafica = FigureCanvasTkAgg(self.fig, master=frame_grafica)
         self.grafica.get_tk_widget().grid(column=0, row=1, sticky='nsew')
 
-        # combos = combinations(range(1, self.n_inputs+1),
-        #                             self.n_inputs-2)
-        # axis_combos = {}
-        # for i, combo in enumerate(combos):
-        #     label = f'{i}.'
-        #     for ax in combo:
-        #         label += f' q{ax},'
-        #     label = label[:-1]
-        #     axis_combos[label] = combo
-
-        proyecs = ['1. q1', '2. q2', '3. q3', '4. q4']
+        # Selección de proyección en gráfica
         self.proyec_combo = ttk.Combobox(frame_grafica, state='readonly')
         self.proyec_combo.grid(column=0, row=2)
+
+        if self.n_inputs <= 3:
+            self.proyec_combo.config(state='disabled')
+            proyecs = ['']
+        else:
+            combos = combinations(range(1, self.n_inputs+1),
+                                        self.n_inputs-3)
+            for i, combo in enumerate(combos):
+                label = f"{i+1}."
+                for ax in combo:
+                    label += f" q{ax},"
+                label = label[:-1]
+                self.axis_combos[label] = combo
+            proyecs = list(self.axis_combos.keys())
+
         self.proyec_combo['values'] = proyecs
         self.proyec_combo.set(proyecs[0])
-        if self.n_inputs < 4:
-            self.proyec_combo.config(state='disabled')
+        self.proyec_combo.bind('<<ComboboxSelected>>', self.recargar_grafica)
 
+        # Configuraciones de la muestra
         frame_derecha = ttk.Frame(self)
         frame_derecha.grid(column=1, row=0, sticky='nsew')
         # Frame configs
-        self.frame_configs = ttk.LabelFrame(frame_derecha, text='Parámetros')
+        self.frame_configs = ttk.LabelFrame(frame_derecha, text="Parámetros")
         self.frame_configs.grid(column=0, row=0, sticky='nsew')
         self.definir_panel_config()
 
         # Frame config de split train-val-test
-        self.frame_split = ttk.LabelFrame(frame_derecha, text='Reparto de datos')
+        self.frame_split = ttk.LabelFrame(frame_derecha, text="Reparto de datos")
         self.frame_split.grid(column=0, row=1, sticky='nsew')
 
         default_split = {'train': 0.7,
@@ -134,8 +141,6 @@ class PantallaConfigMuestreo(Pantalla):
         frame_grafica.rowconfigure(1, weight=1)
         frame_derecha.rowconfigure(0, weight=1)
 
-        self.recargar_grafica()
-
     def definir_panel_config (self, *args):
         # Producir automáticamente entries según selección de trayectoria
         for widget in self.frame_configs.winfo_children():
@@ -149,27 +154,14 @@ class PantallaConfigMuestreo(Pantalla):
             entry = Label_Entry(self.frame_configs,
                                 width=10, **entry_kwargs)
             entry.grid(column=0, row=i)
+            entry.entry.bind('<Return>', self.recargar_grafica)
+            entry.entry.bind('<FocusOut>', self.recargar_grafica)
             self.arg_getters[arg_name] = entry.get
 
         for child in self.frame_configs.winfo_children():
             child.grid_configure(padx=10, pady=8)
 
-    def recargar_grafica(self):
-        self.ax.clear()
-        trayec = self.get_trayec()
-        proyec = self.proyec_combo.get()
-        if trayec is not None:
-            puntosTranspuesto = list(zip(*trayec))
-            self.ax.plot(*puntosTranspuesto[:3],
-                         color='lightcoral',
-                         linewidth=1.5)
-            self.ax.scatter(*puntosTranspuesto[:3],
-                            color='red')
-        self.ax.set_xlabel('q1')
-        self.ax.set_ylabel('q2')
-        if self.n_inputs > 2:
-            self.ax.set_zlabel('q3')
-        self.grafica.draw()
+        self.recargar_grafica()
 
     def get_traj_kwargs(self):
         traj_kwargs = {}
@@ -195,6 +187,28 @@ class PantallaConfigMuestreo(Pantalla):
                 trayec = traj_cls(self.n_inputs, **traj_kwargs)
                 return trayec
         return None
+
+    def get_proyec(self) -> list[int]:
+        combo = self.proyec_combo.get()
+        ejes_ocultos = self.axis_combos[combo] if combo else []
+        return [i for i in range(self.n_inputs) if i+1 not in ejes_ocultos]
+
+    def recargar_grafica(self, *args):
+        self.ax.clear()
+        trayec = self.get_trayec()
+        ejes_visibles = self.get_proyec()
+        if trayec is not None:
+            puntosTranspuesto = trayec.transpose(0,1)# list(zip(*trayec))
+            self.ax.plot(*puntosTranspuesto[ejes_visibles].numpy(),
+                         color='lightcoral',
+                         linewidth=1.5)
+            self.ax.scatter(*puntosTranspuesto[ejes_visibles].numpy(),
+                            color='red')
+        self.ax.set_xlabel('q1')
+        self.ax.set_ylabel('q2')
+        if self.n_inputs > 2:
+            self.ax.set_zlabel('q3')
+        self.grafica.draw()
 
     def ejecutar(self):
         trayec = self.get_trayec()
