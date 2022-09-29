@@ -42,7 +42,7 @@ class DataFitMixin():
         self.checkpoint = {}
         self.trained_epochs = 0
 
-    def set_out_bias(self, reference_set=None):
+    def _set_out_bias(self, reference_set=None):
         """
         Ajustar el bias de salida a los promedios de salida
         de un set de referencia. Acelera convergencia de fit()
@@ -108,7 +108,7 @@ class DataFitMixin():
         self.criterion = criterion
 
         if preadjust_bias:
-            self.set_out_bias(train_set)
+            self._set_out_bias(train_set)
 
         self.optimizer = optim(self.parameters(), lr=lr)
         if use_checkpoint and self.checkpoint:
@@ -116,9 +116,10 @@ class DataFitMixin():
 
         if lr_scheduler:
             scheduler = ReduceLROnPlateau(self.optimizer)#, patience=5)
-            if use_checkpoint and self.checkpoint:
-                scheduler.load_state_dict(
-                    self.checkpoint['sheduler_state_dict'])
+            if use_checkpoint:
+                sched_state = self.checkpoint.get('sheduler_state_dict')
+                if sched_state:
+                    scheduler.load_state_dict(sched_state)
 
         train_loader = DataLoader(train_set, batch_size=batch_size,
                                   shuffle=True)
