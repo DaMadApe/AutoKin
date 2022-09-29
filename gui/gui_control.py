@@ -14,18 +14,6 @@ from gui.robot_database import SelectionList, ModelReg, RoboReg
 SAVE_DIR = 'gui/app_data'
 
 
-class Singleton(type):
-    """
-    Metaclase para asegurar que cada incialización de la clase
-    devuelva la misma instancia en lugar de crear una nueva
-    """
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
 class CtrlRobotDB:
     """
     Métodos para la selección y carga de robots y modelos
@@ -268,8 +256,7 @@ class CtrlEjecucion:
 
 class UIController(CtrlRobotDB,
                    CtrlEntrenamiento,
-                   CtrlEjecucion,
-                   metaclass=Singleton):
+                   CtrlEjecucion):
     """
     Controlador para acoplar GUI con lógica del programa.
     """

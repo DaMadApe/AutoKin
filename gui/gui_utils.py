@@ -10,6 +10,8 @@ class Pantalla(ttk.Frame):
     """
     Clase base para cada pantalla del programa
     """
+    controlador = UIController()
+
     def __init__(self, parent, titulo):
         super().__init__(parent, padding="16 16 16 16")
         self.grid(column=0, row=0, sticky='nsew')
@@ -20,7 +22,6 @@ class Pantalla(ttk.Frame):
 
         self.parent = parent
         self.titulo = titulo
-        self.controlador = UIController()
 
         self.definir_elementos()
 
