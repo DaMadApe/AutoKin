@@ -10,8 +10,12 @@ from gui.gui_utils import Pantalla
 class PantallaProgresoAjuste(Pantalla):
 
     def __init__(self, parent):
-        self.status_labels = {}
+        self.status_labels = []
         self.etapa_actual = 0
+        self.max_steps = 0
+        self.terminado = False
+        parent.after(50) # Solución extraña para evitar errores con
+                         # callbacks cuando se rehace la pantalla
         super().__init__(parent, titulo="Progreso de entrenamiento")
 
     def definir_elementos(self):
@@ -23,8 +27,8 @@ class PantallaProgresoAjuste(Pantalla):
 
         self.etapas = list(self.controlador.train_kwargs.keys())
         if "Ajuste inicial" in self.etapas:
-            self.etapas.insert(self.etapas.index("Ajuste inicial")-1,
-                          "Muestreo inicial")
+            self.etapas.insert(self.etapas.index("Ajuste inicial"),
+                               "Muestreo inicial")
 
         for i, etapa in enumerate(self.etapas):
             ttk.Label(frame_etapas, text=etapa).grid(column=0, row=i+1, sticky='w')
@@ -33,7 +37,7 @@ class PantallaProgresoAjuste(Pantalla):
             status_label.grid(column=1, row=i+1, sticky='w')
             status_label['style'] = 'Red.TLabel'
 
-            self.status_labels[etapa] = status_label
+            self.status_labels.append(status_label)
 
         # Barra de progreso
         frame_progreso = ttk.Frame(self)
@@ -44,8 +48,7 @@ class PantallaProgresoAjuste(Pantalla):
         self.label_prog.grid(column=0, row=0, sticky='w')
         self.label_info = ttk.Label(frame_progreso, text=" ")
         self.label_info.grid(column=1, row=0, sticky='w')
-        self.progreso = ttk.Progressbar(frame_progreso, orient='horizontal',
-                                        mode='determinate')
+        self.progreso = ttk.Progressbar(frame_progreso, orient='horizontal')
         self.progreso.grid(column=0, row=1, columnspan=2,
                            sticky='ew')
     
@@ -54,11 +57,11 @@ class PantallaProgresoAjuste(Pantalla):
         boton_tb.grid(column=0, row=2, sticky='w')
 
         # Botones del fondo
-        boton_regresar = ttk.Button(self, text="Regresar",
+        self.boton_regresar = ttk.Button(self, text="Regresar",
                                     command=self.regresar)
-        boton_regresar.grid(column=0, row=3, sticky='sw')
+        self.boton_regresar.grid(column=0, row=3, sticky='sw')
 
-        boton_continuar = ttk.Button(self, text="Aceptar",
+        boton_continuar = ttk.Button(self, text="Salir",
                                      command=self.continuar)
         boton_continuar.grid(column=1, row=3, sticky='se')
 
@@ -74,36 +77,71 @@ class PantallaProgresoAjuste(Pantalla):
 
         self.parent.after(100, self.iniciar_entrenamiento)
 
-    def iniciar_entrenamiento(self):
-        epochs = self.controlador.train_kwargs['Ajuste inicial']['epochs']
-        self.progreso.config(maximum=epochs+1)
-        def step_callback(progress_info, epoch):
-            self.label_prog.config(text=f"Progreso: {epoch+1}/{epochs} épocas")
-            self.label_info.config(text=self._format_prog_info(progress_info))
-            self.progreso.step(1.0)
-            self.update_idletasks()
-        def close_callback():
-            # self.progreso.stop()
-            pass
-        def stage_callback():
-            label = self.status_labels[self.etapas[self.etapa_actual]]
-            label.config(text="Completado")
-            label['style'] = 'Green.TLabel'
-            self.etapa_actual += 1
-        self.controlador.entrenar(stage_callback, step_callback, close_callback)
-
     def _format_prog_info(self, progress_info):
         formated = str()
         for key, val in progress_info.items():
             formated += f"{key}: {val:4f}   "
         return formated
 
-    def regresar(self, *args):
-        if tk.messagebox.askokcancel("Cerrar", "Cerrar programa?"):
-            self.parent.regresar()
+    def iniciar_entrenamiento(self):
+        self.controlador.entrenar(self.stage_callback,
+                                  self.step_callback,
+                                  self.fin_entrenamiento,
+                                  self.parent.after)
+
+    def stage_callback(self, steps: int):
+        self.progreso.stop()
+        self.label_prog.config(text="")
+        self.max_steps = steps
+        if steps == 0:
+            self.progreso.config(mode='indeterminate', maximum=100)
+            self.progreso.start()
+        else:
+            self.progreso.config(mode='determinate', maximum=self.max_steps+1)
+        if self.etapa_actual > 0:
+            label = self.status_labels[self.etapa_actual-1]
+            label.config(text="Completado")
+            label['style'] = 'Green.TLabel'
+        label = self.status_labels[self.etapa_actual]
+        label.config(text="En proceso...")
+        label['style'] = 'Orange.TLabel'
+
+        self.etapa_actual += 1
+
+    def step_callback(self, progress_info: dict, epoch: int):
+        self.label_prog.config(text=f"Progreso: {epoch+1}/{self.max_steps}")
+        self.label_info.config(text=self._format_prog_info(progress_info))
+        self.progreso.step(1.0)
+        self.update_idletasks()
+
+    def fin_entrenamiento(self):
+        self.boton_regresar['state'] = 'disabled'
+        if str(self.progreso['mode']) == 'indeterminate':
             self.progreso.stop()
+        label = self.status_labels[-1]
+        label.config(text="Completado")
+        label['style'] = 'Green.TLabel'
+        self.terminado = True
+
+    def regresar(self, *args):
+        self.controlador.pausar()
+        if tk.messagebox.askokcancel("Regresar",
+                                     "Cancelar entrenamiento?"):
+            self.controlador.detener(guardar=False)
+            self.parent.regresar()
+        else:
+            self.controlador.reanudar()
 
     def continuar(self, *args):
+        if not self.terminado:
+            self.controlador.pausar()
+            if not tk.messagebox.askokcancel("Entrenamiento en progreso",
+                                             "Cancelar entrenamiento?"):
+                self.controlador.reanudar()
+                return
+        guardar = tk.messagebox.askyesno("Guardar?",
+                                         "Guardar progreso del modelo?")
+        self.controlador.detener(guardar=guardar)
         self.parent.reset()
 
     def abrir_tensorboard(self):

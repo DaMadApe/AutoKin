@@ -1,17 +1,36 @@
 import os
 import pickle
 import time
+from collections import namedtuple
+from threading import Thread
+from queue import Queue
 
 import numpy as np
 import torch
 
 from autokin.robot import ModelRobot
+from autokin.modelos import FKModel
 from autokin.muestreo import FKset
-from autokin.loggers import GUIprogress
+from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
 
 SAVE_DIR = 'gui/app_data'
+
+
+class SignalQueue(Queue):
+    def __init__(self):
+        super().__init__()
+        self.done = False
+        self.pause = False
+
+    def interrupt(self) -> bool:
+        while self.pause:
+            pass
+        return self.done
+
+
+Msg = namedtuple('Msg', ('head', 'info'), defaults=(None, None))
 
 
 class CtrlRobotDB:
@@ -165,6 +184,7 @@ class CtrlEntrenamiento:
         self.train_kwargs = {}
         self.datasets = {}
         self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
+        self.queue = SignalQueue()
 
     def set_train_kwargs(self, train_kwargs):
         self.train_kwargs = train_kwargs
@@ -173,43 +193,118 @@ class CtrlEntrenamiento:
         self.sample = sample
         self.split = list(sample_split.values())
 
-    def entrenar(self, stage_callback, step_callback, close_callback):
-        # if(muestreo_activo):
-        #     modelo = ensemble(modelo)
-
-        train_set, val_set, test_set = self._muestreo_inicial()
-        stage_callback() 
-
-        self._ajuste_inicial(train_set, val_set,
-                             step_callback, close_callback)
-        stage_callback()
-
-        # if(muestreo_activo):
-        #     modelo = max(ensemble, max_score)
-
-    def _meta_ajuste(self):
-        pass
-
-    def _muestreo_inicial(self):
-        # Generar dataset y repartirlo
-        dataset = FKset(self.robot_s, self.sample)
-        return dataset.rand_split(self.split)
-
-    def _ajuste_inicial(self, train_set, val_set,
-                        step_callback, close_callback):
-        fit_kwargs = self.train_kwargs['Ajuste inicial']
-        epocas = fit_kwargs['epochs']
+    def entrenar(self, stage_callback, step_callback, end_callback, after_fn):
+        self.queue = SignalQueue()
         log_name = f'{self.robot_selec.nombre}_{self.modelo_selec.nombre}'
         log_dir = os.path.join(self.tb_dir, log_name)
 
-        self.modelo_s.fit(train_set=train_set, val_set=val_set,
-                          log_dir=log_dir,
-                          loggers=[GUIprogress(step_callback,
-                                               close_callback)],
-                          silent=True,
-                          **fit_kwargs)
-        self.modelo_selec.epochs += epocas
-        self.guardar()
+        self.trainer = TrainThread(queue=self.queue,
+                                   modelo=self.modelo_s,
+                                   robot=self.robot_s,
+                                   sample=self.sample,
+                                   split=self.split,
+                                   train_kwargs=self.train_kwargs,
+                                   log_dir=log_dir)
+        self.trainer.start()
+
+        self.check_queue(stage_callback, step_callback, 
+        end_callback, after_fn)
+
+    def check_queue(self, stage_callback, step_callback, end_callback, after_fn):
+        while not self.queue.empty() and not self.queue.done:
+            msg = self.queue.get()
+
+            if msg.head == 'stage':
+                stage_callback(msg.info)
+            elif msg.head == 'step':
+                step_callback(*msg.info)
+            elif msg.head == 'close':
+                self.modelo_selec.epochs += msg.info['Ajuste inicial']
+                self.detener(guardar=True)
+                end_callback()
+                return
+
+        after_fn(100, self.check_queue, 
+                 stage_callback, step_callback, end_callback, after_fn)
+
+    def detener(self, guardar: bool):
+        self.queue.done = True
+        self.queue.pause = False
+        self.trainer.join()
+        if guardar:
+            self.guardar()
+
+    def pausar(self):
+        self.queue.pause = True
+
+    def reanudar(self):
+        self.queue.pause = False
+
+
+class TrainThread(Thread):
+
+    def __init__(self, queue: SignalQueue, modelo:FKModel,
+                 robot, sample, split, train_kwargs, log_dir):
+        super().__init__(name='training',daemon=True)
+        self.queue = queue
+        self.modelo = modelo
+        self.robot = robot
+        self.sample = sample
+        self.split = split
+        self.train_kwargs = train_kwargs
+        self.log_dir = log_dir
+
+    def run(self):
+        resultados = {}
+        for etapa in self.train_kwargs.keys():
+            if not self.queue.done:
+                method_name = '_' + etapa.lower().replace(' ', '_')
+                resultados[etapa] = getattr(self, method_name)()
+
+        self.queue.put(Msg('close', resultados))
+
+    def _meta_ajuste(self):
+        self.queue.put(Msg('stage', 100))
+        mfit_kwargs = self.train_kwargs['Meta ajuste']
+        # self.modelo.meta_fit(**mfit_kwargs)
+        for i in range(100):
+            time.sleep(0.01)
+            self.queue.put(Msg('step', ({},i)))
+        print(mfit_kwargs)
+
+    def _ajuste_inicial(self):
+        # Muestreo
+        self.queue.put(Msg('stage', 0))
+        time.sleep(2)            
+        dataset = FKset(self.robot, self.sample)
+        train_set, val_set, test_set = dataset.rand_split(self.split)
+
+        fit_kwargs = self.train_kwargs['Ajuste inicial']
+        self.queue.put(Msg('stage', fit_kwargs['epochs']))
+
+        if not self.queue.done:
+            le_log = LastEpochLog()
+            gui_logger = GUIprogress(step_callback=lambda *x:
+                                        self.queue.put(Msg('step', x)),
+                                    close_callback=lambda:None)
+
+            self.modelo.fit(train_set=train_set, val_set=val_set,
+                            log_dir=self.log_dir,
+                            loggers=[gui_logger, le_log],
+                            silent=True,
+                            ext_interrupt=self.queue.interrupt,
+                            **fit_kwargs)
+
+            return le_log.last_epoch
+
+    def _ajuste_dirigido(self):
+        self.queue.put(Msg('stage', 0))
+        afit_kwargs = self.train_kwargs['Ajuste dirigido']
+        # self.modelo.active_fit(**afit_kwargs)
+        print(afit_kwargs)
+        for i in range(100):
+            time.sleep(0.01)
+            self.queue.put(Msg('step', ({},i)))
 
 
 class CtrlEjecucion:
@@ -257,6 +352,10 @@ class CtrlEjecucion:
 class UIController(CtrlRobotDB,
                    CtrlEntrenamiento,
                    CtrlEjecucion):
+                   # TODO(?): Refactorizar para composición
+                   # self.controlador.robots.seleccionar
+                   # self.controlador.entrenamiento.detener
+                   # self.controlador.ejecucion.iniciar
     """
     Controlador para acoplar GUI con lógica del programa.
     """
