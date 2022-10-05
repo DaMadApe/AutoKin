@@ -73,7 +73,7 @@ class DataFitMixin():
             criterion=nn.MSELoss(), optim=torch.optim.Adam,
             lr_scheduler=False, silent=False, log_dir=None,
             use_checkpoint=True, preadjust_bias=True,
-            loggers: list[Logger] = None):
+            loggers: list[Logger] = None, ext_interrupt=None):
         """
         Rutina de entrenamiento para ajustar a un conjunto de datos
         
@@ -97,7 +97,7 @@ class DataFitMixin():
         entrenamiento
         """
         loggers = loggers if loggers is not None else []
-        # Loggers automáticos según argumentos (retrocompatibilidad)
+        # Loggers automáticos según argumentos
         if not silent:
             loggers.append(TqdmDisplay(epochs))
         if log_dir is not None:
@@ -147,7 +147,10 @@ class DataFitMixin():
                 progress_info.update({'Loss/val': val_loss.item()})
 
             for logger in loggers:
-                logger.log_step(progress_info, epoch+self.trained_epochs)
+                logger.log_step(progress_info, epoch)
+
+            if ext_interrupt is not None and ext_interrupt():
+                break
 
         # Métricas para almacenar junto a hiperparámetros
         if val_set is not None:
