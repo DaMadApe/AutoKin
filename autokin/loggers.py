@@ -86,3 +86,11 @@ class TxtLogger(Logger):
 
     def close(self):
         pass
+
+
+class LastEpochLog(Logger):
+    def __init__(self):
+        self.last_epoch = None
+
+    def log_step(self, progress_info, epoch: int):
+        self.last_epoch = epoch
