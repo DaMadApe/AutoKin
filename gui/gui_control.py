@@ -270,7 +270,6 @@ class TrainThread(Thread):
         for i in range(100):
             time.sleep(0.01)
             self.queue.put(Msg('step', ({},i)))
-        print(mfit_kwargs)
 
     def _ajuste_inicial(self):
         # Muestreo
@@ -301,7 +300,6 @@ class TrainThread(Thread):
         self.queue.put(Msg('stage', 0))
         afit_kwargs = self.train_kwargs['Ajuste dirigido']
         # self.modelo.active_fit(**afit_kwargs)
-        print(afit_kwargs)
         for i in range(100):
             time.sleep(0.01)
             self.queue.put(Msg('step', ({},i)))
