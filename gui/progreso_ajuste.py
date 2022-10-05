@@ -14,8 +14,8 @@ class PantallaProgresoAjuste(Pantalla):
         self.etapa_actual = 0
         self.max_steps = 0
         self.terminado = False
-        parent.after(50) # Solución extraña para evitar errores con
-                         # callbacks cuando se rehace la pantalla
+        parent.after(100) # Solución extraña para evitar errores con
+                          # callbacks cuando se rehace la pantalla
         super().__init__(parent, titulo="Progreso de entrenamiento")
 
     def definir_elementos(self):
@@ -90,7 +90,8 @@ class PantallaProgresoAjuste(Pantalla):
                                   self.parent.after)
 
     def stage_callback(self, steps: int):
-        self.progreso.stop()
+        if str(self.progreso['mode']) == 'indeterminate':
+            self.progreso.stop()
         self.label_prog.config(text="")
         self.max_steps = steps
         if steps == 0:
