@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+from gui.gui_utils import Pantalla
 from gui.menu_principal import PantallaMenuPrincipal
 from gui.seleccion_robot import PantallaSelecRobot
 from gui.seleccion_modelo import PantallaSelecModelo
@@ -18,6 +19,7 @@ class Interfaz(tk.Tk):
 
         style= ttk.Style()
         style.configure('Green.TLabel', foreground='#3A2')
+        style.configure('Orange.TLabel', foreground='#F80')
         style.configure('Red.TLabel', foreground='#A11')
         style.configure('Red.TEntry', foreground='red')
         style.configure('Red.TButton', background='#FAA')
@@ -39,7 +41,7 @@ class Interfaz(tk.Tk):
         # style= ttk.Style()
         # style.theme_use('clam')
 
-        self.frame_stack = []
+        self.frame_stack: list[Pantalla] = []
         self.ruta = []
         self.reset()
 
