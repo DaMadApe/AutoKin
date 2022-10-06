@@ -56,10 +56,14 @@ class Label_Entry:
     Ocupa 3 posiciones si se declara post_label
     """
 
-    def __init__(self, parent, label:str,
-                 var_type:str, default_val=None,
-                 restr_positiv=False, non_zero=False,
-                 vertical=False, post_label:str=None,
+    def __init__(self, parent,
+                 label : str,
+                 var_type : str,
+                 default_val = None,
+                 restr_positiv = False,
+                 non_zero = False,
+                 vertical = False,
+                 post_label : str = None,
                  **entry_kwargs):
 
         self.var_type = var_type
@@ -107,6 +111,13 @@ class Label_Entry:
         else:
             self.entry['style'] = 'Red.TEntry'
             return None
+
+    def set(self, val):
+        if not self.valid(val):
+            raise ValueError('Argumento no cumple validación')
+        else:
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, val)
 
     def grid(self, column, row, label_sticky='w',
              entry_sticky='we', **both_kwargs):
