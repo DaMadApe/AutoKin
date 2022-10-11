@@ -1,3 +1,4 @@
+from tabnanny import check
 import tkinter as tk
 from tkinter import ttk
 
@@ -48,6 +49,29 @@ class Popup_agregar_modelo(tk.Toplevel):
             },
         }
     }
+
+    model_args.update({
+        'MLPEnsemble': {
+            'n_modelos': {
+                'label': '# de modelos',
+                'var_type': 'int',
+                'default_val': 3,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            **model_args['MLP']
+        },
+        'ResNetEnsemble': {
+            'n_modelos': {
+                'label': '# de modelos',
+                'var_type': 'int',
+                'default_val': 3,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            **model_args['ResNet']
+        }
+    })
 
     def __init__(self, parent, callback):
         super().__init__()
@@ -110,15 +134,19 @@ class Popup_agregar_modelo(tk.Toplevel):
         tipo_modelo = self.combo_model_cls.get()
         args = self.model_args[tipo_modelo]
         self.arg_getters = {}
+        self.entries = {}
 
+        # Entradas para parámetros numéricos
         for i, (arg_name, entry_kwargs) in enumerate(args.items()):
             entry = Label_Entry(self.frame_mod_params,
                                 width=10, **entry_kwargs)
             entry.grid(column=0, row=i)
+            self.entries[arg_name] = entry
             self.arg_getters[arg_name] = entry.get
 
+        # Selección de función de activación
         f_act_label = ttk.Label(self.frame_mod_params, text="Función de activación")
-        f_act_label.grid(column=0, row=len(args))
+        f_act_label.grid(column=0, row=len(args), sticky='w')
         f_act_combo = ttk.Combobox(self.frame_mod_params,state='readonly',
                                    width=10)
         f_act_combo.grid(column=1, row=len(args))
@@ -127,13 +155,31 @@ class Popup_agregar_modelo(tk.Toplevel):
 
         self.arg_getters['activation'] = f_act_combo.get
 
+        # Checkbox de propagación selectiva
+        if 'Ensemble' in tipo_modelo:
+            self.check_var = tk.IntVar()
+            check_but = ttk.Checkbutton(self.frame_mod_params,
+                                        text="Propagar según signo de dq",
+                                        variable=self.check_var,
+                                        command=self.check_fun)
+            check_but.grid(column=0, row=len(args)+1, sticky='w')
+        else:
+            self.check_var = None
+
         for child in self.frame_mod_params.winfo_children():
             child.grid_configure(padx=5, pady=5)
+
+    def check_fun(self):
+        state = 'disabled' if self.check_var.get() else 'normal'
+        entry = self.entries['n_modelos']
+        entry.entry['state'] = state
 
     def get_model_kwargs(self):
         model_kwargs = {}
         for arg_name, get_fn in self.arg_getters.items():
             model_kwargs[arg_name] = get_fn()
+        if self.check_var is not None and self.check_var.get():
+            model_kwargs['n_modelos'] = 0
         return model_kwargs
 
     def ejecutar(self):

@@ -78,7 +78,10 @@ class ModelReg(Reg):
     """
     Registro de modelo 
     """
-    inits = {cls.__name__ : cls for cls in [MLP, ResNet]}
+    inits = {cls.__name__ : cls for cls in [MLP, 
+                                            ResNet,
+                                            MLPEnsemble,
+                                            ResNetEnsemble]}
 
     epochs: int = 0
 
