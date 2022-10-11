@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from autokin.modelos import FKEnsemble
 
 from gui.gui_utils import Pantalla, Label_Entry
 
@@ -112,6 +113,8 @@ class PantallaConfigAjuste(Pantalla):
 
     def __init__(self, parent):
         self.arg_getters = {etapa: {} for etapa in self.args_etapas.keys()}
+        self.check_buts = {}
+        self.check_vars = {}
 
         super().__init__(parent, titulo="Configurar aproximación")
 
@@ -125,7 +128,6 @@ class PantallaConfigAjuste(Pantalla):
                                   font=(12))
         titulo_checks.grid(column=0, row=0, padx=5, pady=5)
 
-        self.check_vars = []
         for i, etapa in enumerate(self.args_etapas.keys()):
             check_var = tk.IntVar()
             check_but = ttk.Checkbutton(frame_checks, text=etapa,
@@ -133,7 +135,8 @@ class PantallaConfigAjuste(Pantalla):
                                         command=self.actualizar_tabs)
             check_but.grid(column=0, row=i+1,
                            padx=5, pady=5, sticky='w')
-            self.check_vars.append(check_var)
+            self.check_buts[etapa] = check_but
+            self.check_vars[etapa] = check_var
 
         # Configuración de cada etapa
         self.tabs_config = ttk.Notebook(self)
@@ -149,8 +152,13 @@ class PantallaConfigAjuste(Pantalla):
 
             self.tabs_config.add(frame, text=etapa)
 
-        # Ajuste inicial checado por default
-        self.check_vars[1].set(1)
+        # Ajuste inicial checado por default, no modificable
+        self.check_vars['Ajuste inicial'].set(1)
+        self.check_buts['Ajuste inicial']['state'] = 'disabled'
+        # Muestreo activo condicionado a que el modelo sea FKEnsemble
+        if not isinstance(self.controlador.modelo_s, FKEnsemble):
+            self.check_buts['Ajuste dirigido']['state'] = 'disabled'
+
         self.actualizar_tabs()
 
         # Botones inferiores
@@ -176,7 +184,7 @@ class PantallaConfigAjuste(Pantalla):
         self.rowconfigure(1, weight=1)
 
     def actualizar_tabs(self):
-        for i, var in enumerate(self.check_vars):
+        for i, var in enumerate(self.check_vars.values()):
             state = 'normal' if var.get()==1 else 'hidden'
             self.tabs_config.tab(i, state=state)
 
@@ -187,10 +195,10 @@ class PantallaConfigAjuste(Pantalla):
                 self.parent.avanzar()
 
     def get_train_kwargs(self):
-        train_kwargs = {} # etapa: {} for etapa in self.args_etapas.keys()}
-        for i, (etapa, args) in enumerate(self.arg_getters.items()):
+        train_kwargs = {}
+        for etapa, args in self.arg_getters.items():
             # Sólo añadir params de etapas seleccionadas
-            if self.check_vars[i].get() == 1:
+            if self.check_vars[etapa].get() == 1:
                 train_kwargs[etapa] = {}
                 for arg_name, get_fn in args.items():
                     arg_value = get_fn()
