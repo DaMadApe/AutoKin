@@ -1,21 +1,24 @@
 import os
 import pickle
 import time
-from collections import namedtuple
-from threading import Thread
+import webbrowser
+from threading import Thread, Event
 from queue import Queue
+from typing import Union
+from collections import namedtuple
 
 import numpy as np
 import torch
+from tensorboard import program
 
-from autokin.robot import ModelRobot
-from autokin.modelos import FKModel
+from autokin.robot import Robot, ModelRobot
+from autokin.modelos import FKEnsemble, FKModel
 from autokin.muestreo import FKset
 from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
 
-SAVE_DIR = 'gui/app_data'
+SAVE_DIR = os.path.join('gui', 'app_data')
 
 
 class SignalQueue(Queue):
@@ -57,7 +60,7 @@ class CtrlRobotDB:
 
     """ Robots """
     @property
-    def robots(self):
+    def robots(self) -> SelectionList:
         if self._robots is None:
             if os.path.isfile(self.pickle_dir):
                 with open(self.pickle_dir, 'rb') as f:
@@ -67,14 +70,14 @@ class CtrlRobotDB:
         return self._robots
 
     @property
-    def robot_selec(self):
+    def robot_selec(self) -> RoboReg:
         """
         Registro de datos del robot seleccionado
         """
         return self.robots.selec()
 
     @property
-    def robot_s(self):
+    def robot_s(self) -> Robot:
         """
         Robot seleccionado
         """
@@ -111,6 +114,9 @@ class CtrlRobotDB:
         return agregado
 
     def eliminar_robot(self, indice: int):
+        for idx in range(len(self.robots[indice].modelos)):
+            self.eliminar_modelo(idx)
+
         self.robots.eliminar(indice)
 
     """ Modelos """
@@ -121,11 +127,11 @@ class CtrlRobotDB:
         return os.path.join(self.model_dir, filename)
 
     @property
-    def modelos(self):
+    def modelos(self) -> SelectionList:
         return self.robots.selec().modelos
 
     @property
-    def modelo_selec(self):
+    def modelo_selec(self) -> ModelReg:
         """
         Registo de datos del modelo seleccionado
         """
@@ -135,7 +141,7 @@ class CtrlRobotDB:
             return self.robot_selec.modelos.selec()
 
     @property
-    def modelo_s(self):
+    def modelo_s(self) -> Union[FKModel, FKEnsemble]:
         """
         Modelo seleccionado
         """
