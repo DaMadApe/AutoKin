@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.autograd.functional import jacobian
 
-from autokin.model_mixins import HparamsMixin, DataFitMixin
+from autokin.model_mixins import HparamsMixin, DataFitMixin, EnsembleMixin
 
 class FKModel(HparamsMixin, # Para almacenar hiperparámetros del modelo
               DataFitMixin, # Para ajustar y probar modelo con datos
@@ -13,6 +13,8 @@ class FKModel(HparamsMixin, # Para almacenar hiperparámetros del modelo
     """
     def __init__(self):
         super().__init__()
+        self.input_dim : int
+        self.output_dim : int
 
 
 class MLP(FKModel):
@@ -20,14 +22,18 @@ class MLP(FKModel):
     Red neuronal simple (Perceptrón Multicapa)
 
     args:
-    input_dim (int) : Tamaño del tensor de entrada
-    ouput_dim (int) : Tamaño de la salida
-    depth (int) : Número de capas
-    mid_layer_size (int) : Número de neuronas en cada capa
-    activation (string) : Función de activación aplicada después de cada capa
+    input_dim: Tamaño del tensor de entrada
+    ouput_dim: Tamaño de la salida
+    depth: Número de capas
+    mid_layer_size: Número de neuronas en cada capa
+    activation: Función de activación aplicada después de cada capa
     """
-    def __init__(self, input_dim=1, output_dim=1,
-                 depth=1, mid_layer_size=10, activation='tanh'):
+    def __init__(self,
+                 input_dim : int = 1,
+                 output_dim : int = 1,
+                 depth : int = 1,
+                 mid_layer_size : int = 10,
+                 activation : str = 'tanh'):
         super().__init__()
 
         self.input_dim = input_dim
@@ -79,16 +85,20 @@ class ResNet(FKModel):
     Red residual: Red con conexiones salteadas cada cierto número de capas
 
     args:
-    input_dim (int) : Tamaño del tensor de entrada
-    ouput_dim (int) : Tamaño de la salida
-    depth (int) : Número de bloques residuales
-    block_depth (int) : Número de capas en cada bloque
-    block_width (int) : Número de neuronas por capa
-    activation (string) : Función de activación aplicada después de cada capa
+    input_dim: Tamaño del tensor de entrada
+    ouput_dim: Tamaño de la salida
+    depth: Número de bloques residuales
+    block_depth: Número de capas en cada bloque
+    block_width: Número de neuronas por capa
+    activation: Función de activación aplicada después de cada capa
     """
-    def __init__(self, input_dim=1, output_dim=1,
-                 depth=3, block_depth=3, block_width=10,
-                 activation='tanh'):
+    def __init__(self,
+                 input_dim : int = 1,
+                 output_dim : int = 1,
+                 depth : int = 3,
+                 block_depth : int = 3,
+                 block_width : int = 10,
+                 activation : str = 'tanh'):
         super().__init__()
 
         self.activation = getattr(torch, activation)
@@ -118,3 +128,54 @@ class RBFnet(FKModel):
 
 class ELM(FKModel):
     pass
+
+
+class FKEnsemble(
+                 #HparamsMixin,
+                 EnsembleMixin,
+                 torch.nn.Module):
+    """
+    Agrupa un conjunto de modelos, permite entrenarlos en conjunto,
+    y hacer predicción colectiva de nuevas muestras más efectivas.
+    """
+    def __init__(self, models : list[FKModel]):
+        super().__init__()
+        self.input_dim = models[0].input_dim
+        for model in models:
+            if model.input_dim != self.input_dim:
+                raise ValueError('Modelos de dimensiones diferentes')
+        self.ensemble = torch.nn.ModuleList(models)
+
+
+class MLPEnsemble(FKEnsemble):
+    def __init__(self,
+                 n_modelos : int,
+                 input_dim : int = 1,
+                 output_dim : int = 1,
+                 depth : int = 1,
+                 mid_layer_size : int = 10,
+                 activation : str = 'tanh'):
+        modelos = [MLP(input_dim=input_dim,
+                       output_dim=output_dim,
+                       depth=depth,
+                       mid_layer_size=mid_layer_size,
+                       activation=activation) for _ in range(n_modelos)]
+        super().__init__(modelos)
+
+
+class ResNetEnsemble(FKEnsemble):
+    def __init__(self,
+                 n_modelos : int,
+                 input_dim : int = 1,
+                 output_dim : int = 1,
+                 depth : int = 3,
+                 block_depth : int = 3,
+                 block_width : int = 10,
+                 activation : str = 'tanh'):
+        modelos = [ResNet(input_dim=input_dim,
+                          output_dim=output_dim,
+                          depth=depth,
+                          block_depth=block_depth,
+                          block_width=block_width,
+                          activation=activation) for _ in range(n_modelos)]
+        super().__init__(modelos)
