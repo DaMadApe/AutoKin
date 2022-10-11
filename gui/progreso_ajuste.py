@@ -146,18 +146,7 @@ class PantallaProgresoAjuste(Pantalla):
         self.parent.reset()
 
     def abrir_tensorboard(self):
-        nom_robot = self.controlador.robot_selec.nombre
-        nom_modelo = self.controlador.modelo_selec.nombre
-        log_path = f'{self.controlador.tb_dir}/{nom_robot}_{nom_modelo}'
-
-        self.tb = program.TensorBoard()
-        self.tb.configure(argv=[None, '--logdir', log_path])
-        url = self.tb.launch()
-
-        webbrowser.open(url)
-
-        # TODO: Proceso de tensorboard se queda abierto, buscar
-        #       forma de detener o reemplazar nuevas instancias
+        self.controlador.abrir_tensorboard()
 
 
 if __name__ == '__main__':

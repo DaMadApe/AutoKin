@@ -174,6 +174,16 @@ class CtrlRobotDB:
     def eliminar_modelo(self, indice: int):
         self.modelos.eliminar(indice)
 
+    def abrir_tensorboard(self):
+        # TODO: Proceso de tensorboard se queda abierto, buscar
+        #       forma de detener o reemplazar nuevas instancias
+        log_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
+        self.tb = program.TensorBoard()
+        self.tb.configure(argv=[None, '--logdir', log_dir])
+                                # '--port', str(6006)])
+        url = self.tb.launch()
+        webbrowser.open(url)
+
 
 class CtrlEntrenamiento:
     """

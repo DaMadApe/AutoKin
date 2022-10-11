@@ -86,7 +86,7 @@ class PantallaSelecModelo(Pantalla):
         Popup_copiar_modelo(self, callback)
 
     def ver_log(self, indice):
-        pass
+        self.controlador.abrir_tensorboard()
 
     def eliminar_modelo(self, indice):
         self.controlador.eliminar_modelo(indice)
