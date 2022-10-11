@@ -1,4 +1,5 @@
 import os
+import shutil
 import pickle
 import time
 import webbrowser
@@ -126,6 +127,10 @@ class CtrlRobotDB:
         filename = f'{robot_nom}_{model_nom}.pt'
         return os.path.join(self.model_dir, filename)
 
+    def _model_log_dir(self, robot, modelo):
+        log_name = f'{robot.nombre}_{modelo.nombre}'
+        return os.path.join(self.tb_dir, log_name)
+
     @property
     def modelos(self) -> SelectionList:
         return self.robots.selec().modelos
@@ -165,7 +170,11 @@ class CtrlRobotDB:
         cls_id = model_args.pop('cls_id')
 
         agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
-        self.guardar()
+        
+        if agregado:
+            os.mkdir(self._model_log_dir(self.robot_selec,
+                                         self.modelos[-1]))
+            self.guardar()
         return agregado
 
     def copiar_modelo(self, origen: int, nombre: str) -> bool:
@@ -175,9 +184,16 @@ class CtrlRobotDB:
                                               self.modelos[origen]))
             torch.save(obj, self._model_path(self.robot_selec,
                                              self.modelos[-1]))
-        return agregado
+        return agregado 
 
     def eliminar_modelo(self, indice: int):
+        shutil.rmtree(self._model_log_dir(self.robot_selec,
+                                          self.modelos[indice]))
+        model_path = self._model_path(self.robot_selec,
+                                      self.modelos[indice])
+        if os.path.isfile(model_path):
+            os.remove(model_path)
+        
         self.modelos.eliminar(indice)
 
     def abrir_tensorboard(self):
@@ -199,6 +215,7 @@ class CtrlEntrenamiento:
         super().__init__()
         self.train_kwargs = {}
         self.datasets = {}
+        # TODO(?): mover dirs a ubicación cental
         self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
         self.queue = SignalQueue()
 
@@ -211,8 +228,7 @@ class CtrlEntrenamiento:
 
     def entrenar(self, stage_callback, step_callback, end_callback, after_fn):
         self.queue = SignalQueue()
-        log_name = f'{self.robot_selec.nombre}_{self.modelo_selec.nombre}'
-        log_dir = os.path.join(self.tb_dir, log_name)
+        log_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
 
         self.trainer = TrainThread(queue=self.queue,
                                    modelo=self.modelo_s,
