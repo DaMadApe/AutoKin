@@ -248,6 +248,35 @@ class TablaYBotones(ttk.Frame):
                           values=entrada[1:])
 
 
+class TxtPopup(tk.Toplevel):
+    """
+    Popup sencillo para mostrar texto de sólo lectura.
+    """
+    def __init__(self, parent, title, text, **text_params):
+        super().__init__()
+        self.parent = parent
+
+        self.wm_title(title)
+
+        # Definición de widgets
+        text_box = tk.Text(self, **text_params)
+        text_box.grid(column=0, row=0)
+        text_box.insert('insert', text)
+        text_box['state'] = 'disabled'
+
+        boton_cerrar = ttk.Button(self, text="Cerrar",
+                                   command=self.destroy)
+        boton_cerrar.grid(column=0, row=1, sticky='e')
+
+        for child in self.winfo_children():
+            child.grid_configure(padx=5, pady=3)
+
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
+
+
 class MockInterfaz(tk.Tk):
     """
     Sustituto de Interfaz de main_gui.py para probar pantallas individualmente
@@ -255,7 +284,7 @@ class MockInterfaz(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        style= ttk.Style()
+        style = ttk.Style()
         style.configure('Green.TLabel', foreground='#3A2')
         style.configure('Red.TLabel', foreground='#A11')
         style.configure('Red.TEntry', foreground='red')
