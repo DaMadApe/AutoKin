@@ -8,10 +8,59 @@ class PantallaConfigAjuste(Pantalla):
 
     args_etapas = {
         'Meta ajuste': {
-            'epochs': {
-                'label': '# de épocas',
+            'n_steps': {
+                'label': 'Iteraciones de meta ajuste',
                 'var_type': 'int',
-                'default_val': 1000,
+                'default_val': 4,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'n_datasets': {
+                'label': 'Datasets por iteración',
+                'var_type': 'int',
+                'default_val': 8,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'n_samples': {
+                'label': 'Muestras por dataset',
+                'var_type': 'int',
+                'default_val': 100,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'n_post': {
+                'label': 'Muestras para ajuste final',
+                'var_type': 'int',
+                'default_val': 10,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'n_epochs': {
+                'label': 'Épocas por dataset',
+                'var_type': 'int',
+                'default_val': 50,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'n_post_epochs': {
+                'label': 'Épocas de ajuste final',
+                'var_type': 'int',
+                'default_val': 5,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'lr': {
+                'label': 'Learning rate',
+                'var_type': 'float',
+                'default_val': 1e-5,
+                'restr_positiv': True,
+                'non_zero': True
+            },
+            'post_lr': {
+                'label': 'Learning rate para ajuste final',
+                'var_type': 'float',
+                'default_val': 1e-5,
                 'restr_positiv': True,
                 'non_zero': True
             },
@@ -26,14 +75,14 @@ class PantallaConfigAjuste(Pantalla):
                 'non_zero': True
             },
             'lr': {
-                'label': 'learning rate',
+                'label': 'Learning rate',
                 'var_type': 'float',
                 'default_val': 1e-3,
                 'restr_positiv': True,
                 'non_zero': True
             },
             'batch_size': {
-                'label': 'batch size',
+                'label': 'Batch size',
                 'var_type': 'int',
                 'default_val': 256,
                 'restr_positiv': True,
@@ -58,6 +107,8 @@ class PantallaConfigAjuste(Pantalla):
             }
         }
     }
+
+    args_etapas['Ajuste dirigido'].update(args_etapas['Ajuste inicial'])
 
     def __init__(self, parent):
         self.arg_getters = {etapa: {} for etapa in self.args_etapas.keys()}
