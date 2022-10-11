@@ -153,7 +153,7 @@ class CtrlRobotDB:
         if self._modelo_s is None:
             model_path = self._model_path(self.robot_selec,
                                           self.modelo_selec)
-            if os.path.isfile(model_path):      
+            if os.path.isfile(model_path):
                 self._modelo_s = torch.load(model_path)
             else:
                 self._modelo_s = self.modelo_selec.init_obj()
@@ -161,7 +161,7 @@ class CtrlRobotDB:
         
     def seleccionar_modelo(self, indice: int):
         self.modelos.seleccionar(indice)
-        self._model_s = None
+        self._modelo_s = None
 
     def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
         model_args.update(input_dim=self.robot_s.n,
