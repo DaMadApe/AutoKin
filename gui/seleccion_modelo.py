@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Pantalla, TablaYBotones, Label_Entry
+from gui.gui_utils import Pantalla, TablaYBotones, Label_Entry, TxtPopup
 from gui.nuevo_modelo import Popup_agregar_modelo
 
 
@@ -39,6 +39,11 @@ class PantallaSelecModelo(Pantalla):
                                  command=self.copiar_modelo,
                                  activo_en_seleccion=True)
 
+        self.tabla.agregar_boton(text="Ver hparams",
+                                 width=20,
+                                 command=self.ver_hparams,
+                                 activo_en_seleccion=True)
+
         self.tabla.agregar_boton(text="Ver log",
                                  width=20,
                                  command=self.ver_log,
@@ -74,6 +79,8 @@ class PantallaSelecModelo(Pantalla):
             agregado = self.controlador.agregar_modelo(nombre, model_args)
             if agregado:
                 self.agregar_modelo_tabla(self.controlador.modelos[-1])
+                indice = len(self.controlador.modelos) - 1
+                self.controlador.seleccionar_modelo(indice)
             return agregado
         Popup_agregar_modelo(self, callback)
 
@@ -85,7 +92,14 @@ class PantallaSelecModelo(Pantalla):
             return agregado
         Popup_copiar_modelo(self, callback)
 
+    def ver_hparams(self, indice):
+        hparams = self.controlador.modelos[indice].kwargs
+        text = str().join(f"{key} : {val}\n" for key,val in hparams.items())
+        TxtPopup(self, title="Parámetros", text=text,
+                 width= 24, height= 12, font=(12))
+
     def ver_log(self, indice):
+        self.controlador.seleccionar_modelo(indice)
         self.controlador.abrir_tensorboard()
 
     def eliminar_modelo(self, indice):
@@ -101,6 +115,7 @@ class PantallaSelecModelo(Pantalla):
             self.agregar_modelo_tabla(modelo)
 
     def en_cierre(self):
+        self.controlador.cerrar_tensorboard()
         self.controlador.guardar()
 
 
@@ -132,7 +147,7 @@ class Popup_copiar_modelo(tk.Toplevel):
         boton_aceptar.grid(column=1, row=2, sticky='e')
 
         for child in self.winfo_children():
-            child.grid_configure(padx=5, pady=3)
+            child.grid_configure(padx=5, pady=5)
 
     def copiar_modelo(self):
         nombre = self.nom_entry.get()
