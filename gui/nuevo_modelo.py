@@ -1,9 +1,7 @@
-from tabnanny import check
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Label_Entry
-from autokin import modelos
+from gui.gui_utils import Label_Entry, Pantalla
 
 
 class Popup_agregar_modelo(tk.Toplevel):
@@ -73,7 +71,7 @@ class Popup_agregar_modelo(tk.Toplevel):
         }
     })
 
-    def __init__(self, parent, callback):
+    def __init__(self, parent: Pantalla, callback):
         super().__init__()
         self.parent = parent
         self.callback = callback
@@ -187,8 +185,16 @@ class Popup_agregar_modelo(tk.Toplevel):
         if self.arg_getters is not None and nombre != '':
             model_kwargs = self.get_model_kwargs()
             if not (None in model_kwargs.values()):
-                model_kwargs.update(cls_id=self.combo_model_cls.get())
+
+                cls_id = self.combo_model_cls.get()
+
+                if 'Ensemble' in cls_id and model_kwargs['n_modelos']==0:
+                    n_modelos = 2**self.parent.controlador.robot_s.n
+                    model_kwargs['n_modelos'] = n_modelos
+
+                model_kwargs.update(cls_id=cls_id)
                 agregado = self.callback(nombre, model_kwargs)
+
                 if agregado:
                     self.destroy()
 
