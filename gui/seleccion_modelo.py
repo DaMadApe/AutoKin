@@ -14,7 +14,7 @@ class PantallaSelecModelo(Pantalla):
         # Tabla principal
         columnas = (' nombre',
                     ' tipo',
-                    ' épocas')
+                    ' entrenamientos')
         self.tabla = TablaYBotones(self, columnas=columnas,
                                    anchos=(200, 120, 120),
                                    fn_doble_click=self.seleccionar_modelo)
@@ -44,9 +44,14 @@ class PantallaSelecModelo(Pantalla):
                                  command=self.ver_hparams,
                                  activo_en_seleccion=True)
 
-        self.tabla.agregar_boton(text="Ver log",
+        self.tabla.agregar_boton(text="Parámetros de ajuste",
                                  width=20,
-                                 command=self.ver_log,
+                                 command=self.ver_ajustes,
+                                 activo_en_seleccion=True)
+
+        self.tabla.agregar_boton(text="Abrir tensorboard",
+                                 width=20,
+                                 command=self.abrir_tensorboard,
                                  activo_en_seleccion=True)
 
         self.tabla.agregar_boton(text="Eliminar",
@@ -69,7 +74,7 @@ class PantallaSelecModelo(Pantalla):
     def agregar_modelo_tabla(self, modelo):
         self.tabla.agregar_entrada(modelo.nombre,
                                    modelo.cls_id,
-                                   modelo.epochs)
+                                   len(modelo.trains))
 
     def seleccionar_modelo(self, indice):
         self.controlador.seleccionar_modelo(indice)
@@ -96,11 +101,30 @@ class PantallaSelecModelo(Pantalla):
         hparams = self.controlador.modelos[indice].kwargs
         text = str().join(f"{key} : {val}\n" for key,val in hparams.items())
         TxtPopup(self, title="Parámetros", text=text,
-                 width= 24, height= 12, font=(12))
+                 width= 24, height= 12)
 
-    def ver_log(self, indice):
+    def ver_ajustes(self, indice):
+        trains = self.controlador.modelos[indice].trains
+        text = str()
+        for i, train in enumerate(trains):
+            text += "="*24 + f"\n Ajuste {i+1} \n" + "="*24
+
+            for etapa, args in train.items():
+                text += "\n" + etapa + "\n"
+                for key,val in args.items():
+                    text += f"  {key} : {val}\n"
+
+            text += "\n"
+
+        if len(trains) == 0:
+            text = "Sin entrenamientos registrados"
+
+        TxtPopup(self, title="Entrenamientos", text=text,
+                 width= 32, height= 16)
+
+    def abrir_tensorboard(self, indice):
         self.controlador.seleccionar_modelo(indice)
-        self.controlador.abrir_tensorboard()
+        self.controlador.abrir_tensorboard(ver_todos=True)
 
     def eliminar_modelo(self, indice):
         if tk.messagebox.askyesno("Eliminar?",
