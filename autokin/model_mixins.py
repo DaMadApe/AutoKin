@@ -66,13 +66,71 @@ class DataFitMixin:
 
         return train_loss
 
+    def meta_fit(self,
+                 n_steps=10,
+                 n_datasets=8,
+                 n_samples=100,
+                 n_post=10,
+                 lr=1e-4,
+                 post_lr=1e-4,
+                 n_epochs=1,
+                 n_post_epochs=1,
+                 ext_interrupt=None,
+                 **fit_kwargs):
+        min_DH = [1, 0, 0, 1]
+        max_DH = [10, 2*torch.pi, 2*torch.pi, 10]
 
-    def fit(self, train_set, val_set=None,
-            epochs=10, lr=1e-3, batch_size=32,
-            criterion=nn.MSELoss(), optim=torch.optim.Adam,
-            lr_scheduler=False, silent=False, log_dir=None,
-            use_checkpoint=True, preadjust_bias=True,
-            loggers: list[Logger] = None, ext_interrupt=None):
+        for _ in range(n_steps):
+            sample_robots = []
+            # sample_robots.extend(robots_by_n[input_dim])
+
+            post_sets = []
+
+            for _ in range(n_datasets): # - len(sample_robots)):
+                robot = RTBrobot.random(n=self.input_dim,
+                                        min_DH=min_DH,
+                                        max_DH=max_DH)
+                sample_robots.append(robot)
+
+            for robot in sample_robots:
+                full_set = FKset.random_sampling(robot, n_samples+n_post)
+                train_set, post_set = random_split(full_set, [n_samples,
+                                                              n_post])
+                
+                self.fit(train_set, 
+                         lr=lr,
+                         epochs=n_epochs,
+                         silent=True,
+                         use_checkpoint=False,
+                         **fit_kwargs)
+                post_sets.append(post_set)
+
+                if ext_interrupt is not None and ext_interrupt():
+                    return
+
+            post_set = ConcatDataset(post_sets)
+            self.fit(post_set, 
+                     lr=post_lr,
+                     epochs=n_post_epochs,
+                     silent=True,
+                     use_checkpoint=False,
+                     ext_interrupt=ext_interrupt,
+                     **fit_kwargs)
+
+    def fit(self, train_set: Dataset, 
+            val_set:Dataset = None,
+            epochs=10,
+            lr=1e-3,
+            batch_size=32,
+            criterion=nn.MSELoss(),
+            optim=torch.optim.Adam,
+            lr_scheduler=False,
+            silent=False,
+            log_dir=None,
+            use_checkpoint=True,
+            preadjust_bias=True,
+            loggers: list[Logger] = None,
+            ext_interrupt=None):
         """
         Rutina de entrenamiento para ajustar a un conjunto de datos
         
