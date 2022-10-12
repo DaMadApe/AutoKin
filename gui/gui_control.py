@@ -30,7 +30,7 @@ class SignalQueue(Queue):
 
     def interrupt(self) -> bool:
         while self.pause:
-            pass
+            time.sleep(0.1)
         return self.done
 
 
