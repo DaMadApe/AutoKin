@@ -251,9 +251,8 @@ class CtrlEntrenamiento:
             elif msg.head == 'step':
                 step_callback(*msg.info)
             elif msg.head == 'close':
-                self.modelo_selec.epochs += msg.info['Ajuste inicial']
-                self.detener(guardar=True)
-                end_callback()
+                self.trainer.join()
+                end_callback() # msg.info['Ajuste inicial']
                 return
 
         after_fn(100, self.check_queue, 
