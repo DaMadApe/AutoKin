@@ -3,7 +3,7 @@ import shutil
 import pickle
 import time
 import webbrowser
-from threading import Thread, Event
+from threading import Thread
 from queue import Queue
 from typing import Union
 from collections import namedtuple
@@ -49,6 +49,7 @@ class CtrlRobotDB:
         self._modelos = None
         self._robot_s = None
         self._modelo_s = None
+        self.pending_cleanup = []
 
     def guardar(self):
         with open(self.pickle_dir, 'wb') as f:
@@ -172,6 +173,7 @@ class CtrlRobotDB:
         agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
         
         if agregado:
+            # Crear directorio de tensorboard
             os.mkdir(self._model_log_dir(self.robot_selec,
                                          self.modelos[-1]))
             self.guardar()
@@ -180,15 +182,28 @@ class CtrlRobotDB:
     def copiar_modelo(self, origen: int, nombre: str) -> bool:
         agregado = self.modelos.copiar(origen, nombre)
         if agregado:
-            obj = torch.load(self._model_path(self.robot_selec,
-                                              self.modelos[origen]))
-            torch.save(obj, self._model_path(self.robot_selec,
-                                             self.modelos[-1]))
+            # Copiar modelo (~.pt) si existe
+            orig_path = self._model_path(self.robot_selec,
+                                         self.modelos[origen])
+            dest_path = self._model_path(self.robot_selec,
+                                         self.modelos[-1])
+            if os.path.isfile(orig_path):
+                model = torch.load(orig_path)
+                torch.save(model, dest_path)
+
+            # Crear directorio de tensorboard
+            os.mkdir(self._model_log_dir(self.robot_selec,
+                                         self.modelos[-1]))
         return agregado 
 
     def eliminar_modelo(self, indice: int):
-        shutil.rmtree(self._model_log_dir(self.robot_selec,
-                                          self.modelos[indice]))
+        # Eliminar registro de tensorboard
+        log_dir = self._model_log_dir(self.robot_selec,
+                                      self.modelos[indice])
+        # shutil.rmtree(log_dir)
+        self.pending_cleanup.append(log_dir)
+
+        # Eliminar modelo almacenado
         model_path = self._model_path(self.robot_selec,
                                       self.modelos[indice])
         if os.path.isfile(model_path):
@@ -196,15 +211,24 @@ class CtrlRobotDB:
         
         self.modelos.eliminar(indice)
 
-    def abrir_tensorboard(self):
+    def abrir_tensorboard(self, ver_todos=False):
         # TODO: Proceso de tensorboard se queda abierto, buscar
         #       forma de detener o reemplazar nuevas instancias
-        log_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
-        self.tb = program.TensorBoard()
-        self.tb.configure(argv=[None, '--logdir', log_dir])
-                                # '--port', str(6006)])
-        url = self.tb.launch()
+        base_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
+        if os.listdir(base_dir) and not ver_todos:
+            local_dir = sorted(os.listdir(base_dir))[-1]
+            log_dir = os.path.join(base_dir, local_dir)
+        else:
+            log_dir = base_dir
+
+        tb = program.TensorBoard()
+        tb.configure(logdir=log_dir) # '--port', str(6006)])
+        url = tb.launch()
         webbrowser.open(url)
+
+    def cerrar(self):
+        for path in self.pending_cleanup:
+            shutil.rmtree(path)
 
 
 class CtrlEntrenamiento:
@@ -228,7 +252,10 @@ class CtrlEntrenamiento:
 
     def entrenar(self, stage_callback, step_callback, end_callback, after_fn):
         self.queue = SignalQueue()
-        log_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
+
+        timestamp = time.strftime('%Y%m%d-%H%M%S')
+        base_dir = self._model_log_dir(self.robot_selec, self.modelo_selec) 
+        log_dir = os.path.join(base_dir, timestamp)
 
         self.trainer = TrainThread(queue=self.queue,
                                    modelo=self.modelo_s,
@@ -263,7 +290,18 @@ class CtrlEntrenamiento:
         self.queue.pause = False
         self.trainer.join()
         if guardar:
+            self.modelo_selec.trains.append(self.train_kwargs)
             self.guardar()
+        else:
+            # Desechar instancia actual (entrenada) del modelo
+            self._modelo_s = None
+            # Desechar registros de tensorboard
+            base_dir = self._model_log_dir(self.robot_selec,
+                                           self.modelo_selec)
+            local_dir = sorted(os.listdir(base_dir))[-1]
+            log_dir = os.path.join(base_dir, local_dir)
+            # shutil.rmtree(log_dir)
+            self.pending_cleanup.append(log_dir)
 
     def pausar(self):
         self.queue.pause = True
