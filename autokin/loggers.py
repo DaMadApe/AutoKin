@@ -39,6 +39,7 @@ class TBLogger(Logger):
 
     def close(self):
         self.writer.flush()
+        self.writer.close()
 
 
 class TqdmDisplay(Logger):
