@@ -83,7 +83,7 @@ class ModelReg(Reg):
                                             MLPEnsemble,
                                             ResNetEnsemble]}
 
-    epochs: int = 0
+    trains: list = field(default_factory=list)
 
 
 @dataclass
