@@ -103,9 +103,11 @@ class PantallaSelecModelo(Pantalla):
         self.controlador.abrir_tensorboard()
 
     def eliminar_modelo(self, indice):
-        self.controlador.eliminar_modelo(indice)
-        self.tabla.tabla.delete(self.tabla.tabla.focus())
-        self.tabla.desactivar_botones()
+        if tk.messagebox.askyesno("Eliminar?",
+                                  "Eliminar modelo?"):
+            self.controlador.eliminar_modelo(indice)
+            self.tabla.tabla.delete(self.tabla.tabla.focus())
+            self.tabla.desactivar_botones()
 
     def actualizar(self):
         super().actualizar()
