@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.gui_utils import Pantalla
+from gui.gui_control import UIController
 from gui.menu_principal import PantallaMenuPrincipal
 from gui.seleccion_robot import PantallaSelecRobot
 from gui.seleccion_modelo import PantallaSelecModelo
@@ -93,6 +94,7 @@ class Interfaz(tk.Tk):
         Rutina llamada al cerrar el programa
         """
         self.frame_stack[-1].en_cierre()
+        UIController().cerrar()
         self.destroy()
 
 
