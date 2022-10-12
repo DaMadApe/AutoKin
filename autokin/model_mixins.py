@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from autokin.loggers import Logger, TqdmDisplay, TBLogger
 
 
-class HparamsMixin():
+class HparamsMixin:
     """
     Clase auxiliar para almacenar los parámetros con los que se define un
     modelo. Se guarda un diccionario en el atributo hparams del modelo.
@@ -35,12 +35,11 @@ class HparamsMixin():
         self.hparams = hparams
 
 
-class DataFitMixin():
-    # TODO: Transferir funcionalidad a una clase Trainer
+class DataFitMixin:
+    # TODO(?): Transferir funcionalidad a una clase Trainer
     def __init__(self):
         super().__init__()
         self.checkpoint = {}
-        self.trained_epochs = 0
 
     def _set_out_bias(self, reference_set=None):
         """
@@ -152,19 +151,8 @@ class DataFitMixin():
             if ext_interrupt is not None and ext_interrupt():
                 break
 
-        # Métricas para almacenar junto a hiperparámetros
-        if val_set is not None:
-            metrics = {'Last val loss': val_loss.item()}
-        else:
-            metrics = {'Last train loss': train_loss.item()}
-
-        self.hparams.update({'lr':lr, 'batch_size':batch_size})
-
         for logger in loggers:
-            logger.log_hparams(self.hparams, metrics)
             logger.close()
-        
-        self.trained_epochs += epochs
 
         # Guardar estado de los optimizadores en el checkpoint
         self.checkpoint.update(
