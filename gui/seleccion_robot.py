@@ -113,6 +113,7 @@ class PantallaSelecRobot(Pantalla):
             self.agregar_robot_tabla(robot)
 
     def en_cierre(self):
+        self.controlador.cerrar_tensorboard()
         self.controlador.guardar()
 
 

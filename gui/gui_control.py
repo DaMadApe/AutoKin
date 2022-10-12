@@ -226,6 +226,9 @@ class CtrlRobotDB:
         url = tb.launch()
         webbrowser.open(url)
 
+    def cerrar_tensorboard(self):
+        pass
+
     def cerrar(self):
         for path in self.pending_cleanup:
             shutil.rmtree(path)
