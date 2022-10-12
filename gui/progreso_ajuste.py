@@ -86,7 +86,7 @@ class PantallaProgresoAjuste(Pantalla):
     def iniciar_entrenamiento(self):
         self.controlador.entrenar(self.stage_callback,
                                   self.step_callback,
-                                  self.fin_entrenamiento,
+                                  self.end_callback,
                                   self.parent.after)
 
     def stage_callback(self, steps: int):
@@ -115,7 +115,7 @@ class PantallaProgresoAjuste(Pantalla):
         self.progreso.step(1.0)
         self.update_idletasks()
 
-    def fin_entrenamiento(self):
+    def end_callback(self):
         self.boton_regresar['state'] = 'disabled'
         if str(self.progreso['mode']) == 'indeterminate':
             self.progreso.stop()
