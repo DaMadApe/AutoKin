@@ -271,6 +271,9 @@ class TxtPopup(tk.Toplevel):
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
 
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
         # Centrar pantalla
         x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
         y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
