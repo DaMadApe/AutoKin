@@ -274,10 +274,19 @@ class CtrlEntrenamiento:
 
 
 class TrainThread(Thread):
-
-    def __init__(self, queue: SignalQueue, modelo:FKModel,
-                 robot, sample, split, train_kwargs, log_dir):
-        super().__init__(name='training',daemon=True)
+    """
+    Thread para entrenar el modelo en concurrencia con
+    las actualizaciones de la GUI
+    """
+    def __init__(self,
+                 queue: SignalQueue,
+                 modelo: Union[FKModel, FKEnsemble],
+                 robot: Robot,
+                 sample: torch.Tensor,
+                 split: list[float],
+                 train_kwargs: dict,
+                 log_dir):
+        super().__init__(name='training', daemon=True)
         self.queue = queue
         self.modelo = modelo
         self.robot = robot
@@ -285,56 +294,79 @@ class TrainThread(Thread):
         self.split = split
         self.train_kwargs = train_kwargs
         self.log_dir = log_dir
+        
+        self.gui_logger = GUIprogress(step_callback=lambda *x:
+                                          self.queue.put(Msg('step', x)),
+                                      close_callback=lambda:None)
 
     def run(self):
         resultados = {}
         for etapa in self.train_kwargs.keys():
             if not self.queue.done:
                 method_name = '_' + etapa.lower().replace(' ', '_')
-                resultados[etapa] = getattr(self, method_name)()
+                log_dir = os.path.join(self.log_dir, method_name)
+                resultados[etapa] = getattr(self, method_name)(log_dir)
 
         self.queue.put(Msg('close', resultados))
 
-    def _meta_ajuste(self):
-        self.queue.put(Msg('stage', 100))
+    def _meta_ajuste(self, log_dir):
         mfit_kwargs = self.train_kwargs['Meta ajuste']
-        # self.modelo.meta_fit(**mfit_kwargs)
-        for i in range(100):
-            time.sleep(0.01)
-            self.queue.put(Msg('step', ({},i)))
 
-    def _ajuste_inicial(self):
+        steps = mfit_kwargs['n_epochs'] * mfit_kwargs['n_datasets']
+        steps += mfit_kwargs['n_post_epochs']
+        steps *= mfit_kwargs['n_steps']
+        self.queue.put(Msg('stage', steps))
+
+        self.modelo.meta_fit(log_dir=log_dir,
+                             loggers=[self.gui_logger],
+                             ext_interrupt=self.queue.interrupt,
+                             **mfit_kwargs)
+
+    def _ajuste_inicial(self, log_dir):
         # Muestreo
         self.queue.put(Msg('stage', 0))
         time.sleep(2)            
         dataset = FKset(self.robot, self.sample)
         train_set, val_set, test_set = dataset.rand_split(self.split)
 
+        self.train_set = train_set
+
+        # Ajuste
         fit_kwargs = self.train_kwargs['Ajuste inicial']
-        self.queue.put(Msg('stage', fit_kwargs['epochs']))
+
+        steps = fit_kwargs['epochs']
+        self.queue.put(Msg('stage', steps))
 
         if not self.queue.done:
             le_log = LastEpochLog()
-            gui_logger = GUIprogress(step_callback=lambda *x:
-                                        self.queue.put(Msg('step', x)),
-                                    close_callback=lambda:None)
 
             self.modelo.fit(train_set=train_set, val_set=val_set,
-                            log_dir=self.log_dir,
-                            loggers=[gui_logger, le_log],
+                            log_dir=log_dir,
+                            loggers=[self.gui_logger, le_log],
                             silent=True,
                             ext_interrupt=self.queue.interrupt,
                             **fit_kwargs)
 
             return le_log.last_epoch
 
-    def _ajuste_dirigido(self):
-        self.queue.put(Msg('stage', 0))
+    def _ajuste_dirigido(self, log_dir):
         afit_kwargs = self.train_kwargs['Ajuste dirigido']
-        # self.modelo.active_fit(**afit_kwargs)
-        for i in range(100):
-            time.sleep(0.01)
-            self.queue.put(Msg('step', ({},i)))
+
+        steps = len(self.modelo.ensemble) * (afit_kwargs['epochs'])
+        steps *= afit_kwargs['query_steps']
+        self.queue.put(Msg('stage', steps))
+
+        def label_fun(X):
+            _, result = self.robot.fkine(X)
+            return result
+
+        self.modelo.active_fit(train_set=self.train_set,
+                               label_fun=label_fun,
+                               loggers=[self.gui_logger],
+                               log_dir=log_dir,
+                               silent=True,
+                               ext_interrupt=self.queue.interrupt,
+                               **afit_kwargs)
 
 
 class CtrlEjecucion:
