@@ -53,8 +53,11 @@ class PantallaConfigMuestreo(Pantalla):
         frame_grafica.grid(column=0, row=0, sticky='nsew')
 
         # Opciones de trayectoria
+        label_traj = ttk.Label(frame_grafica, 
+                               text="Tipo de trayectoria")
+        label_traj.grid(column=0, row=0, sticky='e')
         self.traj_combo = ttk.Combobox(frame_grafica, state='readonly')
-        self.traj_combo.grid(column=0, row=0, sticky='w')
+        self.traj_combo.grid(column=1, row=0, sticky='w')
         self.traj_combo['values'] = list(self.samp_args.keys())
         self.traj_combo.bind('<<ComboboxSelected>>', self.definir_panel_config)
         self.traj_combo.set('coprime_sines')
@@ -65,11 +68,15 @@ class PantallaConfigMuestreo(Pantalla):
         self.ax = self.fig.add_subplot(projection=projection)
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=frame_grafica)
-        self.grafica.get_tk_widget().grid(column=0, row=1, sticky='nsew')
+        self.grafica.get_tk_widget().grid(column=0, row=1, sticky='nsew',
+                                          columnspan=2)
 
         # Selección de proyección en gráfica
-        self.proyec_combo = ttk.Combobox(frame_grafica, state='readonly')
-        self.proyec_combo.grid(column=0, row=2)
+        label_proy = ttk.Label(frame_grafica, 
+                               text="Ver proyección sobre")
+        label_proy.grid(column=0, row=2, sticky='e')
+        self.proyec_combo = ttk.Combobox(frame_grafica, state='readonly', )
+        self.proyec_combo.grid(column=1, row=2)
 
         if self.n_inputs <= 3:
             self.proyec_combo.config(state='disabled')
