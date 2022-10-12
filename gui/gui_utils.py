@@ -269,7 +269,7 @@ class TxtPopup(tk.Toplevel):
         boton_cerrar.grid(column=0, row=1, sticky='e')
 
         for child in self.winfo_children():
-            child.grid_configure(padx=5, pady=3)
+            child.grid_configure(padx=12, pady=5)
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
