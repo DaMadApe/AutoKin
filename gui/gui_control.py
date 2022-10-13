@@ -3,6 +3,7 @@ import shutil
 import pickle
 import time
 import webbrowser
+import multiprocessing as mp
 from threading import Thread
 from queue import Queue
 from typing import Union
@@ -49,7 +50,7 @@ class CtrlRobotDB:
         self._modelos = None
         self._robot_s = None
         self._modelo_s = None
-        self.pending_cleanup = []
+        self.tb_proc = None
 
     def guardar(self):
         with open(self.pickle_dir, 'wb') as f:
@@ -200,8 +201,7 @@ class CtrlRobotDB:
         # Eliminar registro de tensorboard
         log_dir = self._model_log_dir(self.robot_selec,
                                       self.modelos[indice])
-        # shutil.rmtree(log_dir)
-        self.pending_cleanup.append(log_dir)
+        shutil.rmtree(log_dir)
 
         # Eliminar modelo almacenado
         model_path = self._model_path(self.robot_selec,
@@ -212,8 +212,8 @@ class CtrlRobotDB:
         self.modelos.eliminar(indice)
 
     def abrir_tensorboard(self, ver_todos=False):
-        # TODO: Proceso de tensorboard se queda abierto, buscar
-        #       forma de detener o reemplazar nuevas instancias
+        self.cerrar_tensorboard()
+
         base_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
         if os.listdir(base_dir) and not ver_todos:
             local_dir = sorted(os.listdir(base_dir))[-1]
@@ -221,17 +221,20 @@ class CtrlRobotDB:
         else:
             log_dir = base_dir
 
-        tb = program.TensorBoard()
-        tb.configure(logdir=log_dir) # '--port', str(6006)])
-        url = tb.launch()
-        webbrowser.open(url)
+        def abrir():
+            tb = program.TensorBoard()
+            tb.configure(logdir=log_dir, port=6006)
+            tb.main()
+
+        self.tb_proc = mp.Process(target=abrir)
+        self.tb_proc.start()
+        time.sleep(1) # Incrementar si no conecta a la primera
+        webbrowser.open('http://localhost:6006/')
 
     def cerrar_tensorboard(self):
-        pass
-
-    def cerrar(self):
-        for path in self.pending_cleanup:
-            shutil.rmtree(path)
+        if self.tb_proc is not None:
+            self.tb_proc.terminate()
+            self.tb_proc.join()
 
 
 class CtrlEntrenamiento:
@@ -303,8 +306,7 @@ class CtrlEntrenamiento:
                                            self.modelo_selec)
             local_dir = sorted(os.listdir(base_dir))[-1]
             log_dir = os.path.join(base_dir, local_dir)
-            # shutil.rmtree(log_dir)
-            self.pending_cleanup.append(log_dir)
+            shutil.rmtree(log_dir)
 
     def pausar(self):
         self.queue.pause = True

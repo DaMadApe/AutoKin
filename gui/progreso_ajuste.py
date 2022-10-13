@@ -148,6 +148,9 @@ class PantallaProgresoAjuste(Pantalla):
     def abrir_tensorboard(self):
         self.controlador.abrir_tensorboard()
 
+    def en_cierre(self):
+        self.controlador.cerrar_tensorboard()
+
 
 if __name__ == '__main__':
     from gui.gui_utils import MockInterfaz
