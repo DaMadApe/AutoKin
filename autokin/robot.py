@@ -87,15 +87,22 @@ class RTBrobot(Robot):
 
 class SofaRobot(Robot):
 
-    def __init__(self, config='LSL'):
+    def __init__(self, config='LSL', q_scale=20,
+                 p_scale=0.1, headless=True):
         if config not in ['LLLL','LSLS','LSSL', 'LSL', 'SLS', 'LLL', 'LS', 'LL']:
             raise ValueError('Configuración inválida')
         self.config = config
+        self.q_scale = q_scale
+        self.p_scale = p_scale
+
         super().__init__(n_act=len(config), out_n=3)
 
     def fkine(self, q, headless=True):
+        q *= self.q_scale
         p = sofa_fkine(q.numpy(), headless=headless, config=self.config)
         p = torch.tensor(p, dtype=torch.float)
+        p *= self.p_scale
+        
         return q, p
 
 

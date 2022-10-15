@@ -19,6 +19,8 @@ def sofa_fkine(q, config='LSL', headless=True):
     os.system(f'~/SOFA_robosoft/bin/runSofa {op} -n {q.shape[0]} \'{SIM_PATH}\'')
 
     p = np.load('sofa/p_out.npy')
+    os.remove('sofa/q_in.npy')
+    os.remove('sofa/p_out.npy')
     return p[n_wait:]
 
 def setup(): # No funciona: no quedan las variables
@@ -44,10 +46,10 @@ if __name__ == "__main__":
     N = 1000
     # q = [np.zeros(N), np.linspace(0, 1, N), np.ones(N), np.linspace(1, 0, N)]
     # q = np.stack(q, axis=0).T
-    # q  = np.linspace([0,0,0], [0, 0, 0], 100)
+    q  = np.linspace([0,0,0], [0, 0, 1], 100)
 
-    q = coprime_sines(3, N, densidad=2).numpy()
-    #qs = np.zeros((10, 3))
+    # q = coprime_sines(3, N, densidad=2).numpy()
+    # qs = np.zeros((10, 3))
     
     # q = np.full((20, 3), 0.7)
     # q = np.repeat([[0.9, 0.9, 0.9]], 20, axis=0)

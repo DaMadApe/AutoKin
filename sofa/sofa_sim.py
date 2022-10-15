@@ -11,8 +11,8 @@ from splib3.numerics import Vec3, Quat
 from splib3.animation import animate, AnimationManager
 
 
-path = os.path.dirname(__file__)+'/model_files/'
-dirPath = os.path.dirname(__file__)+'/'
+DIR_PATH = os.path.dirname(__file__)
+PATH = os.path.join(DIR_PATH, 'model_files/')
 
 class TrunkController(Sofa.Core.Controller):
     def __init__(self, trunk, L=4, S=4, *args, **kwargs):
@@ -26,7 +26,7 @@ class TrunkController(Sofa.Core.Controller):
 
         self.cable = getattr(self.trunk.node, self.cables[self.cable_n]).cable
 
-        q = 20 * np.load('q_in.npy')
+        q = np.load('q_in.npy')
         self.q = np.concatenate([np.zeros((1, q.shape[-1])),q])
         self.q_diff = np.diff(self.q, axis=0)
 
@@ -80,9 +80,8 @@ class TrunkController(Sofa.Core.Controller):
         # print(f'Efector final: {pos}')
         # print(self.p)
         if self.step == len(self.q)-2:
-            self.p *= 0.1
-            np.save(os.path.join(dirPath, 'p_out.npy'), self.p[1:])
-            np.save(os.path.join(dirPath, 'forces_out.npy'), self.forces)
+            np.save(os.path.join(DIR_PATH, 'p_out.npy'), self.p[1:])
+            np.save(os.path.join(DIR_PATH, 'forces_out.npy'), self.forces)
 
 
 class Trunk():
@@ -109,7 +108,8 @@ class Trunk():
 
         self.node = parentNode.addChild('Trunk')
 
-        self.node.addObject('MeshVTKLoader', name='loader', filename=path+'trunk.vtk')
+        self.node.addObject('MeshVTKLoader', name='loader',
+                            filename=os.path.join(PATH, 'trunk.vtk'))
         self.node.addObject('MeshTopology', src='@loader', name='container')
 
         self.node.addObject('MechanicalObject', name='dofs', template='Vec3')
@@ -187,7 +187,8 @@ class Trunk():
 
     def addVisualModel(self, color=[1., 1., 1., 1.]):
         trunkVisu = self.node.addChild('VisualModel')
-        trunkVisu.addObject('MeshSTLLoader', filename=path+'trunk.stl')
+        trunkVisu.addObject('MeshSTLLoader',
+                            filename=os.path.join(PATH,'trunk.stl'))
         trunkVisu.addObject('OglModel', color=color)
         trunkVisu.addObject('BarycentricMapping')
 
@@ -195,12 +196,16 @@ class Trunk():
         trunkColli = self.node.addChild('CollisionModel')
         for i in range(2):
             part = trunkColli.addChild(f'Part{i+1}')
-            part.addObject('MeshSTLLoader', name='loader', filename=path+'trunk_colli'+str(i+1)+'.stl')
+            part.addObject('MeshSTLLoader', name='loader',
+                           filename=os.path.join(PATH,f'trunk_colli{i+1}.stl'))
             part.addObject('MeshTopology', src='@loader')
             part.addObject('MechanicalObject')
-            part.addObject('TriangleCollisionModel', group=1 if not selfCollision else i)
-            part.addObject('LineCollisionModel', group=1 if not selfCollision else i)
-            part.addObject('PointCollisionModel', group=1 if not selfCollision else i)
+            part.addObject('TriangleCollisionModel',
+                           group=1 if not selfCollision else i)
+            part.addObject('LineCollisionModel',
+                           group=1 if not selfCollision else i)
+            part.addObject('PointCollisionModel',
+                           group=1 if not selfCollision else i)
             part.addObject('BarycentricMapping')
 
     def fixExtremity(self):
@@ -243,6 +248,7 @@ def createScene(rootNode):
     simulation.addObject('SparseLDLSolver', name='precond')
     simulation.addObject('GenericConstraintCorrection', solverName='precond')
     
+    # TODO: Set dt = real time (~)
 
     with open('config.txt', 'r') as f:
         config = f.read()
