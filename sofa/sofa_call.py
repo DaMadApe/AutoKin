@@ -1,31 +1,43 @@
 import os
+import subprocess
+
 import numpy as np
 
 
+SOFA_ROOT = '/home/damadape/SOFA_robosoft'
+PYTHONPATH = os.path.join(SOFA_ROOT, 'plugins', 'SofaPython3', 'lib', 'python3', 'site-packages')
+RUN_PATH = os.path.join(SOFA_ROOT, 'bin', 'runSofa',)
+
 SIM_PATH = os.path.join(os.path.dirname(__file__), 'sofa_sim.py')
+IN_FILE = os.path.join('sofa', 'q_in.npy')
+OUT_FILE = os.path.join('sofa', 'p_out.npy')
+CONFIG_FILE = os.path.join('sofa', 'config.txt')
+
 
 def sofa_fkine(q, config='LSL', headless=True):
     n_wait = 100
     wait = np.zeros((n_wait, q.shape[-1]))
     q = np.concatenate([wait, q])
 
-    with open('sofa/config.txt', 'w') as output:
+    with open(CONFIG_FILE, 'w') as output:
         output.write(config)
 
-    np.save('sofa/q_in.npy', q) # -n {len(q)}
+    np.save(IN_FILE, q)
 
     op = '-g batch' if headless else '-a'
 
-    os.system(f'~/SOFA_robosoft/bin/runSofa {op} -n {q.shape[0]} \'{SIM_PATH}\'')
+    # env = os.environ.copy()
+    # env.update({'SOFA_ROOT': SOFA_ROOT,
+    #             'PYTHONPATH': PYTHONPATH})
 
-    p = np.load('sofa/p_out.npy')
-    os.remove('sofa/q_in.npy')
-    os.remove('sofa/p_out.npy')
+    subprocess.call(f'{RUN_PATH} {op} -n {q.shape[0]} \"{SIM_PATH}\"',
+                    shell=True) #, env=env)
+
+    p = np.load(OUT_FILE)
+    os.remove(IN_FILE)
+    os.remove(OUT_FILE)
     return p[n_wait:]
 
-def setup(): # No funciona: no quedan las variables
-    os.system('export SOFA_ROOT=\"/home/damadape/SOFA_robosoft\"')
-    os.system('export PYTHONPATH=\"/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH\"')
 
 # def ramp(q1, q2, N):
 #     assert q1.size() == q2.size(), 'Tensores de diferente tamaño'

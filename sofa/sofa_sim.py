@@ -1,5 +1,4 @@
 import os
-import logging
 from math import cos
 from math import sin
 
@@ -12,7 +11,7 @@ from splib3.animation import animate, AnimationManager
 
 
 DIR_PATH = os.path.dirname(__file__)
-PATH = os.path.join(DIR_PATH, 'model_files/')
+MODEL_PATH = os.path.join(DIR_PATH, 'model_files')
 
 class TrunkController(Sofa.Core.Controller):
     def __init__(self, trunk, L=4, S=4, *args, **kwargs):
@@ -109,7 +108,7 @@ class Trunk():
         self.node = parentNode.addChild('Trunk')
 
         self.node.addObject('MeshVTKLoader', name='loader',
-                            filename=os.path.join(PATH, 'trunk.vtk'))
+                            filename=os.path.join(MODEL_PATH, 'trunk.vtk'))
         self.node.addObject('MeshTopology', src='@loader', name='container')
 
         self.node.addObject('MechanicalObject', name='dofs', template='Vec3')
@@ -188,7 +187,7 @@ class Trunk():
     def addVisualModel(self, color=[1., 1., 1., 1.]):
         trunkVisu = self.node.addChild('VisualModel')
         trunkVisu.addObject('MeshSTLLoader',
-                            filename=os.path.join(PATH,'trunk.stl'))
+                            filename=os.path.join(MODEL_PATH,'trunk.stl'))
         trunkVisu.addObject('OglModel', color=color)
         trunkVisu.addObject('BarycentricMapping')
 
@@ -197,7 +196,7 @@ class Trunk():
         for i in range(2):
             part = trunkColli.addChild(f'Part{i+1}')
             part.addObject('MeshSTLLoader', name='loader',
-                           filename=os.path.join(PATH,f'trunk_colli{i+1}.stl'))
+                           filename=os.path.join(MODEL_PATH,f'trunk_colli{i+1}.stl'))
             part.addObject('MeshTopology', src='@loader')
             part.addObject('MechanicalObject')
             part.addObject('TriangleCollisionModel',
