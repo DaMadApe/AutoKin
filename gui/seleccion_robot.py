@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Pantalla, Label_Entry, TablaYBotones
+from gui.gui_utils import Pantalla, Popup, Label_Entry, TablaYBotones
 from gui.nuevo_robot import Popup_agregar_robot
 
 
@@ -117,19 +117,11 @@ class PantallaSelecRobot(Pantalla):
         self.controlador.guardar()
 
 
-class Popup_copiar_robot(tk.Toplevel):
+class Popup_copiar_robot(Popup):
 
     def __init__(self, parent, callback):
-        super().__init__()
-        self.parent = parent
         self.callback = callback
-
-        self.wm_title("Copiar robot")
-        self.definir_elementos()
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
+        super().__init__(title="Copiar robot", parent=parent)
 
     def definir_elementos(self):
         self.nom_entry = Label_Entry(self, label="Nombre", 

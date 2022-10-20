@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Label_Entry, Pantalla
+from gui.gui_utils import Popup, Label_Entry
 
 
-class Popup_agregar_modelo(tk.Toplevel):
+class Popup_agregar_modelo(Popup):
 
     model_args = {
         'MLP': {
@@ -71,21 +71,10 @@ class Popup_agregar_modelo(tk.Toplevel):
         }
     })
 
-    def __init__(self, parent: Pantalla, callback):
-        super().__init__()
-        self.parent = parent
+    def __init__(self, parent, callback):
         self.callback = callback
-
-        self.wm_title("Nuevo modelo")
-
         self.arg_getters = None
-
-        self.definir_elementos()
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
-        self.resizable(False, False)
+        super().__init__(title="Nuevo modelo", parent=parent)
 
     def definir_elementos(self):
         # Entrada para el nombre del modelo

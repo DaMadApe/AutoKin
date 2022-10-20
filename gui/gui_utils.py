@@ -46,6 +46,29 @@ class Pantalla(ttk.Frame):
         pass
 
 
+class Popup(tk.Toplevel):
+    """
+    Clase base para crear pop-ups centrados en la pantalla del programa
+    """
+    def __init__(self, title: str, parent: Pantalla, resizable=False):
+        super().__init__()
+        self.parent = parent
+
+        self.wm_title(title)
+        self.definir_elementos()
+        # Centrar pantalla
+        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
+        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
+        self.geometry(f'+{x_pos}+{y_pos}')
+        self.resizable(resizable, resizable)
+
+    def definir_elementos(self):
+        """
+        Definición de los widgets contenidos
+        """
+        pass
+
+
 class Label_Entry:
     """
     Composición de ttk.Label y ttk.Entry con validación
@@ -248,20 +271,19 @@ class TablaYBotones(ttk.Frame):
                           values=entrada[1:])
 
 
-class TxtPopup(tk.Toplevel):
+class TxtPopup(Popup):
     """
     Popup sencillo para mostrar texto de sólo lectura.
     """
     def __init__(self, parent, title, text, **text_params):
-        super().__init__()
-        self.parent = parent
+        self.text = text
+        self.text_params = text_params
+        super().__init__(title, parent)
 
-        self.wm_title(title)
-
-        # Definición de widgets
-        text_box = tk.Text(self, **text_params)
+    def definir_elementos(self):
+        text_box = tk.Text(self, **self.text_params)
         text_box.grid(column=0, row=0)
-        text_box.insert('insert', text)
+        text_box.insert('insert', self.text)
         text_box['state'] = 'disabled'
 
         boton_cerrar = ttk.Button(self, text="Cerrar",
@@ -273,11 +295,6 @@ class TxtPopup(tk.Toplevel):
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
 
 
 class MockInterfaz(tk.Tk):

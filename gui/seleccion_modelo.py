@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.gui_utils import Pantalla, TablaYBotones, Label_Entry, TxtPopup
+from gui.gui_utils import (Pantalla, Popup, TablaYBotones,
+                           Label_Entry, TxtPopup)
 from gui.nuevo_modelo import Popup_agregar_modelo
 
 
@@ -146,19 +147,11 @@ class PantallaSelecModelo(Pantalla):
         self.controlador.guardar()
 
 
-class Popup_copiar_modelo(tk.Toplevel):
+class Popup_copiar_modelo(Popup):
 
     def __init__(self, parent, callback):
-        super().__init__()
-        self.parent = parent
         self.callback = callback
-
-        self.wm_title("Copiar modelo")
-        self.definir_elementos()
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
+        super().__init__(title="Copiar modelo", parent=parent)
 
     def definir_elementos(self):
         self.nom_entry = Label_Entry(self, label="Nombre", 

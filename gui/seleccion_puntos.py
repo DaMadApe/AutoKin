@@ -4,7 +4,7 @@ from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.gui_utils import Pantalla, Label_Entry, TablaYBotones
+from gui.gui_utils import Pantalla, Label_Entry, Popup, TablaYBotones
 
 
 class PantallaSelecPuntos(Pantalla):
@@ -157,19 +157,11 @@ class PantallaSelecPuntos(Pantalla):
         self.grafica.draw()
 
 
-class Popup_agregar_punto(tk.Toplevel):
+class Popup_agregar_punto(Popup):
 
-    def __init__(self, parent, callback_registro):
-        super().__init__()
-        self.parent = parent
-        self.callback_registro = callback_registro
-        self.wm_title("Agregar punto")
-
-        self.definir_elementos()
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
+    def __init__(self, parent, callback):
+        self.callback = callback
+        super().__init__(title="Agregar punto", parent=parent)
 
     def definir_elementos(self):
         frame_xyz = ttk.Frame(self)
@@ -220,7 +212,7 @@ class Popup_agregar_punto(tk.Toplevel):
         punto = [x, y, z, t_t, t_s]
 
         if not (None in punto):
-            self.callback_registro(punto)
+            self.callback(punto)
             self.destroy()
 
 

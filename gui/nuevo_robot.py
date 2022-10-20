@@ -3,32 +3,20 @@ from tkinter import ttk
 
 import roboticstoolbox as rtb
 
-from gui.gui_utils import Label_Entry
+from gui.gui_utils import Popup, Label_Entry
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 
 
-class Popup_agregar_robot(tk.Toplevel):
+class Popup_agregar_robot(Popup):
 
     robot_inits = {"Externo" : ExternRobot,
                    "Sim. RTB" : RTBrobot.from_name,
                    "Sim. SOFA" : SofaRobot}
 
-    # robot_ids =  ["Externo", "Sim. RTB", "Sim. SOFA"]
-
     def __init__(self, parent, callback):
-        super().__init__()
-        self.parent = parent
         self.callback = callback
-
-        self.wm_title("Nuevo robot")
-
         self.arg_getters = None
-
-        self.definir_elementos()
-        # Centrar pantalla
-        x_pos = parent.winfo_rootx() + parent.winfo_width()//2 - 120
-        y_pos = parent.winfo_rooty() + parent.winfo_height()//2 - 50
-        self.geometry(f'+{x_pos}+{y_pos}')
+        super().__init__(title="Nuevo robot", parent=parent)
 
     def definir_elementos(self):
         # Entrada para el nombre del robot
