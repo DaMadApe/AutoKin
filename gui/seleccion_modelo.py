@@ -169,7 +169,9 @@ class Popup_copiar_modelo(Popup):
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
-    def copiar_modelo(self):
+        self.bind('<Return>', self.copiar_modelo)
+
+    def copiar_modelo(self, *args):
         nombre = self.nom_entry.get()
         if nombre != '':
             agregado = self.callback(nombre)

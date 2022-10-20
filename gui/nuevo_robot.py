@@ -53,6 +53,8 @@ class Popup_agregar_robot(Popup):
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
 
+        self.bind('<Return>', self.agregar_robot)
+
     def definir_param_frame(self, event):
         for widget in self.param_frame.winfo_children():
             widget.destroy()
@@ -100,7 +102,7 @@ class Popup_agregar_robot(Popup):
             robot_kwargs[arg_name] = get_fn()
         return robot_kwargs
 
-    def agregar_robot(self):
+    def agregar_robot(self, *args):
         nombre = self.nom_entry.get()
         if self.arg_getters is not None and nombre != '':
             robot_cls = self.robot_cls_combo.get()

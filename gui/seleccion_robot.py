@@ -145,7 +145,9 @@ class Popup_copiar_robot(Popup):
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
 
-    def copiar_robot(self):
+        self.bind('<Return>', self.copiar_robot)
+
+    def copiar_robot(self, *args):
         nombre = self.nom_entry.get()
         copiar_modelos = bool(self.check_var.get())
         if nombre != '':

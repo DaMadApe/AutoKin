@@ -202,7 +202,9 @@ class Popup_agregar_punto(Popup):
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=3)
 
-    def agregar_punto(self):
+        self.bind('<Return>', self.agregar_punto)
+
+    def agregar_punto(self, *args):
         x = self.x_entry.get()
         y = self.y_entry.get()
         z = self.z_entry.get()

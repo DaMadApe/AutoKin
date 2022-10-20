@@ -112,6 +112,8 @@ class Popup_agregar_modelo(Popup):
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
+        self.bind('<Return>', self.ejecutar)
+
     def definir_panel_hparams(self, event):
         # Producir automáticamente los widgets según el dict
         # de model_params para cada tipo de modelo
@@ -169,7 +171,7 @@ class Popup_agregar_modelo(Popup):
             model_kwargs['n_modelos'] = 0
         return model_kwargs
 
-    def ejecutar(self):
+    def ejecutar(self, *args):
         nombre = self.nom_entry.get()
         if self.arg_getters is not None and nombre != '':
             model_kwargs = self.get_model_kwargs()
