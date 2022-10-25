@@ -106,17 +106,24 @@ class Popup_config_sofa(Popup):
 
         for frame in [self, frame_spins, frame_entry, frame_botones]:
             for child in frame.winfo_children():
-                child.grid_configure(padx=5, pady=3)
+                child.grid_configure(padx=5, pady=5)
 
     def set_min(self, idx):
-        # q_min = self.robot.q_min.tolist()
-        # q_min[idx] = self.min_vars[idx].get()
-        # self.callback({'q_min': q_min})
+        q_min = self.robot.q_min.tolist()
+        new_q_i = float(self.min_vars[idx].get())
+        q_min[idx] = new_q_i
+        self.robot.q_min[idx] = new_q_i
+        self.callback({'q_min': q_min})
         # self.robot.fkine(ones if check_tens else zeros[idx]==1)
-        print(f'min q{idx+1}: {self.min_vars[idx].get()}')
+        print(f'min q: {self.robot.q_min}')
 
     def set_max(self, idx):
-        print(f'max q{idx+1}: {self.max_vars[idx].get()}')
+        q_max = self.robot.q_max.tolist()
+        new_q_i = float(self.max_vars[idx].get())
+        q_max[idx] = new_q_i
+        self.robot.q_max[idx] = new_q_i
+        self.callback({'q_max': q_max})
+        print(f'max q: {self.robot.q_max}')
 
     def jog(self):
         # self.robot.fkine(coprime_sines)
@@ -129,4 +136,5 @@ class Popup_config_sofa(Popup):
     def cancelar(self):
         # self.robot.fkine(zeros)
         # self.callback(old_config)
+        # Usar old config o limitar guardado a robot original?
         self.destroy()

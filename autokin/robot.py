@@ -87,23 +87,31 @@ class RTBrobot(Robot):
 
 class SofaRobot(Robot):
 
-    def __init__(self, config='LSL', q_scale=20,
-                 p_scale=0.1, headless=True):
+    def __init__(self,
+                 config = 'LSL',
+                 q_min: list[float] = None,
+                 q_max: list[float] = None,
+                 p_scale = 1):
         if config not in ['LLLL','LSLS','LSSL', 'LSL', 'SLS', 'LLL', 'LS', 'LL']:
             raise ValueError('Configuración inválida')
-        self.config = config
-        self.q_scale = q_scale
-        self.p_scale = p_scale
+        if q_min is None:
+            q_min = [0] * len(config)
+        if q_max is None:
+            q_max = [1] * len(config)
 
+        self.config = config
+        self.q_min = torch.tensor(q_min)
+        self.q_max = torch.tensor(q_max)
+        self.p_scale = p_scale
         super().__init__(n_act=len(config), out_n=3)
 
-    def fkine(self, q, headless=True):
-        q *= self.q_scale
-        p = sofa_fkine(q.numpy(), headless=headless, config=self.config)
+    def fkine(self, q, headless=False):
+        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
+        p = sofa_fkine(scaled_q.numpy(), headless=headless, config=self.config)
         p = torch.tensor(p, dtype=torch.float)
-        p *= self.p_scale
+        scaled_p = self.p_scale
         
-        return q, p
+        return q, scaled_p
 
 
 class ExternRobot(Robot):
@@ -117,7 +125,8 @@ class ExternRobot(Robot):
     """
     def __init__(self, n):
         super().__init__(n, out_n=3)
-        self.config = None
+        self.q_scale = 1 # = pasos_max - pasos_min
+        self.q_offset = 0 # = pasos_min
 
     def fkine(self, q):
         # cam.start()

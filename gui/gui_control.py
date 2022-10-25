@@ -122,8 +122,8 @@ class CtrlRobotDB:
 
         self.robots.eliminar(indice)
 
-    def config_robot(self, indice: int, config: dict):
-        self.robots[indice].kwargs.update(config)
+    def config_robot(self, config: dict):
+        self.robot_selec.kwargs.update(config)
         # Forzar reinstanciación del robot en caso de configurar el seleccionado
         self._robot_s = None
 
