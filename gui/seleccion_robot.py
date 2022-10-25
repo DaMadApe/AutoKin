@@ -3,6 +3,7 @@ from tkinter import ttk
 
 from gui.gui_utils import Pantalla, Popup, Label_Entry, TablaYBotones
 from gui.nuevo_robot import Popup_agregar_robot
+from gui.popups_config import Popup_config_ext, Popup_config_rtb, Popup_config_sofa
 
 
 class PantallaSelecRobot(Pantalla):
@@ -95,8 +96,14 @@ class PantallaSelecRobot(Pantalla):
         self.parent.avanzar()
 
     def configurar_robot(self, indice):
-        # Abrir interfaz de calibración
-        pass
+        popups = {"Externo" : Popup_config_ext,
+                  "Sim. RTB" : Popup_config_rtb,
+                  "Sim. SOFA" : Popup_config_sofa}
+        self.controlador.seleccionar_robot(indice)
+        robot_cls = self.controlador.robot_selec.cls_id
+        popups[robot_cls](self,
+                          callback=self.controlador.config_robot,
+                          robot=self.controlador.robot_s)
 
     def eliminar_robot(self, indice):
         if tk.messagebox.askyesno("Eliminar?",

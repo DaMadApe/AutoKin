@@ -122,6 +122,11 @@ class CtrlRobotDB:
 
         self.robots.eliminar(indice)
 
+    def config_robot(self, indice: int, config: dict):
+        self.robots[indice].kwargs.update(config)
+        # Forzar reinstanciación del robot en caso de configurar el seleccionado
+        self._robot_s = None
+
     """ Modelos """
     def _model_path(self, robot, modelo):
         robot_nom = robot.nombre
