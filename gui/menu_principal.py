@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.gui_utils import Pantalla
+from gui.popups_config import Popup_config_ext, Popup_config_rtb, Popup_config_sofa
 
 
 class PantallaMenuPrincipal(Pantalla):
@@ -46,7 +47,7 @@ class PantallaMenuPrincipal(Pantalla):
         self.label_robot.grid(column=0, row=1, sticky='w')
 
         self.boton_config = ttk.Button(frame_status, text="Config...",
-                                       command=self.config_robot,
+                                       command=self.configurar_robot,
                                        width=12)
         self.boton_config.grid(column=1, row=1, sticky='e')
 
@@ -96,8 +97,14 @@ class PantallaMenuPrincipal(Pantalla):
     def controlar(self):
         self.parent.controlar_robot()
 
-    def config_robot(self):
-        pass
+    def configurar_robot(self):
+        popups = {"Externo" : Popup_config_ext,
+                  "Sim. RTB" : Popup_config_rtb,
+                  "Sim. SOFA" : Popup_config_sofa}
+        robot_cls = self.controlador.robot_selec.cls_id
+        popups[robot_cls](self,
+                          callback=self.controlador.config_robot,
+                          robot=self.controlador.robot_s)
 
     def actualizar(self, *args):
         super().actualizar()
