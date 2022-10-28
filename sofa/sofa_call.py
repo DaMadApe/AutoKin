@@ -1,12 +1,18 @@
 import os
+import platform
 import subprocess
 
 import numpy as np
 
+# Ajustar paths según compu en la que se ejecuta el programa
+if platform.system() == 'Windows':
+    SOFA_ROOT = os.path.join('C:', 'Users', 'ralej', 'Downloads', 'SofaSoftRobot')
+    RUN_PATH = os.path.join(SOFA_ROOT, 'bin', 'runSofa.exe')
+else:
+    SOFA_ROOT = os.path.join('/home', 'damadape', 'SOFA_robosoft')
+    RUN_PATH = os.path.join(SOFA_ROOT, 'bin', 'runSofa')
 
-SOFA_ROOT = '/home/damadape/SOFA_robosoft'
 PYTHONPATH = os.path.join(SOFA_ROOT, 'plugins', 'SofaPython3', 'lib', 'python3', 'site-packages')
-RUN_PATH = os.path.join(SOFA_ROOT, 'bin', 'runSofa',)
 
 SIM_PATH = os.path.join(os.path.dirname(__file__), 'sofa_sim.py')
 IN_FILE = os.path.join('sofa', 'q_in.npy')
