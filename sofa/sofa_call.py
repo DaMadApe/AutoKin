@@ -20,29 +20,50 @@ OUT_FILE = os.path.join('sofa', 'p_out.npy')
 CONFIG_FILE = os.path.join('sofa', 'config.txt')
 
 
-def sofa_fkine(q, config='LSL', headless=True):
-    n_wait = 100
-    wait = np.zeros((n_wait, q.shape[-1]))
-    q = np.concatenate([wait, q])
+class Sofa_instance:
+    def __init__(self, config='LSL', headless=True):
+        self.proc = None
+        self.headless = headless
 
-    with open(CONFIG_FILE, 'w') as output:
-        output.write(config)
+        # HACK: Esta implementación previene que existan
+        #       instancias simultáneas, repetirían config
+        with open(CONFIG_FILE, 'w') as output:
+            output.write(config)
 
-    np.save(IN_FILE, q)
+    def fkine(self, q):
+        n_wait = 100
+        wait = np.zeros((n_wait, q.shape[-1]))
+        q = np.concatenate([wait, q])
+        np.save(IN_FILE, q)
+        
+        self.start_proc()
+        self.proc.wait()
 
-    op = '-g batch' if headless else '-a'
+        p = np.load(OUT_FILE)
+        # os.remove(IN_FILE)
+        # os.remove(OUT_FILE)
+        return q, p[n_wait:]
 
-    # env = os.environ.copy()
-    # env.update({'SOFA_ROOT': SOFA_ROOT,
-    #             'PYTHONPATH': PYTHONPATH})
+    def start_proc(self):
+        # op = '-g batch' if self.headless else '-a'
+        op = ('-g', 'batch') if False else ('-a')
+        env = os.environ.copy()
+        env.update({'PYTHONPATH': PYTHONPATH})
 
-    subprocess.call(f'{RUN_PATH} {op} -n {q.shape[0]} \"{SIM_PATH}\"',
-                    shell=True) #, env=env)
+        # Funciona en windows, proc.kill() no cierra Sofa
+        # command = f'{RUN_PATH} {op} \"{SIM_PATH}\"' # -n {q.shape[0]}
+        # self.proc = subprocess.Popen(command, shell=True, env=env)
 
-    p = np.load(OUT_FILE)
-    os.remove(IN_FILE)
-    os.remove(OUT_FILE)
-    return p[n_wait:]
+        # No incluye opción headless, no está probado en windows
+        # Pero proc.kill() sí cierra Soffa
+        self.proc = subprocess.Popen([RUN_PATH, op, SIM_PATH], 
+                                     shell=False, env=env)
+
+    def stop(self):
+        if self.proc is not None:
+            self.proc.kill()
+            self.proc.wait()
+            self.proc = None
 
 
 # def ramp(q1, q2, N):
@@ -55,16 +76,14 @@ def sofa_fkine(q, config='LSL', headless=True):
 
 
 if __name__ == "__main__":
-    # export PYTHONPATH="/home/damadape/SOFA_robosoft/plugins/SofaPython3/lib/python3/site-packages:$PYTHONPATH"
-    # export SOFA_ROOT="/home/damadape/SOFA_robosoft"
-
+    import time
     import matplotlib.pyplot as plt
     from autokin.trayectorias import coprime_sines
 
     N = 1000
     # q = [np.zeros(N), np.linspace(0, 1, N), np.ones(N), np.linspace(1, 0, N)]
     # q = np.stack(q, axis=0).T
-    q  = np.linspace([0,0,0], [0, 0, 1], 100)
+    q  = np.linspace([0,0,0], [0, 5, 10], 100)
 
     # q = coprime_sines(3, N, densidad=2).numpy()
     # qs = np.zeros((10, 3))
@@ -74,8 +93,9 @@ if __name__ == "__main__":
     # q = np.zeros((100, 3))
     
     #q = np.concatenate([qs, q])
-    p = sofa_fkine(q, headless=False)
-    # p = np.load('p_out.npy')
+
+    instance = Sofa_instance(headless=False)
+    instance.fkine(q)
 
     print(q.shape)
     print(p.shape)
