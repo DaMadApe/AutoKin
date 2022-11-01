@@ -5,7 +5,7 @@ import roboticstoolbox as rtb
 
 from autokin.robot_mixins import IkineMixin
 from autokin.utils import random_robot
-from sofa.sofa_call import sofa_fkine
+from sofa.sofa_call import Sofa_instance
 
 
 class Robot(IkineMixin):
@@ -89,29 +89,53 @@ class SofaRobot(Robot):
 
     def __init__(self,
                  config = 'LSL',
+                 headless : bool = True,
                  q_min: list[float] = None,
                  q_max: list[float] = None,
-                 p_scale = 1):
+                 p_scale : float = 1):
         if config not in ['LLLL','LSLS','LSSL', 'LSL', 'SLS', 'LLL', 'LS', 'LL']:
             raise ValueError('Configuración inválida')
         if q_min is None:
             q_min = [0] * len(config)
         if q_max is None:
-            q_max = [1] * len(config)
+            q_max = [10] * len(config)
 
         self.config = config
+        self._headless = headless
         self.q_min = torch.tensor(q_min)
         self.q_max = torch.tensor(q_max)
         self.p_scale = p_scale
+
+        self.sofa_instance = Sofa_instance()
         super().__init__(n_act=len(config), out_n=3)
+
+    @property
+    def headless(self):
+        return self._headless
+
+    @headless.setter
+    def headless(self, val: bool):
+        if self._headless != val:
+            self._headless = val
+            self.sofa_instance.headless=val
+            self.stop_instance()
 
     def fkine(self, q, headless=False):
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-        p = sofa_fkine(scaled_q.numpy(), headless=headless, config=self.config)
+        p = self.sofa_instance.fkine(scaled_q.numpy(),
+                                     headless=headless,
+                                     config=self.config)
+        _, p = self.sofa_instance.fkine()
         p = torch.tensor(p, dtype=torch.float)
         scaled_p = self.p_scale
         
         return q, scaled_p
+
+    def start_instance(self):
+        self.sofa_instance.start_proc()
+
+    def stop_instance(self):
+        self.sofa_instance.stop()
 
 
 class ExternRobot(Robot):
