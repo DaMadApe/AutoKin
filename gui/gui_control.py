@@ -309,9 +309,10 @@ class CtrlEntrenamiento:
             # Desechar registros de tensorboard
             base_dir = self._model_log_dir(self.robot_selec,
                                            self.modelo_selec)
-            local_dir = sorted(os.listdir(base_dir))[-1]
-            log_dir = os.path.join(base_dir, local_dir)
-            shutil.rmtree(log_dir)
+            if os.listdir(base_dir): 
+                local_dir = sorted(os.listdir(base_dir))[-1]
+                log_dir = os.path.join(base_dir, local_dir)
+                shutil.rmtree(log_dir)
 
     def pausar(self):
         self.queue.pause = True
@@ -371,8 +372,7 @@ class TrainThread(Thread):
 
     def _ajuste_inicial(self, log_dir):
         # Muestreo
-        self.queue.put(Msg('stage', 0))
-        time.sleep(2)            
+        self.queue.put(Msg('stage', 0))      
         dataset = FKset(self.robot, self.sample)
         train_set, val_set, test_set = dataset.rand_split(self.split)
 
