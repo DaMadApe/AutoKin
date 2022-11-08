@@ -1,8 +1,12 @@
+import time
 from functools import partial
 import tkinter as tk
 from tkinter import ttk
 
+import torch
+
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
+from autokin.trayectorias import coprime_sines
 from gui.gui_utils import Popup, Label_Entry
 
 
@@ -11,21 +15,170 @@ class Popup_config_ext(Popup):
     def __init__(self, parent, callback, robot: ExternRobot):
         self.callback = callback
         self.robot = robot
+        self.min_vars = []
+        self.max_vars = []
+        self.spins = []
+
+        self.old_config = {'q_min': robot.q_min.tolist(),
+                           'q_max': robot.q_max.tolist()}
         super().__init__(title="Configurar robot: Externo", parent=parent)
 
     def definir_elementos(self):
-        pass
+        # Configuración de mínimos/máximos de actuación
+        frame_spins = ttk.Frame(self)
+        frame_spins.grid(column=0, row=0)
+
+        self.protocol("WM_DELETE_WINDOW", self.cancelar)
+
+        for i in range(self.robot.n):
+            q_label = ttk.Label(frame_spins, text=f"q{i+1}")
+            q_label.grid(column=0, row=i)
+
+            min_var = tk.IntVar(value=int(self.robot.q_min[i]))
+            self.min_vars.append(min_var)
+            max_var = tk.IntVar(value=int(self.robot.q_max[i]))
+            self.max_vars.append(max_var)
+
+            min_spin = ttk.Spinbox(frame_spins, width=5,
+                                   from_=0, to=1000, increment=1,
+                                   textvariable=min_var, 
+                                   command=partial(self.min_spin_command, i))
+            min_spin.grid(column=1, row=i)
+
+            max_spin = ttk.Spinbox(frame_spins, width=5,
+                                   from_=0, to=1000, increment=1,
+                                   textvariable=max_var, 
+                                   command=partial(self.max_spin_command, i))
+            max_spin.grid(column=3, row=i)
+
+            self.spins.extend([min_spin, max_spin])
+
+            min_but = ttk.Button(frame_spins, text="Set min",
+                                 width=7,
+                                 command=partial(self.set_min, i))
+            min_but.grid(column=2, row=i)
+
+            max_but = ttk.Button(frame_spins, text="Set max",
+                                 width=7,
+                                 command=partial(self.set_max, i))
+            max_but.grid(column=4, row=i)
+
+        # Selector de tamaño de paso
+        frame_step_size = ttk.LabelFrame(self, text="Tamaño de paso")
+        frame_step_size.grid(column=0, row=1, sticky='ew')
+
+        # Tamaños disponibles de paso
+        # self.step_sizes = [1, 10, 100]
+    
+        self.step_sel = tk.IntVar(value=0)
+        for i in range(3):
+            step_radio = ttk.Radiobutton(frame_step_size,
+                                        text=f'x {10**i}', # f'x{step_sizes[i]}',
+                                        variable=self.step_sel,
+                                        value=i,
+                                        command=partial(self.set_step_size, i))
+            step_radio.grid(column=i, row=0, sticky='ew', pady=0, padx=20)
+            frame_step_size.columnconfigure(i, weight=1)
+
+        # Definir factor de escala para medidas de posición
+        frame_entry = ttk.Frame(self)
+        frame_entry.grid(column=0, row=2, sticky='w')
+
+        self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
+                                         var_type='float', width=16)
+        self.p_scale_entry.grid(column=0, row=0)
+        self.p_scale_entry.set(self.robot.p_scale)
+ 
+        # Botones del fondo
+        frame_botones = ttk.Frame(self)
+        frame_botones.grid(column=0, row=3)
+
+        jog_but = ttk.Button(frame_botones, text="Jog",
+                             width=12,
+                             command=lambda: self.jog)
+        jog_but.grid(column=0, row=2)
+
+        aceptar_but = ttk.Button(frame_botones, text="Aceptar",
+                                 width=12,
+                                 command=self.aceptar)
+        aceptar_but.grid(column=1, row=2)
+
+        cancelar_but = ttk.Button(frame_botones, text="Cancelar",
+                                 width=12,
+                                 command=self.cancelar)
+        cancelar_but.grid(column=2, row=2)
+
+        for frame in [self, frame_spins, frame_entry, frame_botones]:
+            for child in frame.winfo_children():
+                child.grid_configure(padx=5, pady=5)
+
+        frame_step_size.grid_configure(padx=10, pady=5)
+
+    def min_spin_command(self, idx): 
+        val = self.min_vars[idx].get()
+        if val > self.max_vars[idx].get():
+            self.max_vars[idx].set(val)
+
+    def max_spin_command(self, idx):
+        val = self.max_vars[idx].get()
+        if val < self.min_vars[idx].get():
+            self.min_vars[idx].set(val)
+
+    def set_step_size(self, idx):
+        for spin in self.spins:
+            spin.config(increment=10**idx)
+
+    def set_min(self, idx):
+        q_min = self.robot.q_min.tolist()
+        new_q_i = float(self.min_vars[idx].get())
+        q_min[idx] = new_q_i
+        self.robot.q_min[idx] = new_q_i
+        self.callback({'q_min': q_min})
+
+        q = torch.zeros(self.robot.n)
+        self.robot.fkine(q)
+
+        print(f'min q: {self.robot.q_min}')
+
+    def set_max(self, idx):
+        q_max = self.robot.q_max.tolist()
+        new_q_i = float(self.max_vars[idx].get())
+        q_max[idx] = new_q_i
+        self.robot.q_max[idx] = new_q_i
+        self.callback({'q_max': q_max})
+
+        q = torch.zeros(self.robot.n)
+        q[idx] = 1
+        self.robot.fkine(q)
+
+        print(f'max q: {self.robot.q_max}')
+
+    def jog(self):
+        jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
+        self.robot.fkine(jog_traj)
+
+    def aceptar(self):
+        q = torch.zeros(self.robot.n)
+        self.robot.fkine(q)
+        self.callback({'p_scale' : float(self.p_scale_entry.get())})
+        self.destroy()
+
+    def cancelar(self):
+        self.callback(self.old_config)
+        q = torch.zeros(self.robot.n)
+        self.robot.fkine(q)
+        self.destroy()
 
 
 class Popup_config_rtb(Popup):
+    pass
+    # def __init__(self, parent, callback, robot: RTBrobot):
+    #     self.callback = callback
+    #     self.robot = robot
+    #     super().__init__(title="Configurar robot: RTB", parent=parent)
 
-    def __init__(self, parent, callback, robot: RTBrobot):
-        self.callback = callback
-        self.robot = robot
-        super().__init__(title="Configurar robot: RTB", parent=parent)
-
-    def definir_elementos(self):
-        pass
+    # def definir_elementos(self):
+        # pass
 
 
 class Popup_config_sofa(Popup):
@@ -43,6 +196,8 @@ class Popup_config_sofa(Popup):
 
         self.robot.headless = False
         self.robot.start_instance()
+        time.sleep(1)
+        self.lift()
 
     def definir_elementos(self):
         # Configuración de mínimos/máximos de actuación
@@ -87,7 +242,7 @@ class Popup_config_sofa(Popup):
         frame_entry.grid(column=0, row=1, sticky='w')
 
         self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
-                                         var_type='float', width=5)
+                                         var_type='float', width=16)
         self.p_scale_entry.grid(column=0, row=0)
         self.p_scale_entry.set(self.robot.p_scale)
  
@@ -103,7 +258,7 @@ class Popup_config_sofa(Popup):
 
         jog_but = ttk.Button(frame_botones, text="Jog",
                              width=12,
-                             command=lambda: self.jog)
+                             command=self.jog)
         jog_but.grid(column=0, row=2)
 
         aceptar_but = ttk.Button(frame_botones, text="Aceptar",
@@ -120,7 +275,7 @@ class Popup_config_sofa(Popup):
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
-    def min_spin_command(self, idx):
+    def min_spin_command(self, idx): 
         val = self.min_vars[idx].get()
         if val > self.max_vars[idx].get():
             self.max_vars[idx].set(val)
@@ -136,8 +291,10 @@ class Popup_config_sofa(Popup):
         q_min[idx] = new_q_i
         self.robot.q_min[idx] = new_q_i
         self.callback({'q_min': q_min})
-        # self.robot.fkine(ones if check_tens else zeros[idx]==1)
-        print(f'min q: {self.robot.q_min}')
+
+        if self.robot.running():
+            q = torch.zeros(self.robot.n)
+            self.robot.fkine(q.unsqueeze(0))
 
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
@@ -145,22 +302,25 @@ class Popup_config_sofa(Popup):
         q_max[idx] = new_q_i
         self.robot.q_max[idx] = new_q_i
         self.callback({'q_max': q_max})
-        print(f'max q: {self.robot.q_max}')
+
+        if self.robot.running():
+            q = torch.zeros(self.robot.n)
+            q[idx] = 1
+            self.robot.fkine(q.unsqueeze(0))
 
     def jog(self):
-        # self.robot.fkine(coprime_sines)
-        pass
+        jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
+        self.robot.fkine(jog_traj)
 
     def aceptar(self):
-        # self.robot.fkine(zeros)
-        self.callback({'headless' : bool(self.check_var.get()),
-                       'p_scale' : float(self.p_scale_entry.get())})
+        self.callback({'q_min': [var.get() for var in self.min_vars],
+                       'q_max': [var.get() for var in self.max_vars],
+                       'p_scale' : float(self.p_scale_entry.get()),
+                       'headless' : bool(self.check_var.get())})
         self.robot.stop_instance()
         self.destroy()
 
     def cancelar(self):
-        # self.robot.fkine(zeros)
         self.callback(self.old_config)
-        # Usar old config o limitar guardado a robot original?
         self.robot.stop_instance()
         self.destroy()
