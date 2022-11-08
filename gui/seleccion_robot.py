@@ -100,7 +100,7 @@ class PantallaSelecRobot(Pantalla):
                   "Sim. RTB" : Popup_config_rtb,
                   "Sim. SOFA" : Popup_config_sofa}
         self.controlador.seleccionar_robot(indice)
-        robot_cls = self.controlador.robot_selec.cls_id
+        robot_cls = self.controlador.robot_reg_s.cls_id
         popups[robot_cls](self,
                           callback=self.controlador.config_robot,
                           robot=self.controlador.robot_s)

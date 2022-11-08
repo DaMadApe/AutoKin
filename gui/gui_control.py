@@ -57,8 +57,8 @@ class CtrlRobotDB:
             pickle.dump(self._robots, f)
         
         if self._modelo_s is not None:
-            model_path = self._model_path(self.robot_selec,
-                                          self.modelo_selec)
+            model_path = self._model_path(self.robot_reg_s,
+                                          self.modelo_reg_s)
             torch.save(self._modelo_s, model_path)
 
     """ Robots """
@@ -73,7 +73,7 @@ class CtrlRobotDB:
         return self._robots
 
     @property
-    def robot_selec(self) -> RoboReg:
+    def robot_reg_s(self) -> RoboReg:
         """
         Registro de datos del robot seleccionado
         """
@@ -85,7 +85,7 @@ class CtrlRobotDB:
         Robot seleccionado
         """
         if self._robot_s is None:
-            self._robot_s = self.robot_selec.init_obj()
+            self._robot_s = self.robot_reg_s.init_obj()
         return self._robot_s
 
     def seleccionar_robot(self, indice: int):
@@ -123,7 +123,7 @@ class CtrlRobotDB:
         self.robots.eliminar(indice)
 
     def config_robot(self, config: dict):
-        self.robot_selec.kwargs.update(config)
+        self.robot_reg_s.kwargs.update(config)
         # Forzar reinstanciación del robot en caso de configurar el seleccionado
         self._robot_s = None
 
@@ -143,14 +143,14 @@ class CtrlRobotDB:
         return self.robots.selec().modelos
 
     @property
-    def modelo_selec(self) -> ModelReg:
+    def modelo_reg_s(self) -> ModelReg:
         """
         Registo de datos del modelo seleccionado
         """
-        if self.robot_selec is None:
+        if self.robot_reg_s is None:
             return None
         else:
-            return self.robot_selec.modelos.selec()
+            return self.robot_reg_s.modelos.selec()
 
     @property
     def modelo_s(self) -> Union[FKModel, FKEnsemble]:
@@ -158,12 +158,12 @@ class CtrlRobotDB:
         Modelo seleccionado
         """
         if self._modelo_s is None:
-            model_path = self._model_path(self.robot_selec,
-                                          self.modelo_selec)
+            model_path = self._model_path(self.robot_reg_s,
+                                          self.modelo_reg_s)
             if os.path.isfile(model_path):
                 self._modelo_s = torch.load(model_path)
             else:
-                self._modelo_s = self.modelo_selec.init_obj()
+                self._modelo_s = self.modelo_reg_s.init_obj()
         return self._modelo_s
         
     def seleccionar_modelo(self, indice: int):
@@ -180,7 +180,7 @@ class CtrlRobotDB:
         
         if agregado:
             # Crear directorio de tensorboard
-            os.mkdir(self._model_log_dir(self.robot_selec,
+            os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
             self.guardar()
         return agregado
@@ -189,27 +189,27 @@ class CtrlRobotDB:
         agregado = self.modelos.copiar(origen, nombre)
         if agregado:
             # Copiar modelo (~.pt) si existe
-            orig_path = self._model_path(self.robot_selec,
+            orig_path = self._model_path(self.robot_reg_s,
                                          self.modelos[origen])
-            dest_path = self._model_path(self.robot_selec,
+            dest_path = self._model_path(self.robot_reg_s,
                                          self.modelos[-1])
             if os.path.isfile(orig_path):
                 model = torch.load(orig_path)
                 torch.save(model, dest_path)
 
             # Crear directorio de tensorboard
-            os.mkdir(self._model_log_dir(self.robot_selec,
+            os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
         return agregado 
 
     def eliminar_modelo(self, indice: int):
         # Eliminar registro de tensorboard
-        log_dir = self._model_log_dir(self.robot_selec,
+        log_dir = self._model_log_dir(self.robot_reg_s,
                                       self.modelos[indice])
         shutil.rmtree(log_dir)
 
         # Eliminar modelo almacenado
-        model_path = self._model_path(self.robot_selec,
+        model_path = self._model_path(self.robot_reg_s,
                                       self.modelos[indice])
         if os.path.isfile(model_path):
             os.remove(model_path)
@@ -219,7 +219,7 @@ class CtrlRobotDB:
     def abrir_tensorboard(self, ver_todos=False):
         self.cerrar_tensorboard()
 
-        base_dir = self._model_log_dir(self.robot_selec, self.modelo_selec)
+        base_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s)
         if os.listdir(base_dir) and not ver_todos:
             local_dir = sorted(os.listdir(base_dir))[-1]
             log_dir = os.path.join(base_dir, local_dir)
@@ -265,7 +265,7 @@ class CtrlEntrenamiento:
         self.queue = SignalQueue()
 
         timestamp = time.strftime('%Y%m%d-%H%M%S')
-        base_dir = self._model_log_dir(self.robot_selec, self.modelo_selec) 
+        base_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s) 
         log_dir = os.path.join(base_dir, timestamp)
 
         self.trainer = TrainThread(queue=self.queue,
@@ -301,14 +301,14 @@ class CtrlEntrenamiento:
         self.queue.pause = False
         self.trainer.join()
         if guardar:
-            self.modelo_selec.trains.append(self.train_kwargs)
+            self.modelo_reg_s.trains.append(self.train_kwargs)
             self.guardar()
         else:
             # Desechar instancia actual (entrenada) del modelo
             self._modelo_s = None
             # Desechar registros de tensorboard
-            base_dir = self._model_log_dir(self.robot_selec,
-                                           self.modelo_selec)
+            base_dir = self._model_log_dir(self.robot_reg_s,
+                                           self.modelo_reg_s)
             if os.listdir(base_dir): 
                 local_dir = sorted(os.listdir(base_dir))[-1]
                 log_dir = os.path.join(base_dir, local_dir)
@@ -453,8 +453,7 @@ class CtrlEjecucion:
                                            p_target=target)
             _, p = self.robot_s.fkine(q)
             q_prev = q
-            # time.sleep(t_s)
-            # after_fn(t_s*1000)
+
             reg_callback(p.tolist())
 
 

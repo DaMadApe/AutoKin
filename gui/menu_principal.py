@@ -101,19 +101,19 @@ class PantallaMenuPrincipal(Pantalla):
         popups = {"Externo" : Popup_config_ext,
                   "Sim. RTB" : Popup_config_rtb,
                   "Sim. SOFA" : Popup_config_sofa}
-        robot_cls = self.controlador.robot_selec.cls_id
+        robot_cls = self.controlador.robot_reg_s.cls_id
         popups[robot_cls](self,
                           callback=self.controlador.config_robot,
                           robot=self.controlador.robot_s)
 
     def actualizar(self, *args):
         super().actualizar()
-        robot_selec = self.controlador.robot_selec
-        modelo_selec = self.controlador.modelo_selec
+        robot_reg_s = self.controlador.robot_reg_s
+        modelo_reg_s = self.controlador.modelo_reg_s
 
-        if modelo_selec is not None:
-            model_nom = modelo_selec.nombre
-            model_cls = modelo_selec.cls_id
+        if modelo_reg_s is not None:
+            model_nom = modelo_reg_s.nombre
+            model_cls = modelo_reg_s.cls_id
             self.label_modelo.config(text=f"{model_nom}  ({model_cls})")
             self.boton_entrenar['state'] = 'normal'
             self.boton_controlar['state'] = 'normal'
@@ -122,9 +122,9 @@ class PantallaMenuPrincipal(Pantalla):
             self.boton_entrenar['state'] = 'disabled'
             self.boton_controlar['state'] = 'disabled'
 
-        if robot_selec is not None:
-            robot_nom = robot_selec.nombre
-            robot_cls = robot_selec.cls_id
+        if robot_reg_s is not None:
+            robot_nom = robot_reg_s.nombre
+            robot_cls = robot_reg_s.cls_id
             self.label_robot.config(text=f"{robot_nom}  ({robot_cls})")
             self.boton_config['state'] = 'normal'
             self.boton_modelos['state'] = 'normal'
