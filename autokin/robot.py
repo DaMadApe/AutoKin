@@ -58,7 +58,7 @@ class RTBrobot(Robot):
     def __repr__(self):
         return self.robot.__repr__()
 
-    def fkine(self, q):
+    def fkine(self, q: torch.Tensor):
         denormed_q = self.denorm(q)
         se3_pose = self.robot.fkine(denormed_q.detach().numpy())
 
@@ -120,14 +120,11 @@ class SofaRobot(Robot):
             self.sofa_instance.headless=val
             self.stop_instance()
 
-    def fkine(self, q, headless=False):
+    def fkine(self, q: torch.Tensor, headless=False):
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-        p = self.sofa_instance.fkine(scaled_q.numpy(),
-                                     headless=headless,
-                                     config=self.config)
-        _, p = self.sofa_instance.fkine()
+        _, p = self.sofa_instance.fkine(scaled_q.numpy())
         p = torch.tensor(p, dtype=torch.float)
-        scaled_p = self.p_scale
+        scaled_p = self.p_scale * p
         
         return q, scaled_p
 
@@ -136,6 +133,9 @@ class SofaRobot(Robot):
 
     def stop_instance(self):
         self.sofa_instance.stop()
+
+    def running(self):
+        return self.sofa_instance.is_alive()
 
 
 class ExternRobot(Robot):
@@ -185,10 +185,10 @@ class ModelRobot(Robot):
         model.eval() # TODO: revisar ubicación de esto
         return cls(model)
 
-    def fkine(self, q):
+    def fkine(self, q: torch.Tensor):
         with torch.no_grad():
             p = self.model(q)
         return q, p
 
-    def jacob(self, q):
+    def jacob(self, q: torch.Tensor):
         return jacobian(self.model, q).squeeze()

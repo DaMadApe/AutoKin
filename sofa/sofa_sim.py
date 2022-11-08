@@ -1,6 +1,9 @@
 import os
+import socketserver
+import threading
 from math import cos
 from math import sin
+from queue import Queue, SimpleQueue
 
 import numpy as np
 
@@ -12,6 +15,30 @@ from splib3.animation import animate, AnimationManager
 
 DIR_PATH = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(DIR_PATH, 'model_files')
+PORT = 6969
+
+class SofaMsgHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        # Obtener tamaño del arreglo
+        q_size_bytes = self.rfile.read(4)
+        q_size = int.from_bytes(q_size_bytes, byteorder='big')
+        # Leer según tamaño envíado
+        data = self.rfile.read(q_size)
+        # Convertir bytes a np.array
+        q_in = np.frombuffer(data, dtype=float)
+
+        self.server.recv_queue.put(q_in)
+
+        p_out = self.server.out_queue.get()
+        self.wfile.write(p_out.tobytes())
+
+
+class SofaServer(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+    def set_queues(self, recv_queue: Queue, out_queue: Queue):
+        self.recv_queue = recv_queue
+        self.out_queue = out_queue
+
 
 class TrunkController(Sofa.Core.Controller):
     def __init__(self, trunk, L=4, S=4, *args, **kwargs):
@@ -25,62 +52,69 @@ class TrunkController(Sofa.Core.Controller):
 
         self.cable = getattr(self.trunk.node, self.cables[self.cable_n]).cable
 
-        q = np.load('q_in.npy')
-        self.q = np.concatenate([np.zeros((1, q.shape[-1])),q])
-        self.q_diff = np.diff(self.q, axis=0)
+        self.recv_queue = Queue()
+        self.exec_queue = SimpleQueue()
 
-        self.step = 0
-        self.p = np.zeros((len(self.q), 3))
-        self.forces = np.zeros((len(self.q), 709)) # len(self.trunk.node.dofs.force.value)))
+        self.out_queue = Queue()
+
+        self.in_exec = False
+        self.done_exec = False
+        self.p_stack = []
+        self.f_stack = []
+
+        self.start_server()
+
+    def start_server(self):
+        server = SofaServer(("localhost", PORT), SofaMsgHandler)
+        server.set_queues(self.recv_queue, self.out_queue)
+        server_thread = threading.Thread(target=server.serve_forever)
+        # Exit the server thread when the main thread terminates
+        server_thread.daemon = True
+        server_thread.start()
+        return server
 
     def get_pos(self):
         return self.trunk.node.effector.mo.position[0]
 
-    def onKeypressedEvent(self, e):
-        displacement = self.cable.value[0]
-        if e["key"] == Key.plus:
-            displacement += 3.
-            self.cable.value = [displacement]
-            print(f'cable{self.cables[self.cable_n]} val: {self.cable.value[0]}')
+    def get_forces(self):
+        forces = self.trunk.node.dofs.force.value
+        return np.linalg.norm(forces, axis=1)
 
-        elif e["key"] == Key.minus:
-            displacement -= 3.
-            if displacement < 0:
-                displacement = 0
-            self.cable.value = [displacement]
-            print(f'cable{self.cables[self.cable_n]} val: {self.cable.value[0]}')
-
-        elif e["key"] == '.':
-            self.cable_n += 1
-            self.cable_n %= len(self.cables)
-            cable_handle = self.cables[self.cable_n]
-            self.cable = getattr(self.trunk.node, cable_handle).cable
-            print(f'Cambio a {cable_handle}')
-
-        print(f'finger: {self.get_pos()}')
-
-    def update_q(self, diff):
-        for i, dq in enumerate(diff):
+    def update_q(self, val):
+        for i, q_n in enumerate(val):
             cable = getattr(self.trunk.node, self.cables[i]).cable
-            cable.value += dq
+            cable.value = [q_n]
             # print(f'cable{i}.value: {cable.value[0]}, {dq}')
 
+    def send_out_data(self):
+        p_out = np.array(self.p_stack)
+        self.out_queue.put(p_out)
+        self.p_stack = []
+
     def onAnimateBeginEvent(self, event): # called at each begin of animation step
-        if self.step < len(self.q) - 1:
-            self.update_q(self.q_diff[self.step])
-            self.step += 1
-        # print(self.step)
+        if self.exec_queue.empty():
+            if self.in_exec:
+                self.done_exec = True
+
+            if not self.recv_queue.empty():
+                q_req = self.recv_queue.get().reshape(-1,len(self.cables))
+                # Unravel
+                for q in q_req:
+                    self.exec_queue.put(q)
+        else:
+            self.in_exec = True
+            q_i = self.exec_queue.get()
+            self.update_q(q_i)
 
     def onAnimateEndEvent(self, event):
-        self.p[self.step] = self.get_pos()
-        forces = self.trunk.node.dofs.force.value
-        forces = np.linalg.norm(forces, axis=1)
-        self.forces[self.step] = forces
-        # print(f'Efector final: {pos}')
-        # print(self.p)
-        if self.step == len(self.q)-2:
-            np.save(os.path.join(DIR_PATH, 'p_out.npy'), self.p[1:])
-            np.save(os.path.join(DIR_PATH, 'forces_out.npy'), self.forces)
+        if self.in_exec:
+            if self.done_exec:
+                self.send_out_data()
+                self.in_exec = False
+                self.done_exec = False
+            else:
+                self.p_stack.append(self.get_pos())
+                # self.f_stack.append(self.get_forces())
 
 
 class Trunk():

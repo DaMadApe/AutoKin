@@ -1,4 +1,6 @@
 import os
+import time
+import socket
 import platform
 import subprocess
 
@@ -19,6 +21,9 @@ IN_FILE = os.path.join('sofa', 'q_in.npy')
 OUT_FILE = os.path.join('sofa', 'p_out.npy')
 CONFIG_FILE = os.path.join('sofa', 'config.txt')
 
+PORT = 6969
+BUFFER_SIZE = 1024 # bytes
+
 
 class Sofa_instance:
     def __init__(self, config='LSL', headless=True):
@@ -30,19 +35,32 @@ class Sofa_instance:
         with open(CONFIG_FILE, 'w') as output:
             output.write(config)
 
-    def fkine(self, q):
-        n_wait = 100
-        wait = np.zeros((n_wait, q.shape[-1]))
-        q = np.concatenate([wait, q])
-        np.save(IN_FILE, q)
-        
-        self.start_proc()
-        self.proc.wait()
+    def fkine(self, q : np.ndarray):
+        q = q.astype(float)
 
-        p = np.load(OUT_FILE)
-        # os.remove(IN_FILE)
-        # os.remove(OUT_FILE)
-        return q, p[n_wait:]
+        if self.proc is None or not self.is_alive():
+            self.start_proc()
+            time.sleep(1)
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.connect(("localhost", PORT))
+
+            q_encoded = q.tobytes()
+            # Enviar tamaño de q
+            sock.send(len(q_encoded).to_bytes(4, byteorder='big'))
+            # Enviar q
+            sock.sendall(q_encoded)
+
+            data = bytearray()
+            while True:
+                msg = sock.recv(BUFFER_SIZE)
+                if not msg:
+                    break
+                data.extend(msg)
+
+            p_out = np.frombuffer(data).reshape(-1, 3)
+
+        return q, p_out
 
     def start_proc(self):
         # op = '-g batch' if self.headless else '-a'
@@ -64,6 +82,9 @@ class Sofa_instance:
             self.proc.kill()
             self.proc.wait()
             self.proc = None
+
+    def is_alive(self):
+        return self.proc.poll() is None
 
 
 # def ramp(q1, q2, N):
@@ -95,10 +116,11 @@ if __name__ == "__main__":
     #q = np.concatenate([qs, q])
 
     instance = Sofa_instance(headless=False)
-    instance.fkine(q)
 
-    print(q.shape)
-    print(p.shape)
+    time.sleep(5)
+    p, q = instance.fkine(q)
+
+    # Graficar resultado
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.scatter(p[:,0], p[:,1], p[:,2])
