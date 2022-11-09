@@ -5,7 +5,8 @@ import roboticstoolbox as rtb
 
 from autokin.robot_mixins import IkineMixin
 from autokin.utils import random_robot
-from sofa.sofa_call import Sofa_instance
+from sofa.sofa_call import SofaInstance
+from ext_robot.client import ExtInstance
 
 
 class Robot(IkineMixin):
@@ -84,6 +85,9 @@ class RTBrobot(Robot):
         q_min, q_max = torch.tensor(self.robot.qlim, dtype=torch.float32)
         return q * (q_max - q_min) + q_min
 
+    def status(self):
+        return {"Instancia RTB", True}
+
 
 class SofaRobot(Robot):
 
@@ -106,7 +110,7 @@ class SofaRobot(Robot):
         self.q_max = torch.tensor(q_max)
         self.p_scale = p_scale
 
-        self.sofa_instance = Sofa_instance(config=config,
+        self.SofaInstance = SofaInstance(config=config,
                                            headless=headless)
         super().__init__(n_act=len(config), out_n=3)
 
@@ -118,25 +122,28 @@ class SofaRobot(Robot):
     def headless(self, val: bool):
         if self._headless != val:
             self._headless = val
-            self.sofa_instance.headless=val
+            self.SofaInstance.headless=val
             self.stop_instance()
 
     def fkine(self, q: torch.Tensor, headless=False):
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-        _, p = self.sofa_instance.fkine(scaled_q.numpy())
+        _, p = self.SofaInstance.fkine(scaled_q.numpy())
         p = torch.tensor(p, dtype=torch.float)
         scaled_p = self.p_scale * p
         
         return q, scaled_p
 
     def start_instance(self):
-        self.sofa_instance.start_proc()
+        self.SofaInstance.start_proc()
 
     def stop_instance(self):
-        self.sofa_instance.stop()
+        self.SofaInstance.stop()
 
     def running(self):
-        return self.sofa_instance.is_alive()
+        return self.SofaInstance.is_alive()
+
+    def status(self):
+        return {"Instancia Sofa": self.running()}
 
 
 class ExternRobot(Robot):
@@ -153,21 +160,15 @@ class ExternRobot(Robot):
         self.q_scale = 1 # = pasos_max - pasos_min
         self.q_offset = 0 # = pasos_min
 
-    def fkine(self, q):
-        # cam.start()
-        # mcu.write(q, params)
-        # q_full = mcu.read()
-        # p_full = cam.stop()
-        # q, p = align(q_full, p_full)
-        # return q, p # Para poder devolver q más grande que la de entrada
-        pass
+        self.client = ExtInstance()
 
-    def config(self, *q_limits):
-        """
-        Hacer parámetro de init?
-        """
-        self.config = []
-        pass
+    def fkine(self, q):
+        return self.client.fkine(q)
+
+    def status(self):
+        mcu_status, cam_status = self.client.status()
+        return {'Microcontrolador': mcu_status,
+                'Sistema de cámaras': cam_status}
 
 
 class ModelRobot(Robot):
