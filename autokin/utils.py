@@ -79,3 +79,10 @@ def linterp(q1, q2, pasos):
         interp[:, i] = torch.linspace(qi, qf, pasos)
 
     return interp
+
+
+def suavizar(q):
+    return q
+
+def alinear_datos(q, p):
+    return q, p
