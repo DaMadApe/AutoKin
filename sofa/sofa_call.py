@@ -40,7 +40,7 @@ class SofaInstance:
 
         if self.proc is None or not self.is_alive():
             self.start_proc()
-            time.sleep(1)
+            time.sleep(2)
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.connect(("localhost", PORT))

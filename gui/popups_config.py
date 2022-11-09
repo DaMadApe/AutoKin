@@ -138,8 +138,6 @@ class Popup_config_ext(Popup):
         q = torch.zeros(self.robot.n)
         self.robot.fkine(q)
 
-        print(f'min q: {self.robot.q_min}')
-
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
         new_q_i = float(self.max_vars[idx].get())
@@ -150,8 +148,6 @@ class Popup_config_ext(Popup):
         q = torch.zeros(self.robot.n)
         q[idx] = 1
         self.robot.fkine(q)
-
-        print(f'max q: {self.robot.q_max}')
 
     def jog(self):
         jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
@@ -196,7 +192,7 @@ class Popup_config_sofa(Popup):
 
         self.robot.headless = False
         self.robot.start_instance()
-        time.sleep(1)
+        time.sleep(2)
         self.lift()
 
     def definir_elementos(self):
