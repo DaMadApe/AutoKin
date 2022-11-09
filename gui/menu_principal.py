@@ -14,7 +14,8 @@ class PantallaMenuPrincipal(Pantalla):
 
         # Botones izquierdos
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=1, row=1, sticky='nsew', padx=10, pady=(50,10))
+        frame_botones.grid(column=1, row=1, rowspan=3,
+                           sticky='nsew', padx=10, pady=(50,10))
 
         boton_seleccionar = ttk.Button(frame_botones, text="Seleccionar",
                                        width=20,
@@ -34,51 +35,51 @@ class PantallaMenuPrincipal(Pantalla):
         for child in frame_botones.winfo_children():
             child.grid_configure(padx=10, pady=15)
 
-        # Panel de información derecho
-        frame_status = ttk.Frame(self)
-        frame_status.grid(column=2, row=1, sticky='ns')
+        # Panel de información de selección actual
+        frame_selec = ttk.Frame(self)
+        frame_selec.grid(column=2, row=1, sticky='ns')
 
         # Datos de robot (y modelo) seleccionado
-        titulo_robot = ttk.Label(frame_status, text="Robot",
+        titulo_robot = ttk.Label(frame_selec, text="Robot",
                                  font=(13))
         titulo_robot.grid(column=0, row=0, columnspan=2)
 
-        self.label_robot = ttk.Label(frame_status)
+        self.label_robot = ttk.Label(frame_selec)
         self.label_robot.grid(column=0, row=1, sticky='w')
 
-        self.boton_config = ttk.Button(frame_status, text="Config...",
+        self.boton_config = ttk.Button(frame_selec, text="Config...",
                                        command=self.configurar_robot,
                                        width=12)
         self.boton_config.grid(column=1, row=1, sticky='e')
 
-        self.label_modelo = ttk.Label(frame_status)
+        self.label_modelo = ttk.Label(frame_selec)
         self.label_modelo.grid(column=0, row=2, sticky='w')
 
-        self.boton_modelos = ttk.Button(frame_status, text="Ver modelos",
+        self.boton_modelos = ttk.Button(frame_selec, text="Ver modelos",
                                        command=self.parent.ver_modelos,
                                        width=12)
         self.boton_modelos.grid(column=1, row=2, sticky='e')
 
         # Estado de componentes
-        titulo_estado = ttk.Label(frame_status, text="Estado",
+        self.frame_status = ttk.Frame(self)
+        self.frame_status.grid(column=2, row=2, sticky='ns')
+        titulo_estado = ttk.Label(self.frame_status, text="Estado",
                                   font=(13))
-        titulo_estado.grid(column=0, row=3, columnspan=2)
+        titulo_estado.grid(column=0, row=0, columnspan=2)
 
-        self.status_labels = []
-
-        for i, sis in enumerate(["Medición posición",
-                                 "Controlador robot"]):
-            sys_label = ttk.Label(frame_status, text=sis)
-            sys_label.grid(column=0, row=4+i)
-
-            status_label = ttk.Label(frame_status)
-            status_label.grid(column=1, row=4+i)
-            self.status_labels.append(status_label)
+        # Botón para actualizar pantalla
+        boton_actualizar = ttk.Button(self,
+                                      text="Actualizar",
+                                      width=12,
+                                      command=self.actualizar)
+        boton_actualizar.grid(column=2, row=3, sticky='s',
+                              pady=10)
 
         self.actualizar()
 
-        for child in frame_status.winfo_children():
-            child.grid_configure(padx=10, pady=10)
+        for frame in [frame_selec, self.frame_status]:
+            for child in frame.winfo_children():
+                child.grid_configure(padx=10, pady=10)
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
@@ -86,7 +87,7 @@ class PantallaMenuPrincipal(Pantalla):
         frame_botones.columnconfigure(0, weight=1)
 
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(2, weight=2)
+        self.rowconfigure(4, weight=2)
 
     def seleccionar_robot(self):
         self.parent.seleccionar_robot()
@@ -134,14 +135,19 @@ class PantallaMenuPrincipal(Pantalla):
             self.boton_config['state'] = 'disabled'
             self.boton_modelos['state'] = 'disabled'
 
-        status = self.controlador.get_ext_status()
-        for i, label in enumerate(self.status_labels):
-            if status[i]:
-                label.config(text="  conectado ")
-                label['style'] = 'Green.TLabel'
+        robot_status = self.controlador.get_robot_status()
+        for i, (sis, status) in enumerate(robot_status.items()):
+            sys_label = ttk.Label(self.frame_status, text=sis)
+            sys_label.grid(column=0, row=1+i)
+
+            status_label = ttk.Label(self.frame_status)
+            status_label.grid(column=1, row=1+i)
+            if status:
+                status_label.config(text=" activo ")
+                status_label['style'] = 'Green.TLabel'
             else:
-                label.config(text="desconectado ")
-                label['style'] = 'Red.TLabel'
+                status_label.config(text=" inactivo ")
+                status_label['style'] = 'Red.TLabel'
 
 
 if __name__ == '__main__':
