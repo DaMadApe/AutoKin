@@ -155,10 +155,20 @@ class ExternRobot(Robot):
     Para conectar otro robot o usar conjuntos disintos de
     sensores, se debe definir otra interfaz como esta.
     """
-    def __init__(self, n):
+    def __init__(self, 
+                 n: int,
+                 q_min: list[float] = None,
+                 q_max: list[float] = None,
+                 p_scale : float = 1):
         super().__init__(n, out_n=3)
-        self.q_scale = 1 # = pasos_max - pasos_min
-        self.q_offset = 0 # = pasos_min
+        if q_min is None:
+            q_min = [0] * n
+        if q_max is None:
+            q_max = [100] * n
+
+        self.q_min = torch.tensor(q_min)
+        self.q_max = torch.tensor(q_max)
+        self.p_scale = p_scale
 
         self.client = ExtInstance()
 
