@@ -12,6 +12,7 @@ dependencies:
   - tqdm
   - pytest
   - hypothesis
+  - pyserial
 
 # Nuevo env
 # conda env create -f AutokinEnv.yml
