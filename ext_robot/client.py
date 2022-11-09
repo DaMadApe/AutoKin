@@ -49,12 +49,12 @@ class ExtInstance:
                                             self.cam_client.commandPort))
 
     def send_q_esp(self, q): # -> ack # Saber cuando termina ejecución
-        pasos = [0]*4
+        pasos = ['0']*4
         for i, val in enumerate(q):
             pasos[i] = str(int(val))
         msg_pasos = ','.join(pasos)
-        print(msg_pasos)
-        self.serialESP.write(msg_pasos.encode('ascii'))
+        if self.serialESP is not None:
+            self.serialESP.write(msg_pasos.encode('ascii'))
 
     def wait_exec_esp(self):
         pass
