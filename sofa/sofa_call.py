@@ -84,7 +84,7 @@ class SofaInstance:
             self.proc = None
 
     def is_alive(self):
-        return self.proc.poll() is None
+        return self.proc is not None and self.proc.poll() is None
 
 
 # def ramp(q1, q2, N):
