@@ -106,7 +106,8 @@ class SofaRobot(Robot):
         self.q_max = torch.tensor(q_max)
         self.p_scale = p_scale
 
-        self.sofa_instance = Sofa_instance()
+        self.sofa_instance = Sofa_instance(config=config,
+                                           headless=headless)
         super().__init__(n_act=len(config), out_n=3)
 
     @property
