@@ -241,6 +241,13 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
+    def get_robot_status(self) -> dict:
+        # Revisar estado de conexión BT, cámaras, etc.
+        if self.robot_s is None:
+            return {}
+        if hasattr(self.robot_s, 'status'):
+            return self.robot_s.status()
+
 
 class CtrlEntrenamiento:
     """
@@ -469,7 +476,3 @@ class UIController(CtrlRobotDB,
     """
     def __init__(self):
         super().__init__()
-
-    def get_ext_status(self):
-        # Revisar estado de conexión BT, cámaras, etc.
-        return (False, False)
