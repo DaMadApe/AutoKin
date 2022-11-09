@@ -171,8 +171,8 @@ class Popup_config_ext(Popup):
 
 
 class Popup_config_rtb(Popup):
-    pass
-    # def __init__(self, parent, callback, robot: RTBrobot):
+    def __init__(self, parent, callback, robot: RTBrobot):
+        pass
     #     self.callback = callback
     #     self.robot = robot
     #     super().__init__(title="Configurar robot: RTB", parent=parent)
