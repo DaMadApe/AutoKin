@@ -275,7 +275,9 @@ class EnsembleMixin:
                 pred = self.ensemble[self.best_model_idx](x)
             return pred
 
-    def query(self, candidate_batch=None, n_queries=1):
+    def query(self,
+              candidate_batch: torch.Tensor = None,
+              n_queries: int = 1) -> torch.Tensor:
         """
         De un conjunto de posibles puntos, devuelve
         el punto que maximiza la desviación estándar
@@ -294,6 +296,11 @@ class EnsembleMixin:
         deviation = torch.sum(torch.var(preds, axis=0), axis=-1)
         candidate_idx = torch.topk(deviation, n_queries).indices
         query = candidate_batch[candidate_idx]
+
+        # Ordenar puntos del query según norma euclidiana (~ menor a mayor tensión)
+        indices = query.norm(dim=1).argsort()
+        query = query[indices, :]
+
         return query
         # return torch.topk(deviation, n_queries)
 
