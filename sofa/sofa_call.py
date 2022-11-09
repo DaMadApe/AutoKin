@@ -25,7 +25,7 @@ PORT = 6969
 BUFFER_SIZE = 1024 # bytes
 
 
-class Sofa_instance:
+class SofaInstance:
     def __init__(self, config='LSL', headless=True):
         self.proc = None
         self.headless = headless
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     
     #q = np.concatenate([qs, q])
 
-    instance = Sofa_instance(headless=False)
+    instance = SofaInstance(headless=False)
 
     time.sleep(5)
     p, q = instance.fkine(q)
