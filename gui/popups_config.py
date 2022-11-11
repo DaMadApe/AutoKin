@@ -135,8 +135,8 @@ class Popup_config_ext(Popup):
         self.robot.q_min[idx] = new_q_i
         self.callback({'q_min': q_min})
 
-        q = torch.zeros(self.robot.n)
-        self.robot.fkine(q)
+        self.robot.fkine(torch.zeros(self.robot.n))
+
 
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
@@ -150,19 +150,18 @@ class Popup_config_ext(Popup):
         self.robot.fkine(q)
 
     def jog(self):
+        self.robot.fkine(torch.zeros(self.robot.n))
         jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
         self.robot.fkine(jog_traj)
 
     def aceptar(self):
-        q = torch.zeros(self.robot.n)
-        self.robot.fkine(q)
+        self.robot.fkine(torch.zeros(self.robot.n))
         self.callback({'p_scale' : float(self.p_scale_entry.get())})
         self.destroy()
 
     def cancelar(self):
         self.callback(self.old_config)
-        q = torch.zeros(self.robot.n)
-        self.robot.fkine(q)
+        self.robot.fkine(torch.zeros(self.robot.n))
         self.destroy()
 
 
@@ -289,8 +288,7 @@ class Popup_config_sofa(Popup):
         self.callback({'q_min': q_min})
 
         if self.robot.running():
-            q = torch.zeros(self.robot.n)
-            self.robot.fkine(q.unsqueeze(0))
+            self.robot.fkine(torch.zeros(self.robot.n))
 
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
@@ -302,7 +300,7 @@ class Popup_config_sofa(Popup):
         if self.robot.running():
             q = torch.zeros(self.robot.n)
             q[idx] = 1
-            self.robot.fkine(q.unsqueeze(0))
+            self.robot.fkine(q)
 
     def jog(self):
         jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
