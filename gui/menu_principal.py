@@ -37,7 +37,7 @@ class PantallaMenuPrincipal(Pantalla):
 
         # Panel de información de selección actual
         frame_selec = ttk.Frame(self)
-        frame_selec.grid(column=2, row=1, sticky='ns')
+        frame_selec.grid(column=2, row=1, sticky='ns', pady=(10,30))
 
         # Datos de robot (y modelo) seleccionado
         titulo_robot = ttk.Label(frame_selec, text="Robot",
@@ -60,26 +60,26 @@ class PantallaMenuPrincipal(Pantalla):
                                        width=12)
         self.boton_modelos.grid(column=1, row=2, sticky='e')
 
-        # Estado de componentes
-        self.frame_status = ttk.Frame(self)
-        self.frame_status.grid(column=2, row=2, sticky='ns')
-        titulo_estado = ttk.Label(self.frame_status, text="Estado",
-                                  font=(13))
-        titulo_estado.grid(column=0, row=0, columnspan=2)
+        for child in frame_selec.winfo_children():
+            child.grid_configure(padx=10, pady=10)
 
-        # Botón para actualizar pantalla
+        # Estado de componentes
+        titulo_estado = ttk.Label(self, text="Estado",
+                                  font=(13))
+        titulo_estado.grid(column=2, row=2)#, columnspan=2)
+
+        self.frame_status = ttk.Frame(self)
+        self.frame_status.grid(column=2, row=3, sticky='ns')#, pady=(10,30))
+
+        # Botón para actualizar pantalla (estado)
         boton_actualizar = ttk.Button(self,
                                       text="Actualizar",
                                       width=12,
                                       command=self.actualizar)
-        boton_actualizar.grid(column=2, row=3, sticky='s',
+        boton_actualizar.grid(column=2, row=4, sticky='n',
                               pady=10)
 
         self.actualizar()
-
-        for frame in [frame_selec, self.frame_status]:
-            for child in frame.winfo_children():
-                child.grid_configure(padx=10, pady=10)
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
@@ -112,6 +112,7 @@ class PantallaMenuPrincipal(Pantalla):
         robot_reg_s = self.controlador.robot_reg_s
         modelo_reg_s = self.controlador.modelo_reg_s
 
+        # Actualizar vista de selección de robot y modelo
         if modelo_reg_s is not None:
             model_nom = modelo_reg_s.nombre
             model_cls = modelo_reg_s.cls_id
@@ -135,19 +136,27 @@ class PantallaMenuPrincipal(Pantalla):
             self.boton_config['state'] = 'disabled'
             self.boton_modelos['state'] = 'disabled'
 
-        robot_status = self.controlador.get_robot_status()
-        for i, (sis, status) in enumerate(robot_status.items()):
-            sys_label = ttk.Label(self.frame_status, text=sis)
-            sys_label.grid(column=0, row=1+i)
+        # Actualizar estado de conecciones de robot externo
+        for widget in self.frame_status.winfo_children():
+            widget.destroy()
 
-            status_label = ttk.Label(self.frame_status)
-            status_label.grid(column=1, row=1+i)
-            if status:
-                status_label.config(text=" activo ")
-                status_label['style'] = 'Green.TLabel'
-            else:
-                status_label.config(text=" inactivo ")
-                status_label['style'] = 'Red.TLabel'
+        ext_status = self.controlador.get_ext_status()
+        if ext_status is not None:
+            for i, (sis, status) in enumerate(ext_status.items()):
+                sys_label = ttk.Label(self.frame_status, text=sis)
+                sys_label.grid(column=0, row=i, padx=10, pady=10, sticky='w')
+
+                status_label = ttk.Label(self.frame_status)
+                status_label.grid(column=1, row=i, padx=10, pady=10, sticky='w')
+                if status:
+                    status_label.config(text=" activo ")
+                    status_label['style'] = 'Green.TLabel'
+                else:
+                    status_label.config(text=" inactivo ")
+                    status_label['style'] = 'Red.TLabel'
+        else:
+            label = ttk.Label(self.frame_status, text='Sin selección de robot externo')
+            label.grid(column=0, row=0, columnspan=2, padx=10, pady=10)
 
 
 if __name__ == '__main__':

@@ -241,12 +241,14 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
-    def get_robot_status(self) -> dict:
-        # Revisar estado de conexión BT, cámaras, etc.
-        if self.robot_s is None:
-            return {}
-        if hasattr(self.robot_s, 'status'):
+    def get_ext_status(self) -> dict:
+        """
+        Revisar estado de conexión BT, cámaras, etc.
+        """
+        if self.robot_reg_s is not None and self.robot_reg_s.cls_id=='Externo':
             return self.robot_s.status()
+        else:
+            return None
 
 
 class CtrlEntrenamiento:
