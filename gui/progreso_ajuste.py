@@ -92,6 +92,8 @@ class PantallaProgresoAjuste(Pantalla):
     def stage_callback(self, steps: int):
         if str(self.progreso['mode']) == 'indeterminate':
             self.progreso.stop()
+        else:
+            self.progreso.step(1) # Último paso
         self.label_prog.config(text="")
         self.max_steps = steps
         if steps == 0:
@@ -112,7 +114,7 @@ class PantallaProgresoAjuste(Pantalla):
     def step_callback(self, progress_info: dict, epoch: int):
         self.label_prog.config(text=f"Progreso: {epoch+1}/{self.max_steps}")
         self.label_info.config(text=self._format_prog_info(progress_info))
-        self.progreso.step(1.0)
+        self.progreso.step(1)
         self.update_idletasks()
 
     def end_callback(self):
@@ -129,6 +131,7 @@ class PantallaProgresoAjuste(Pantalla):
         if tk.messagebox.askokcancel("Regresar",
                                      "Cancelar entrenamiento?"):
             self.controlador.detener(guardar=False)
+            # self.update_idletasks()
             self.parent.regresar()
         else:
             self.controlador.reanudar()
@@ -143,6 +146,7 @@ class PantallaProgresoAjuste(Pantalla):
         guardar = tk.messagebox.askyesno("Guardar?",
                                          "Guardar progreso del modelo?")
         self.controlador.detener(guardar=guardar)
+        # self.update_idletasks()
         self.parent.reset()
 
     def abrir_tensorboard(self):

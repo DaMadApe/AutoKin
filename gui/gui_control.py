@@ -363,6 +363,7 @@ class TrainThread(Thread):
                 method_name = '_' + etapa.lower().replace(' ', '_')
                 log_dir = os.path.join(self.log_dir, method_name)
                 resultados[etapa] = getattr(self, method_name)(log_dir)
+                self.gui_logger.steps = 0
 
         self.queue.put(Msg('close', resultados))
 
@@ -372,6 +373,8 @@ class TrainThread(Thread):
         steps = mfit_kwargs['n_epochs'] * mfit_kwargs['n_datasets']
         steps += mfit_kwargs['n_post_epochs']
         steps *= mfit_kwargs['n_steps']
+        if issubclass(type(self.modelo), FKEnsemble):
+            steps *= len(self.modelo.ensemble)
         self.queue.put(Msg('stage', steps))
 
         self.modelo.meta_fit(log_dir=log_dir,
@@ -381,7 +384,7 @@ class TrainThread(Thread):
 
     def _ajuste_inicial(self, log_dir):
         # Muestreo
-        self.queue.put(Msg('stage', 0))      
+        self.queue.put(Msg('stage', 0))
         dataset = FKset(self.robot, self.sample)
         train_set, val_set, test_set = dataset.rand_split(self.split)
 
@@ -391,6 +394,8 @@ class TrainThread(Thread):
         fit_kwargs = self.train_kwargs['Ajuste inicial']
 
         steps = fit_kwargs['epochs']
+        if issubclass(type(self.modelo), FKEnsemble):
+            steps *= len(self.modelo.ensemble)
         self.queue.put(Msg('stage', steps))
 
         if not self.queue.done:
