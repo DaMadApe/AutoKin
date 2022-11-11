@@ -17,12 +17,12 @@ class Robot(IkineMixin):
     rango [0, 1], por lo que se debe hacer normalización
     si se enlaza con un robot que opere con otros valores
     """
-    def __init__(self, n_act, out_n):
+    def __init__(self, n_act: int, out_n: int):
         super().__init__()
         self.n = n_act # Número de actuadores
         self.out_n = out_n # Número de salidas
 
-    def fkine(self, q: torch.Tensor)->tuple[torch.Tensor, torch.Tensor]:
+    def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Toma un tensor q [N,M] de N vectores de actuación de M dimensión.
         Devuelve un par de tensores q',p de tamaños [N',M], [N',3], donde
@@ -42,7 +42,7 @@ class RTBrobot(Robot):
     Para usar otra librería robótica con el resto del
     programa, se debe definir una interfaz como esta.
     """
-    def __init__(self, robot, full_pose=False):
+    def __init__(self, robot: rtb.DHRobot, full_pose=False):
         self.robot = robot
         self.full_pose = full_pose
         super().__init__(robot.n, out_n=6 if full_pose else 3)
@@ -60,6 +60,9 @@ class RTBrobot(Robot):
         return self.robot.__repr__()
 
     def fkine(self, q: torch.Tensor):
+        if len(q.shape) == 1:
+            q.unsqueeze(0)
+
         denormed_q = self.denorm(q)
         se3_pose = self.robot.fkine(denormed_q.detach().numpy())
 
@@ -85,12 +88,11 @@ class RTBrobot(Robot):
         q_min, q_max = torch.tensor(self.robot.qlim, dtype=torch.float32)
         return q * (q_max - q_min) + q_min
 
-    def status(self):
-        return {"Instancia RTB", True}
-
 
 class SofaRobot(Robot):
-
+    """
+    Interfaz para iniciar y controlar un robot suave simulado en SOFA
+    """
     def __init__(self,
                  config = 'LSL',
                  headless : bool = True,
@@ -125,13 +127,17 @@ class SofaRobot(Robot):
             self.SofaInstance.headless=val
             self.stop_instance()
 
-    def fkine(self, q: torch.Tensor, headless=False):
-        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-        _, p = self.SofaInstance.fkine(scaled_q.numpy())
-        p = torch.tensor(p, dtype=torch.float)
-        scaled_p = self.p_scale * p
+    def fkine(self, q: torch.Tensor):
+        # Compatibilidad para vectores individuales
+        if len(q.shape) == 1:
+            q.unsqueeze(0)
         
-        return q, scaled_p
+        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
+        q_out, p_out = self.SofaInstance.fkine(scaled_q.numpy())
+        p_out = torch.tensor(p_out, dtype=torch.float)
+        p_out = self.p_scale * p_out
+        
+        return q_out, p_out
 
     def start_instance(self):
         self.SofaInstance.start_proc()
@@ -141,9 +147,6 @@ class SofaRobot(Robot):
 
     def running(self):
         return self.SofaInstance.is_alive()
-
-    def status(self):
-        return {"Instancia Sofa": self.running()}
 
 
 class ExternRobot(Robot):
@@ -172,8 +175,15 @@ class ExternRobot(Robot):
 
         self.client = ExtInstance()
 
-    def fkine(self, q):
-        return self.client.fkine(q)
+    def fkine(self, q: torch.Tensor):
+        # Compatibilidad para vectores individuales
+        if len(q.shape) == 1:
+            q.unsqueeze(0)
+
+        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
+        q_out, p_out = self.client.fkine(scaled_q.numpy())
+        p_out = torch.tensor(p_out, dtype=torch.float)
+        p_out = self.p_scale * p_out
 
     def status(self):
         mcu_status, cam_status = self.client.status()
