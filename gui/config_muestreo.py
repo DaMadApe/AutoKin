@@ -7,41 +7,16 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.gui_utils import Pantalla, Label_Entry
+from gui.const import samp_args
 from autokin import trayectorias
 
 
 class PantallaConfigMuestreo(Pantalla):
 
-    samp_args = {
-        'coprime_sines': {
-            'n_points': {
-                'label': '# de muestras',
-                'var_type': 'int',
-                'default_val': 100,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'densidad': {
-                'label': 'densidad de ondas',
-                'var_type': 'int',
-                'default_val': 1,
-                'restr_positiv': True,
-                'non_zero': False
-            },
-            'base_frec': {
-                'label': 'frecuencia base',
-                'var_type': 'int',
-                'default_val': 1,
-                'restr_positiv': True,
-                'non_zero': False
-            }
-        }
-    }
-
     def __init__(self, parent):
         self.arg_getters = None
         self.split_arg_getters = {}
-
+        self.samp_args = samp_args
         self.axis_combos = {}
 
         super().__init__(parent, titulo="Configurar muestreo")

@@ -3,119 +3,16 @@ from tkinter import ttk
 from autokin.modelos import FKEnsemble
 
 from gui.gui_utils import Pantalla, Label_Entry
+from gui.const import args_etapas
 
 
 class PantallaConfigAjuste(Pantalla):
-
-    args_etapas = {
-        'Meta ajuste': {
-            'n_steps': {
-                'label': 'Iteraciones de meta ajuste',
-                'var_type': 'int',
-                'default_val': 4,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_datasets': {
-                'label': 'Datasets por iteración',
-                'var_type': 'int',
-                'default_val': 8,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_samples': {
-                'label': 'Muestras por dataset',
-                'var_type': 'int',
-                'default_val': 100,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_post': {
-                'label': 'Muestras para ajuste final',
-                'var_type': 'int',
-                'default_val': 10,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_epochs': {
-                'label': 'Épocas por dataset',
-                'var_type': 'int',
-                'default_val': 50,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_post_epochs': {
-                'label': 'Épocas de ajuste final',
-                'var_type': 'int',
-                'default_val': 5,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'lr': {
-                'label': 'Learning rate',
-                'var_type': 'float',
-                'default_val': 1e-5,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'post_lr': {
-                'label': 'Learning rate para ajuste final',
-                'var_type': 'float',
-                'default_val': 1e-5,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-        },
-
-        'Ajuste inicial': {
-            'epochs': {
-                'label': '# de épocas',
-                'var_type': 'int',
-                'default_val': 1000,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'lr': {
-                'label': 'Learning rate',
-                'var_type': 'float',
-                'default_val': 1e-3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'batch_size': {
-                'label': 'Batch size',
-                'var_type': 'int',
-                'default_val': 256,
-                'restr_positiv': True,
-                'non_zero': True
-            }
-        },
-
-        'Ajuste dirigido': {
-            'query_steps': {
-                'label': 'Pasos de muestreo',
-                'var_type': 'int',
-                'default_val': 5,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'n_queries': {
-                'label': 'Muestras por paso',
-                'var_type': 'int',
-                'default_val': 5,
-                'restr_positiv': True,
-                'non_zero': True
-            }
-        }
-    }
-
-    args_etapas['Ajuste dirigido'].update(args_etapas['Ajuste inicial'])
 
     def __init__(self, parent):
         self.arg_getters = {etapa: {} for etapa in self.args_etapas.keys()}
         self.check_buts = {}
         self.check_vars = {}
-
+        self.args_etapas = args_etapas
         super().__init__(parent, titulo="Configurar aproximación")
 
     def definir_elementos(self):

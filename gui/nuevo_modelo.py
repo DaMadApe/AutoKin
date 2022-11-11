@@ -2,78 +2,15 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.gui_utils import Popup, Label_Entry
+from gui.const import model_args
 
 
 class Popup_agregar_modelo(Popup):
 
-    model_args = {
-        'MLP': {
-            'depth': {
-                'label': '# de capas',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'mid_layer_size': {
-                'label': '# de neuronas/capa',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-        },
-        'ResNet': {
-            'depth': {
-                'label': '# de bloques',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'block_depth': {
-                'label': '# de capas/bloque',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            'block_width': {
-                'label': '# de neuronas/capa',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-        }
-    }
-
-    model_args.update({
-        'MLPEnsemble': {
-            'n_modelos': {
-                'label': '# de modelos',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            **model_args['MLP']
-        },
-        'ResNetEnsemble': {
-            'n_modelos': {
-                'label': '# de modelos',
-                'var_type': 'int',
-                'default_val': 3,
-                'restr_positiv': True,
-                'non_zero': True
-            },
-            **model_args['ResNet']
-        }
-    })
-
     def __init__(self, parent, callback):
         self.callback = callback
         self.arg_getters = None
+        self.model_args = model_args
         super().__init__(title="Nuevo modelo", parent=parent)
 
     def definir_elementos(self):
