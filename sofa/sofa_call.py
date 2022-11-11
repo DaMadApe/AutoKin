@@ -35,7 +35,7 @@ class SofaInstance:
         with open(CONFIG_FILE, 'w') as output:
             output.write(config)
 
-    def fkine(self, q : np.ndarray):
+    def fkine(self, q: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         q = q.astype(float)
 
         if self.proc is None or not self.is_alive():

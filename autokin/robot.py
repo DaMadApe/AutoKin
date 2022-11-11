@@ -113,7 +113,7 @@ class SofaRobot(Robot):
         self.p_scale = p_scale
 
         self.SofaInstance = SofaInstance(config=config,
-                                           headless=headless)
+                                         headless=headless)
         super().__init__(n_act=len(config), out_n=3)
 
     @property
@@ -133,8 +133,11 @@ class SofaRobot(Robot):
             q.unsqueeze(0)
         
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
+
         q_out, p_out = self.SofaInstance.fkine(scaled_q.numpy())
+        q_out = torch.tensor(q_out, dtype=torch.float)
         p_out = torch.tensor(p_out, dtype=torch.float)
+
         p_out = self.p_scale * p_out
         
         return q_out, p_out
