@@ -19,7 +19,7 @@ import struct
 from threading import Thread
 
 
-major = 1
+major = 3 # HACK: En el archivo original se deja sin definir
 
 def trace( *args ):
     pass # print( "".join(map(str,args)) )
@@ -33,10 +33,11 @@ DoubleValue = struct.Struct( '<d' )
 class NatNetClient:
     def __init__( self ):
         # Change this value to the IP address of the NatNet server.
-        self.serverIPAddress = "127.0.0.1" 
+        # Dirección en Motive > Data Streaming Pane > Local Interface
+        self.serverIPAddress = "10.86.1.34" # "127.0.0.1" 
 
         # Change this value to the IP address of your local network interface
-        self.localIPAddress = "127.0.0.1"
+        self.localIPAddress =  "127.0.0.1" #"10.86.3.147" # 
 
         # This should match the multicast address listed in Motive's streaming settings.
         self.multicastAddress = "239.255.42.99"
@@ -47,6 +48,8 @@ class NatNetClient:
         # NatNet Data channel     
         self.dataPort = 1511
 
+        # Callback llamado con cada frame recibido y su info
+        self.newFrameListener = None
         # Set this to a callback method of your choice to receive per-rigid-body data at each frame.
         self.rigidBodyListener = None
         
@@ -506,13 +509,13 @@ class NatNetClient:
         # Create a separate thread for receiving data packets
         dataThread = Thread( target = self.__dataThreadFunction,
                              args = (self.dataSocket, ),
-                             daemon=True)
+                             daemon=True) # Modificado
         dataThread.start()
 
         # Create a separate thread for receiving command packets
         commandThread = Thread( target = self.__dataThreadFunction,
                                 args = (self.commandSocket, ),
-                                daemon=True)
+                                daemon=True) # Modificado
         commandThread.start()
 
         self.sendCommand( self.NAT_REQUEST_MODELDEF, "", self.commandSocket, (self.serverIPAddress, self.commandPort) )
