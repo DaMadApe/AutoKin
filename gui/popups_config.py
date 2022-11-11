@@ -153,6 +153,7 @@ class Popup_config_ext(Popup):
         self.robot.fkine(torch.zeros(self.robot.n))
         jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
         self.robot.fkine(jog_traj)
+        self.robot.fkine(torch.zeros(self.robot.n))
 
     def aceptar(self):
         self.robot.fkine(torch.zeros(self.robot.n))
@@ -303,8 +304,10 @@ class Popup_config_sofa(Popup):
             self.robot.fkine(q)
 
     def jog(self):
+        self.robot.fkine(torch.zeros(self.robot.n))
         jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
         self.robot.fkine(jog_traj)
+        self.robot.fkine(torch.zeros(self.robot.n))
 
     def aceptar(self):
         self.callback({'q_min': [var.get() for var in self.min_vars],
