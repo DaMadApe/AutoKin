@@ -86,8 +86,23 @@ class Popup_config_ext(Popup):
 
         self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
                                          var_type='float', width=16)
-        self.p_scale_entry.grid(column=0, row=0)
+        self.p_scale_entry.grid(column=0, row=0, columnspan=2)
         self.p_scale_entry.set(self.robot.p_scale)
+
+        # Configurar máximo cambio instantáneo de actuadores
+        max_dq_label = ttk.Label(frame_entry, text=f"Máximo dq instantáneo")
+        max_dq_label.grid(column=0, row=1)
+
+        self.max_dq_var = tk.IntVar(value=int(self.robot.max_dq))
+        max_dq_spin = ttk.Spinbox(frame_entry, width=5,
+                                  from_=1, to=30, increment=1,
+                                  textvariable=self.max_dq_var)
+        max_dq_spin.grid(column=1, row=1)
+
+        set_dq_but = ttk.Button(frame_entry, text="Set",
+                                width=4,
+                                command=self.set_max_dq)
+        set_dq_but.grid(column=2, row=1)
  
         # Botones del fondo
         frame_botones = ttk.Frame(self)
@@ -137,7 +152,6 @@ class Popup_config_ext(Popup):
 
         self.robot.fkine(torch.zeros(self.robot.n))
 
-
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
         new_q_i = float(self.max_vars[idx].get())
@@ -149,15 +163,23 @@ class Popup_config_ext(Popup):
         q[idx] = 1
         self.robot.fkine(q)
 
+    def set_max_dq(self):
+        max_dq = int(self.max_dq_var.get())
+        self.robot.max_dq = max_dq
+        self.callback({'max_dq': max_dq})
+
     def jog(self):
         self.robot.fkine(torch.zeros(self.robot.n))
-        jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
+        jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
         self.robot.fkine(jog_traj)
         self.robot.fkine(torch.zeros(self.robot.n))
 
     def aceptar(self):
         self.robot.fkine(torch.zeros(self.robot.n))
-        self.callback({'p_scale' : float(self.p_scale_entry.get())})
+        self.callback({'q_min': [var.get() for var in self.min_vars],
+                       'q_max': [var.get() for var in self.max_vars],
+                       'p_scale': float(self.p_scale_entry.get()),
+                       'max_dq': int(self.max_dq_var.get())})
         self.destroy()
 
     def cancelar(self):
@@ -239,8 +261,23 @@ class Popup_config_sofa(Popup):
 
         self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
                                          var_type='float', width=16)
-        self.p_scale_entry.grid(column=0, row=0)
+        self.p_scale_entry.grid(column=0, row=0, columnspan=2)
         self.p_scale_entry.set(self.robot.p_scale)
+
+        # Configurar máximo cambio instantáneo de actuadores
+        max_dq_label = ttk.Label(frame_entry, text=f"Máximo dq instantáneo")
+        max_dq_label.grid(column=0, row=1)
+
+        self.max_dq_var = tk.DoubleVar(value=float(self.robot.max_dq))
+        max_dq_spin = ttk.Spinbox(frame_entry, width=5,
+                                  from_=0.01, to=50.0, increment=0.5,
+                                  textvariable=self.max_dq_var)
+        max_dq_spin.grid(column=1, row=1)
+
+        set_dq_but = ttk.Button(frame_entry, text="Set",
+                                width=4,
+                                command=self.set_max_dq)
+        set_dq_but.grid(column=2, row=1)
  
         # Botones del fondo
         frame_botones = ttk.Frame(self)
@@ -303,17 +340,24 @@ class Popup_config_sofa(Popup):
             q[idx] = 1
             self.robot.fkine(q)
 
+    def set_max_dq(self):
+        max_dq = float(self.max_dq_var.get())
+        self.robot.max_dq = max_dq
+        self.callback({'max_dq': max_dq})
+
     def jog(self):
-        self.robot.fkine(torch.zeros(self.robot.n))
-        jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
-        self.robot.fkine(jog_traj)
-        self.robot.fkine(torch.zeros(self.robot.n))
+        if self.robot.running():
+            self.robot.fkine(torch.zeros(self.robot.n))
+            jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
+            self.robot.fkine(jog_traj)
+            self.robot.fkine(torch.zeros(self.robot.n))
 
     def aceptar(self):
         self.callback({'q_min': [var.get() for var in self.min_vars],
                        'q_max': [var.get() for var in self.max_vars],
-                       'p_scale' : float(self.p_scale_entry.get()),
-                       'headless' : bool(self.check_var.get())})
+                       'p_scale': float(self.p_scale_entry.get()),
+                       'max_dq': float(self.max_dq_var.get()),
+                       'headless': bool(self.check_var.get())})
         self.robot.stop_instance()
         self.destroy()
 
