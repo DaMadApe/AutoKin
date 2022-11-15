@@ -9,10 +9,10 @@ from gui.const import args_etapas
 class PantallaConfigAjuste(Pantalla):
 
     def __init__(self, parent):
+        self.args_etapas = args_etapas
         self.arg_getters = {etapa: {} for etapa in self.args_etapas.keys()}
         self.check_buts = {}
         self.check_vars = {}
-        self.args_etapas = args_etapas
         super().__init__(parent, titulo="Configurar aproximación")
 
     def definir_elementos(self):
