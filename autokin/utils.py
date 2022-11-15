@@ -114,10 +114,6 @@ def suavizar(q: torch.Tensor,
 
     q_ext = torch.zeros(q.shape[0]+total_extra_steps, q.shape[1])
 
-    print('orig', q)
-    print('oversteps', oversteps)
-    print('accum_steps', accum_steps)
-
     for i in range(len(q)-1):
         cur_idx = i + accum_steps[i].item()
         if oversteps[i] == 0:

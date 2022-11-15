@@ -4,7 +4,7 @@ from torch.autograd.functional import jacobian
 import roboticstoolbox as rtb
 
 from autokin.robot_mixins import IkineMixin
-from autokin.utils import random_robot
+from autokin.utils import random_robot, suavizar
 from sofa.sofa_call import SofaInstance
 from ext_robot.client import ExtInstance
 
@@ -30,7 +30,7 @@ class Robot(IkineMixin):
         """
         raise NotImplementedError
 
-    def jacob(self, q):
+    def jacob(self, q: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
 
@@ -59,9 +59,9 @@ class RTBrobot(Robot):
     def __repr__(self):
         return self.robot.__repr__()
 
-    def fkine(self, q: torch.Tensor):
+    def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if len(q.shape) == 1:
-            q.unsqueeze(0)
+            q = q.unsqueeze(0)
 
         denormed_q = self.denorm(q)
         se3_pose = self.robot.fkine(denormed_q.detach().numpy())
@@ -76,7 +76,7 @@ class RTBrobot(Robot):
         p = p.float()
         return q, p
 
-    def jacob(self, q):
+    def jacob(self, q: torch.Tensor) -> torch.Tensor:
         J = self.robot.jacob0(q.numpy())
 
         if not self.full_pose:
@@ -98,7 +98,8 @@ class SofaRobot(Robot):
                  headless : bool = True,
                  q_min: list[float] = None,
                  q_max: list[float] = None,
-                 p_scale : float = 1):
+                 p_scale: float = 1,
+                 max_dq: float = 1):
         if config not in ['LLLL','LSLS','LSSL', 'LSL', 'SLS', 'LLL', 'LS', 'LL']:
             raise ValueError('Configuración inválida')
         if q_min is None:
@@ -111,6 +112,7 @@ class SofaRobot(Robot):
         self.q_min = torch.tensor(q_min)
         self.q_max = torch.tensor(q_max)
         self.p_scale = p_scale
+        self.max_dq = max_dq
 
         self.SofaInstance = SofaInstance(config=config,
                                          headless=headless)
@@ -127,20 +129,23 @@ class SofaRobot(Robot):
             self.SofaInstance.headless=val
             self.stop_instance()
 
-    def fkine(self, q: torch.Tensor):
+    def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         # Compatibilidad para vectores individuales
         if len(q.shape) == 1:
-            q.unsqueeze(0)
-        
+            q = q.unsqueeze(0)
+
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
 
-        q_out, p_out = self.SofaInstance.fkine(scaled_q.numpy())
-        q_out = torch.tensor(q_out, dtype=torch.float)
-        p_out = torch.tensor(p_out, dtype=torch.float)
+        soft_q = suavizar(q=scaled_q,
+                          q_prev=torch.tensor(self.SofaInstance.q_prev),
+                          dq_max=self.max_dq)
 
+        p_out = self.SofaInstance.fkine(soft_q.numpy())
+
+        p_out = torch.tensor(p_out, dtype=torch.float)
         p_out = self.p_scale * p_out
         
-        return q_out, p_out
+        return soft_q, p_out
 
     def start_instance(self):
         self.SofaInstance.start_proc()
@@ -148,7 +153,7 @@ class SofaRobot(Robot):
     def stop_instance(self):
         self.SofaInstance.stop()
 
-    def running(self):
+    def running(self) -> bool:
         return self.SofaInstance.is_alive()
 
 
@@ -165,7 +170,8 @@ class ExternRobot(Robot):
                  n: int,
                  q_min: list[float] = None,
                  q_max: list[float] = None,
-                 p_scale : float = 1):
+                 p_scale : float = 1,
+                 max_dq: int = 10):
         super().__init__(n, out_n=3)
         if q_min is None:
             q_min = [0] * n
@@ -175,18 +181,28 @@ class ExternRobot(Robot):
         self.q_min = torch.tensor(q_min)
         self.q_max = torch.tensor(q_max)
         self.p_scale = p_scale
+        self.max_dq = max_dq
 
         self.client = ExtInstance()
 
-    def fkine(self, q: torch.Tensor):
+    def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         # Compatibilidad para vectores individuales
         if len(q.shape) == 1:
-            q.unsqueeze(0)
+            q = q.unsqueeze(0)
 
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-        q_out, p_out = self.client.fkine(scaled_q.numpy())
+
+        q_prev = torch.tensor(self.client.q_prev)[:self.n]
+        soft_q = suavizar(q=scaled_q,
+                          q_prev=q_prev,
+                          dq_max=self.max_dq)
+
+        p_out = self.client.fkine(soft_q.numpy())
+
         p_out = torch.tensor(p_out, dtype=torch.float)
         p_out = self.p_scale * p_out
+
+        return soft_q, p_out
 
     def status(self):
         mcu_status, cam_status = self.client.status()
@@ -210,10 +226,10 @@ class ModelRobot(Robot):
         model.eval() # TODO: revisar ubicación de esto
         return cls(model)
 
-    def fkine(self, q: torch.Tensor):
+    def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         with torch.no_grad():
             p = self.model(q)
         return q, p
 
-    def jacob(self, q: torch.Tensor):
+    def jacob(self, q: torch.Tensor) -> torch.Tensor:
         return jacobian(self.model, q).squeeze()
