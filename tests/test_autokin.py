@@ -10,7 +10,7 @@ import hypothesis.strategies as some
 from autokin.modelos import MLP
 from autokin.muestreo import EnsembleRegressor, FKset
 from autokin.robot import RTBrobot
-from autokin.utils import random_robot, restringir
+from autokin.utils import *
 
 
 assert_equal = partial(tt.assert_close, atol=1e-7, rtol=1e-7)
@@ -27,6 +27,31 @@ def test_restringir():
         q_trans = restringir(q)
         max_norm = max(q_trans.norm(dim=-1))
         assert max_norm <= 1
+
+
+def test_suavizar():
+    q = torch.rand(250, 4)
+    q_prev = torch.zeros(4)
+    dq_max = 0.1
+
+    q_s = suavizar(q=q, q_prev=q_prev, dq_max=dq_max)
+    q_s_diff = q_s.diff(dim=0)
+
+    # El resultado nunca excede la diferencia solicitada
+    assert torch.all(q_s_diff.abs() <= dq_max)
+    # El resutado contiene todos los puntos de la entrada
+    assert all([(q_i in q_s) for q_i in q])
+
+
+def test_alinear_datos():
+    # Función de prueba: p = q^2, con 5x puntos  # y padding
+    q_in = linterp(torch.zeros(4), torch.ones(4), 101)
+    p_in = linterp(torch.zeros(4), torch.ones(4), 101) # TODO TODO TODO TODO 501
+
+    q_out, p_out = alinear_datos(q_in, p_in)
+
+    assert len(q_out) == len(p_out)
+    assert_equal(p_out, q_out)
 
 
 def test_ajuste_modelos():
