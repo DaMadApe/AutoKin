@@ -1,8 +1,9 @@
 import torch
 import serial
+import time
 
 from ext_robot.NatNetClient import NatNetClient
-from autokin.utils import suavizar, alinear_datos
+from autokin.utils import alinear_datos
 
 
 class ExtInstance:
@@ -57,6 +58,11 @@ class ExtInstance:
                                     address=(self.cam_client.serverIPAddress,
                                              self.cam_client.commandPort))
 
+    def send_q_list_esp(self, q):
+        for q_i in q:
+            self.send_q_esp(q_i)
+            time.sleep(0.5)
+
     def send_q_esp(self, q): # -> ack # Saber cuando termina ejecución
         pasos = ['0']*4
         for i, val in enumerate(q):
@@ -71,12 +77,10 @@ class ExtInstance:
     def fkine(self, q):
         # self.send_cam_command('StartRecording')
         self.in_exec = True
-
-        q_ext = suavizar(q)
-        self.send_q_esp(q_ext)
+        self.send_q_list_esp(q)
         # self.send_cam_command('StopRecording')
         p = torch.tensor(self.p_stack)
-        q_out, p_out = alinear_datos(q_ext, p)
+        q_out, p_out = alinear_datos(q, p)
 
         self.in_exec = False
         self.p_stack = []
