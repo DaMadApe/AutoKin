@@ -30,12 +30,14 @@ class SofaInstance:
         self.proc = None
         self.headless = headless
 
+        self.q_prev = np.zeros(len(config))
+
         # HACK: Esta implementación previene que existan
         #       instancias simultáneas, repetirían config
         with open(CONFIG_FILE, 'w') as output:
             output.write(config)
 
-    def fkine(self, q: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def fkine(self, q: np.ndarray) -> np.ndarray:
         q = q.astype(float)
 
         if self.proc is None or not self.is_alive():
@@ -60,7 +62,9 @@ class SofaInstance:
 
             p_out = np.frombuffer(data).reshape(-1, 3)
 
-        return q, p_out
+        self.q_prev = q[-1]
+
+        return p_out
 
     def start_proc(self):
         # op = '-g batch' if self.headless else '-a'
