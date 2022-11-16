@@ -143,9 +143,12 @@ class PantallaProgresoAjuste(Pantalla):
                                              "Cancelar entrenamiento?"):
                 self.controlador.reanudar()
                 return
-        guardar = tk.messagebox.askyesno("Guardar?",
-                                         "Guardar progreso del modelo?")
-        self.controlador.detener(guardar=guardar)
+        guardar_entrenamiento = tk.messagebox.askyesno("Guardar entrenamiento",
+                                                       "Guardar progreso del modelo?")
+        guardar_dataset = tk.messagebox.askyesno("Guardar dataset",
+                                                 "Guardar datos muestreados?")
+        self.controlador.detener(guardar_entrenamiento=guardar_entrenamiento,
+                                 guardar_dataset=guardar_dataset)
         # self.update_idletasks()
         self.parent.reset()
 

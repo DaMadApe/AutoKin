@@ -11,6 +11,7 @@ from collections import namedtuple
 
 import numpy as np
 import torch
+from torch.utils.data import Dataset, ConcatDataset
 from tensorboard import program
 
 from autokin.robot import Robot, ModelRobot
@@ -261,6 +262,8 @@ class CtrlEntrenamiento:
         self.datasets = {}
         # TODO(?): mover dirs a ubicación cental
         self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
+        self.dataset_dir = os.path.join(SAVE_DIR, 'datasets')
+
         self.queue = SignalQueue()
 
     def set_train_kwargs(self, train_kwargs):
@@ -305,12 +308,15 @@ class CtrlEntrenamiento:
         after_fn(100, self.check_queue, 
                  stage_callback, step_callback, end_callback, after_fn)
 
-    def detener(self, guardar: bool):
+    def detener(self, guardar_entrenamiento: bool, guardar_dataset: bool):
         self.queue.done = True
         self.queue.pause = False
         self.trainer.join()
-        if guardar:
+
+        if guardar_entrenamiento:
+            # Guardar registro de los parámetros usados
             self.modelo_reg_s.trains.append(self.train_kwargs)
+            # Guardar dataset producido
             self.guardar()
         else:
             # Desechar instancia actual (entrenada) del modelo
@@ -322,6 +328,12 @@ class CtrlEntrenamiento:
                 local_dir = sorted(os.listdir(base_dir))[-1]
                 log_dir = os.path.join(base_dir, local_dir)
                 shutil.rmtree(log_dir)
+
+        if guardar_dataset:
+            dataset = self.trainer.dataset
+            if dataset is not None:
+                torch.save(dataset, self.dataset_dir)
+
 
     def pausar(self):
         self.queue.pause = True
@@ -342,7 +354,8 @@ class TrainThread(Thread):
                  sample: torch.Tensor,
                  split: list[float],
                  train_kwargs: dict,
-                 log_dir):
+                 log_dir,
+                 prev_train_sets: list[Dataset] = None):
         super().__init__(name='training', daemon=True)
         self.queue = queue
         self.modelo = modelo
@@ -351,6 +364,11 @@ class TrainThread(Thread):
         self.split = split
         self.train_kwargs = train_kwargs
         self.log_dir = log_dir
+
+        if prev_train_sets is None:
+            self.train_set = []
+
+        self.dataset = None
         
         self.gui_logger = GUIprogress(step_callback=lambda *x:
                                           self.queue.put(Msg('step', x)),
@@ -365,6 +383,7 @@ class TrainThread(Thread):
                 resultados[etapa] = getattr(self, method_name)(log_dir)
                 self.gui_logger.steps = 0
 
+        # Agregar dataset generado a resultados
         self.queue.put(Msg('close', resultados))
 
     def _meta_ajuste(self, log_dir):
@@ -388,7 +407,8 @@ class TrainThread(Thread):
         dataset = FKset(self.robot, self.sample)
         train_set, val_set, test_set = dataset.rand_split(self.split)
 
-        self.train_set = train_set
+        self.dataset = dataset
+        self.train_set = ConcatDataset([self.train_set, train_set])
 
         # Ajuste
         fit_kwargs = self.train_kwargs['Ajuste inicial']
