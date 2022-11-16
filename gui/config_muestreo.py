@@ -158,7 +158,10 @@ class PantallaConfigMuestreo(Pantalla):
             split[label] = val
             if val is None:
                 return None
-        return split
+        if round(sum(split.values()), ndigits=2) != 1:
+            return None
+        else:
+            return split
 
     def get_trayec(self):
         traj_cls = self.traj_combo.get()
