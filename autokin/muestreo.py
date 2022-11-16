@@ -27,7 +27,7 @@ class FKset(Dataset):
             raise ValueError('q_vecs debe ir normalizado a intervalo [0,1]')
 
         self.robot = robot
-        self.q_vecs = q_vecs
+        self.q_in_vecs = q_vecs
 
         self.n = self.robot.n # Número de ejes
         self.out_n = self.robot.out_n
@@ -70,7 +70,7 @@ class FKset(Dataset):
 
     def _generate_labels(self):
         # Hacer cinemática directa
-        self.q_vecs, self.p_vecs = self.robot.fkine(self.q_vecs)
+        self.q_vecs, self.p_vecs = self.robot.fkine(self.q_in_vecs)
 
         q_noise = (self.q_uniform_noise*torch.rand(len(self), self.n) +
                    self.q_normal_noise*torch.randn(len(self), self.n))
@@ -99,10 +99,15 @@ class FKset(Dataset):
         if round(sum(proportions), ndigits=2) != 1:
             raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
         split = [round(prop*len(self)) for prop in proportions]
+
+        # HACK: Compensa por algunos valores que no suman la longitud original
+        split[0] += (len(self) - sum(split))
+
         return random_split(self, split)
 
 
 class EnsembleRegressor(torch.nn.Module):
+    # TODO: Borrar, reemplazado en autokin.modelos por FKEnsemble
     """
     Agrupa un conjunto de modelos, permite entrenarlos en conjunto,
     y luego predecir qué nuevas muestras serían más efectivas.
