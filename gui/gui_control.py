@@ -45,16 +45,45 @@ class CtrlRobotDB:
     """
     def __init__(self):
         super().__init__()
-        self.pickle_dir = os.path.join(SAVE_DIR, 'robotDB.pkl')
-        self.model_dir = os.path.join(SAVE_DIR, 'modelos')
-        self._robots = None
-        self._modelos = None
-        self._robot_s = None
-        self._modelo_s = None
+        self.pickle_path = os.path.join(SAVE_DIR, 'robotDB.pkl')
+        self.robot_base_dir = os.path.join(SAVE_DIR, 'robots')
+
+        self._robots = None # Lista de registros de robots
+        self._modelos = None # Lista de registros de modelos
+        self._robot_s = None # Robot seleccionado
+        self._modelo_s = None # Modelo seleccionado
+
         self.tb_proc = None
 
+        # Asegurar estructura de directorios
+        for dir in [SAVE_DIR, self.robot_base_dir]:
+            if not os.path.exists(dir):
+                os.mkdir(dir)
+
+    """ Directorios """
+    def _robot_dir(self, robot: RoboReg):
+        return os.path.join(self.robot_base_dir, robot.nombre)
+
+    def _model_dir(self, robot: RoboReg):
+        return os.path.join(self._robot_dir(robot), 'modelos')
+
+    def _dataset_dir(self, robot: RoboReg):
+        return os.path.join(self._robot_dir(robot), 'datasets')
+
+    def _tb_dir(self, robot: RoboReg):
+        return os.path.join(self._robot_dir(robot), 'tb_logs')
+
+    def _model_path(self, robot: RoboReg, modelo: ModelReg):
+        basedir = self._model_dir(robot)
+        filename = modelo.nombre + '.pt'
+        return os.path.join(basedir, filename)
+
+    def _model_log_dir(self, robot: RoboReg, modelo: ModelReg):
+        return os.path.join(self._tb_dir(robot), modelo.nombre)
+
     def guardar(self):
-        with open(self.pickle_dir, 'wb') as f:
+        # Guardar lista de registros y modelo de torch
+        with open(self.pickle_path, 'wb') as f:
             pickle.dump(self._robots, f)
         
         if self._modelo_s is not None:
@@ -66,8 +95,8 @@ class CtrlRobotDB:
     @property
     def robots(self) -> SelectionList:
         if self._robots is None:
-            if os.path.isfile(self.pickle_dir):
-                with open(self.pickle_dir, 'rb') as f:
+            if os.path.isfile(self.pickle_path):
+                with open(self.pickle_path, 'rb') as f:
                     self._robots = pickle.load(f)
             else:
                 self._robots = SelectionList()
@@ -97,29 +126,49 @@ class CtrlRobotDB:
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
         cls_id = robot_args.pop('cls_id')
         agregado = self.robots.agregar(RoboReg(nombre, cls_id, robot_args))
-        self.guardar()
+
+        if agregado:
+            # Crear directorios
+            os.mkdir(self._robot_dir(self.robots[-1]))
+            os.mkdir(self._model_dir(self.robots[-1]))
+            os.mkdir(self._dataset_dir(self.robots[-1]))
+            os.mkdir(self._tb_dir(self.robots[-1]))
+            self.guardar()
         return agregado
 
     def copiar_robot(self,
                      origen: int,
                      nombre: str,
-                     copiar_modelos: bool) -> bool:
+                     copiar_modelos: bool,
+                     copiar_datasets: bool) -> bool:
         agregado = self.robots.copiar(origen, nombre)
-        if agregado:
-            if copiar_modelos:
-                for modelo in self.robots[origen].modelos:
-                    obj = torch.load(self._model_path(self.robots[origen],
-                                                      modelo))
-                    torch.save(obj, self._model_path(self.robots[-1],
-                                                     modelo))
 
+        if agregado:
+            # Crear directorios
+            os.mkdir(self._robot_dir(self.robots[-1]))
+
+            if copiar_modelos:
+                shutil.copytree(src=self._model_dir(self.robots[origen]),
+                                dst=self._model_dir(self.robots[-1])), #dirs_exist_ok=True)
+                # Copiar logs de tensorboard
+                shutil.copytree(src=self._tb_dir(self.robots[origen]),
+                                dst=self._tb_dir(self.robots[-1]))
             else:
                 self.robots[-1].modelos = SelectionList()
+                os.mkdir(self._model_dir(self.robots[-1]))
+                os.mkdir(self._tb_dir(self.robots[-1]))
+
+            if copiar_datasets:
+                shutil.copytree(src=self._dataset_dir(self.robots[origen]),
+                                dst=self._dataset_dir(self.robots[-1]))
+            else:
+                os.mkdir(self._dataset_dir(self.robots[-1]))
+
         return agregado
 
     def eliminar_robot(self, indice: int):
-        for idx in range(len(self.robots[indice].modelos)):
-            self.eliminar_modelo(idx)
+        # Eliminar modelos, datasets y logs
+        shutil.rmtree(self._robot_dir(self.robots[indice]))
 
         self.robots.eliminar(indice)
 
@@ -129,16 +178,6 @@ class CtrlRobotDB:
         self._robot_s = None
 
     """ Modelos """
-    def _model_path(self, robot, modelo):
-        robot_nom = robot.nombre
-        model_nom = modelo.nombre
-        filename = f'{robot_nom}_{model_nom}.pt'
-        return os.path.join(self.model_dir, filename)
-
-    def _model_log_dir(self, robot, modelo):
-        log_name = f'{robot.nombre}_{modelo.nombre}'
-        return os.path.join(self.tb_dir, log_name)
-
     @property
     def modelos(self) -> SelectionList:
         return self.robots.selec().modelos
@@ -180,7 +219,7 @@ class CtrlRobotDB:
         agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
         
         if agregado:
-            # Crear directorio de tensorboard
+            # Crear directorio para guardar logs
             os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
             self.guardar()
@@ -198,9 +237,11 @@ class CtrlRobotDB:
                 model = torch.load(orig_path)
                 torch.save(model, dest_path)
 
-            # Crear directorio de tensorboard
-            os.mkdir(self._model_log_dir(self.robot_reg_s,
-                                         self.modelos[-1]))
+            # Copiar registros de tensorboard
+            shutil.copytree(src=self._model_log_dir(self.robot_reg_s,
+                                                    self.modelos[origen]),
+                            dst=self._model_log_dir(self.robot_reg_s,
+                                                    self.modelos[-1]))
         return agregado 
 
     def eliminar_modelo(self, indice: int):
@@ -260,9 +301,6 @@ class CtrlEntrenamiento:
         super().__init__()
         self.train_kwargs = {}
         self.datasets = {}
-        # TODO(?): mover dirs a ubicación cental
-        self.tb_dir = os.path.join(SAVE_DIR, 'tb_logs')
-        self.dataset_dir = os.path.join(SAVE_DIR, 'datasets')
 
         self.queue = SignalQueue()
 
@@ -314,25 +352,22 @@ class CtrlEntrenamiento:
         self.trainer.join()
 
         if guardar_entrenamiento:
-            # Guardar registro de los parámetros usados
+            # Guardar parámetros usados en el registro del modelo
             self.modelo_reg_s.trains.append(self.train_kwargs)
-            # Guardar dataset producido
+            # Guardar todos los registros
             self.guardar()
         else:
             # Desechar instancia actual (entrenada) del modelo
             self._modelo_s = None
-            # Desechar registros de tensorboard
-            base_dir = self._model_log_dir(self.robot_reg_s,
-                                           self.modelo_reg_s)
-            if os.listdir(base_dir): 
-                local_dir = sorted(os.listdir(base_dir))[-1]
-                log_dir = os.path.join(base_dir, local_dir)
-                shutil.rmtree(log_dir)
+            # TODO: Desechar logs recolectados de tensorboard
 
         if guardar_dataset:
-            dataset = self.trainer.dataset
+            dataset = self.trainer.get_dataset()
             if dataset is not None:
-                torch.save(dataset, self.dataset_dir)
+                timestamp = time.strftime('%Y-%m-%d_%H-%M-%S')
+                filename = f'dataset_{timestamp}.pt'
+                data_save_dir = os.path.join(self._dataset_dir(self.robot_reg_s), filename)
+                torch.save(dataset, data_save_dir)
 
 
     def pausar(self):
@@ -448,6 +483,9 @@ class TrainThread(Thread):
                                silent=True,
                                ext_interrupt=self.queue.interrupt,
                                **afit_kwargs)
+
+    def get_dataset(self):
+        return self.dataset
 
 
 class CtrlEjecucion:

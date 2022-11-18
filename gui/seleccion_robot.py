@@ -84,8 +84,10 @@ class PantallaSelecRobot(Pantalla):
         Popup_agregar_robot(self, callback)
 
     def copiar_robot(self, indice):
-        def callback(nombre, copiar_modelos):
-            agregado = self.controlador.copiar_robot(indice, nombre, copiar_modelos)
+        def callback(nombre, copiar_modelos, copiar_datasets):
+            agregado = self.controlador.copiar_robot(indice, nombre,
+                                                     copiar_modelos,
+                                                     copiar_datasets)
             if agregado:
                 self.agregar_robot_tabla(self.controlador.robots[-1])
             return agregado
@@ -135,19 +137,25 @@ class Popup_copiar_robot(Popup):
                                 var_type='str', width=20)
         self.nom_entry.grid(column=0, row=0)
 
-        self.check_var = tk.IntVar(value=0)
-        check_copia = ttk.Checkbutton(self,
-                                      text="Copiar modelos",
-                                      variable=self.check_var)
-        check_copia.grid(column=0, row=1, columnspan=2)
+        self.check_mod_var = tk.IntVar(value=0)
+        check_modelos = ttk.Checkbutton(self,
+                                        text="Copiar modelos",
+                                        variable=self.check_mod_var)
+        check_modelos.grid(column=0, row=1, columnspan=2, sticky='w')
+
+        self.check_ds_var = tk.IntVar(value=0)
+        check_datasets = ttk.Checkbutton(self,
+                                         text="Copiar datasets",
+                                         variable=self.check_ds_var)
+        check_datasets.grid(column=0, row=2, columnspan=2, sticky='w')
 
         boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.destroy)
-        boton_cancelar.grid(column=0, row=2)
+        boton_cancelar.grid(column=0, row=3)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
                                    command=self.copiar_robot)
-        boton_aceptar.grid(column=1, row=2, sticky='e')
+        boton_aceptar.grid(column=1, row=3, sticky='e')
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=3)
@@ -156,9 +164,10 @@ class Popup_copiar_robot(Popup):
 
     def copiar_robot(self, *args):
         nombre = self.nom_entry.get()
-        copiar_modelos = bool(self.check_var.get())
+        copiar_modelos = bool(self.check_mod_var.get())
+        copiar_datasets = bool(self.check_ds_var.get())
         if nombre != '':
-            agregado = self.callback(nombre, copiar_modelos)
+            agregado = self.callback(nombre, copiar_modelos, copiar_datasets)
             if agregado:
                 self.destroy()
 
