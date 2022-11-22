@@ -173,6 +173,9 @@ class CtrlRobotDB:
 
         self.robots.eliminar(indice)
 
+        if self.robots.selec is None:
+            self._robot_s = None
+
     def config_robot(self, config: dict):
         self.robot_reg_s.kwargs.update(config)
         # Forzar reinstanciación del robot en caso de configurar el seleccionado
@@ -258,6 +261,9 @@ class CtrlRobotDB:
             os.remove(model_path)
         
         self.modelos.eliminar(indice)
+
+        if self.modelos.selec is None:
+            self._modelo_s = None
 
     def abrir_tensorboard(self, ver_todos=False):
         self.cerrar_tensorboard()
