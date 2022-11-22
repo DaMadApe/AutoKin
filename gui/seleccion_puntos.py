@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -11,6 +12,8 @@ class PantallaSelecPuntos(Pantalla):
 
     def __init__(self, parent):
         self.puntos = []
+
+        self.dataset_check_var = tk.IntVar(value=0)
 
         super().__init__(parent, titulo="Selección de puntos")
 
@@ -61,21 +64,28 @@ class PantallaSelecPuntos(Pantalla):
                                           rowspan=3, padx=5, pady=5)
         self.recargar_grafica()
 
-        # Configuraciones del movimiento
-        frame_configs = ttk.LabelFrame(self)
-        frame_configs.grid(column=0, row=2, sticky='nsew')
+        # # Configuraciones del movimiento
+        # frame_configs = ttk.LabelFrame(self)
+        # frame_configs.grid(column=0, row=2, sticky='nsew')
 
-        self.config1_entry = Label_Entry(frame_configs,
-                                         label="Config 1",
-                                         var_type='float',
-                                         width=10)
-        self.config1_entry.grid(column=0, row=0)
+        # self.config1_entry = Label_Entry(frame_configs,
+        #                                  label="Config 1",
+        #                                  var_type='float',
+        #                                  width=10)
+        # self.config1_entry.grid(column=0, row=0)
 
-        self.config2_entry = Label_Entry(frame_configs,
-                                         label="Config 2",
-                                         var_type='float',
-                                         width=10)
-        self.config2_entry.grid(column=0, row=1)
+        # self.config2_entry = Label_Entry(frame_configs,
+        #                                  label="Config 2",
+        #                                  var_type='float',
+        #                                  width=10)
+        # self.config2_entry.grid(column=0, row=1)
+
+        # Check para ver puntos de datasets pasados como referencia
+        check_but = ttk.Checkbutton(self,
+                                    text="Mostrar puntos de muestras anteriores",
+                                    variable=self.dataset_check_var,
+                                    command=self.recargar_grafica)
+        check_but.grid(column=0, row=2)
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
@@ -87,7 +97,7 @@ class PantallaSelecPuntos(Pantalla):
         boton_ejecutar.grid(column=1, row=3, sticky='e')
 
         # Agregar pad a todos los widgets
-        for frame in [self, frame_configs]:
+        for frame in [self]: #, frame_configs]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=6)
 
@@ -151,6 +161,14 @@ class PantallaSelecPuntos(Pantalla):
             self.ax.plot(*puntosTranspuesto[:3], color='lightcoral',
                         linewidth=1.5)
             self.ax.scatter(*puntosTranspuesto[:3], color='red')
+
+        if bool(self.dataset_check_var.get()):
+            datasets = self.controlador.get_datasets()
+            for d_set in datasets.values():
+                q_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
+                q_trans = q_set.transpose()
+                q_trans = q_trans[:,::10] # Mostrar 1 de cada 10 puntos
+                self.ax.scatter(*q_trans, color='royalblue')
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
