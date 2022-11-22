@@ -3,10 +3,11 @@ from itertools import combinations
 import tkinter as tk
 from tkinter import ttk
 
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from gui.gui_utils import Pantalla, Label_Entry
+from gui.gui_utils import Pantalla, Popup, Label_Entry
 from gui.const import samp_args
 from autokin import trayectorias
 
@@ -18,6 +19,8 @@ class PantallaConfigMuestreo(Pantalla):
         self.split_arg_getters = {}
         self.samp_args = samp_args
         self.axis_combos = {}
+
+        self.dataset_check_var = tk.IntVar(value=0)
 
         super().__init__(parent, titulo="Configurar muestreo")
 
@@ -38,12 +41,12 @@ class PantallaConfigMuestreo(Pantalla):
         self.traj_combo.set('coprime_sines')
 
         # Gráfica
-        self.fig = Figure(figsize=(4,4), dpi=90)
+        self.fig = Figure(figsize=(8,8), dpi=90)
         projection = '3d' if self.n_inputs > 2 else None
         self.ax = self.fig.add_subplot(projection=projection)
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=frame_grafica)
-        self.grafica.get_tk_widget().grid(column=0, row=1, sticky='nsew',
+        self.grafica.get_tk_widget().grid(column=0, row=1, sticky='nw',
                                           columnspan=2)
 
         # Selección de proyección en gráfica
@@ -96,6 +99,20 @@ class PantallaConfigMuestreo(Pantalla):
             entry.grid(column=0, row=i)
             self.split_arg_getters[label] = entry.get
 
+        # Selección/visualización de datasets previos
+        self.frame_datasets = ttk.LabelFrame(frame_derecha, text="Datasets anteriores")
+        self.frame_datasets.grid(column=0, row=2, sticky='nsew')
+
+        boton_ds = ttk.Button(self.frame_datasets, text="Seleccionar datasets",
+                              command=self.mostrar_datasets)
+        boton_ds.grid(column=0, row=0, sticky='ew')
+
+        check_but = ttk.Checkbutton(self.frame_datasets,
+                                    text="Mostrar datasets seleccionados",
+                                    variable=self.dataset_check_var,
+                                    command=self.recargar_grafica)
+        check_but.grid(column=0, row=1)
+
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
                                     command=self.parent.regresar)
@@ -114,13 +131,18 @@ class PantallaConfigMuestreo(Pantalla):
         frame_derecha.grid_configure(padx=10, pady=25)
 
         for child in self.frame_split.winfo_children():
-            child.grid_configure(padx=10, pady=8)
+            child.grid_configure(padx=10, pady=5)
+
+        for child in self.frame_datasets.winfo_children():
+            child.grid_configure(padx=16, pady=8)
  
         # Comportamiento al cambiar de tamaño
-        self.columnconfigure(0, weight=2)
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+        # Para que gráfica llene espacio
+        frame_grafica.columnconfigure(0, weight=1)
         frame_grafica.rowconfigure(1, weight=1)
+        # Para que frame de params llene espacio
         frame_derecha.rowconfigure(0, weight=1)
 
     def definir_panel_config (self, *args):
@@ -183,17 +205,35 @@ class PantallaConfigMuestreo(Pantalla):
         trayec = self.get_trayec()
         ejes_visibles = self.get_proyec()
         if trayec is not None:
-            puntosTranspuesto = trayec.transpose(0,1)# list(zip(*trayec))
+            puntosTranspuesto = trayec.transpose(0 ,1)
             self.ax.plot(*puntosTranspuesto[ejes_visibles].numpy(),
                          color='lightcoral',
                          linewidth=1.5)
             self.ax.scatter(*puntosTranspuesto[ejes_visibles].numpy(),
                             color='red')
+
+        if bool(self.dataset_check_var.get()):
+            datasets = self.controlador.extra_datasets
+            for d_set in datasets.values():
+                q_set = np.concatenate([d_point[0].unsqueeze(0).numpy() for d_point in d_set])
+                q_trans = q_set.transpose()
+                self.ax.scatter(*q_trans[ejes_visibles],
+                                color='royalblue')
+
         self.ax.set_xlabel('q1')
         self.ax.set_ylabel('q2')
         if self.n_inputs > 2:
             self.ax.set_zlabel('q3')
         self.grafica.draw()
+
+    def mostrar_datasets(self):
+        dataset_list = self.controlador.get_datasets()
+        preselec_datasets = self.controlador.extra_datasets
+        def callback(seleccion):
+            self.controlador.set_extra_datasets(seleccion)
+            self.recargar_grafica()
+        Popup_selec_datasets(self, dataset_list, preselec_datasets, callback)
+        pass
 
     def ejecutar(self):
         trayec = self.get_trayec()
@@ -201,6 +241,45 @@ class PantallaConfigMuestreo(Pantalla):
         if trayec is not None and split is not None:
             self.controlador.set_sample(trayec, split)
             self.parent.avanzar()
+
+
+class Popup_selec_datasets(Popup):
+    """
+    Popup para mostrar y seleccionar los datasets preexistentes disponibles
+    """
+    def __init__(self, parent, datasets: dict, preselec_datasets: dict, callback):
+        self.callback = callback
+        self.datasets = datasets
+        self.preseleccion = list(preselec_datasets.keys())
+        self.check_vars = {}
+        self.seleccion = {}
+        super().__init__(title="Selec. datasets", parent=parent)
+
+    def definir_elementos(self):
+        # Producir automáticamente un check por cada dataset
+        for i, ds_name in enumerate(self.datasets.keys()):
+            check_var = tk.IntVar(value=int(ds_name in self.preseleccion))
+            check_but = ttk.Checkbutton(self,
+                                        text=ds_name,
+                                        variable=check_var)
+            check_but.grid(column=0, row=i, sticky='w')
+
+            self.check_vars[ds_name] = check_var
+
+        boton_aceptar = ttk.Button(self, text="Aceptar", width=24,
+                                   command=self.ejecutar)
+        boton_aceptar.grid(column=0, row=len(self.datasets))
+
+        for child in self.winfo_children():
+            child.grid_configure(padx=12, pady=6)
+
+    def ejecutar(self):
+        seleccion = {}
+        for ds_name, var in self.check_vars.items():
+            if bool(var.get()):
+                seleccion[ds_name] = self.datasets[ds_name]
+        self.callback(seleccion)
+        self.destroy()
 
 
 if __name__ == '__main__':

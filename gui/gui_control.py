@@ -47,6 +47,7 @@ class CtrlRobotDB:
         super().__init__()
         self.pickle_path = os.path.join(SAVE_DIR, 'robotDB.pkl')
         self.robot_base_dir = os.path.join(SAVE_DIR, 'robots')
+        self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
 
         self._robots = None # Lista de registros de robots
         self._modelos = None # Lista de registros de modelos
@@ -56,7 +57,7 @@ class CtrlRobotDB:
         self.tb_proc = None
 
         # Asegurar estructura de directorios
-        for dir in [SAVE_DIR, self.robot_base_dir]:
+        for dir in [SAVE_DIR, self.robot_base_dir, self.trayec_dir]:
             if not os.path.exists(dir):
                 os.mkdir(dir)
 
@@ -283,6 +284,14 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
+    def get_datasets(self) -> dict[Dataset]:
+        datasets = {}
+        dataset_dir = self._dataset_dir(self.robot_reg_s)
+        for filename in sorted(os.listdir(dataset_dir)):
+            dataset_path = os.path.join(dataset_dir, filename)
+            datasets[filename] = torch.load(dataset_path)
+        return datasets
+
     def get_ext_status(self) -> dict:
         """
         Revisar estado de conexión BT, cámaras, etc.
@@ -300,8 +309,7 @@ class CtrlEntrenamiento:
     def __init__(self):
         super().__init__()
         self.train_kwargs = {}
-        self.datasets = {}
-
+        self.extra_datasets = {}
         self.queue = SignalQueue()
 
     def set_train_kwargs(self, train_kwargs):
@@ -310,6 +318,9 @@ class CtrlEntrenamiento:
     def set_sample(self, sample, sample_split):
         self.sample = sample
         self.split = list(sample_split.values())
+
+    def set_extra_datasets(self, datasets: dict[Dataset]):
+        self.extra_datasets = datasets
 
     def entrenar(self, stage_callback, step_callback, end_callback, after_fn):
         self.queue = SignalQueue()
@@ -494,7 +505,6 @@ class CtrlEjecucion:
     """
     def __init__(self):
         super().__init__()
-        self.trayec_dir = os.path.join(SAVE_DIR, 'trayec')
         self.puntos = None
 
     def listas_puntos(self):
