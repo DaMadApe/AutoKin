@@ -204,10 +204,14 @@ class ExternRobot(Robot):
 
         return soft_q, p_out
 
-    def status(self):
+    def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
         return {'Microcontrolador': mcu_status,
                 'Sistema de cámaras': cam_status}
+
+    def running(self) -> bool:
+        mcu_status, cam_status = self.client.status()
+        return mcu_status and cam_status
 
 
 class ModelRobot(Robot):
