@@ -197,12 +197,10 @@ class ExternRobot(Robot):
                           q_prev=q_prev,
                           dq_max=self.max_dq)
 
-        p_out = self.client.fkine(soft_q.numpy())
-
-        p_out = torch.tensor(p_out, dtype=torch.float)
+        q_out, p_out = self.client.fkine(soft_q)
         p_out = self.p_scale * p_out
 
-        return soft_q, p_out
+        return q_out, p_out
 
     def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
