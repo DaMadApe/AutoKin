@@ -15,6 +15,10 @@ def coprime_sines(n_dim, n_points, densidad=0, base_frec=0):
     """
     coefs = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
              31, 37, 41, 43, 47, 53, 59, 61, 67]
+
+    # Acotar valores de densidad demasiado altos
+    densidad = min(len(coefs)-n_dim, densidad)
+
     coefs = torch.tensor(coefs) * 2*torch.pi
     points = torch.zeros((n_points, n_dim))
 
