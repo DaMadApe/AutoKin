@@ -6,7 +6,7 @@ import webbrowser
 import multiprocessing as mp
 from threading import Thread
 from queue import Queue
-from typing import Union
+from typing import Union, Optional
 from collections import namedtuple
 
 import numpy as np
@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import Dataset, ConcatDataset
 from tensorboard import program
 
-from autokin.robot import Robot, ModelRobot
+from autokin.robot import Robot, ExternRobot, ModelRobot
 from autokin.modelos import FKEnsemble, FKModel
 from autokin.muestreo import FKset
 from autokin.loggers import GUIprogress, LastEpochLog
@@ -104,14 +104,14 @@ class CtrlRobotDB:
         return self._robots
 
     @property
-    def robot_reg_s(self) -> RoboReg:
+    def robot_reg_s(self) -> Optional[RoboReg]:
         """
         Registro de datos del robot seleccionado
         """
         return self.robots.selec()
 
     @property
-    def robot_s(self) -> Robot:
+    def robot_s(self) -> Optional[Robot]:
         """
         Robot seleccionado
         """
@@ -187,7 +187,7 @@ class CtrlRobotDB:
         return self.robots.selec().modelos
 
     @property
-    def modelo_reg_s(self) -> ModelReg:
+    def modelo_reg_s(self) -> Optional[ModelReg]:
         """
         Registo de datos del modelo seleccionado
         """
@@ -298,11 +298,11 @@ class CtrlRobotDB:
             datasets[filename] = torch.load(dataset_path)
         return datasets
 
-    def get_ext_status(self) -> dict:
+    def get_ext_status(self) -> Optional[dict]:
         """
         Revisar estado de conexión BT, cámaras, etc.
         """
-        if self.robot_reg_s is not None and self.robot_reg_s.cls_id=='Externo':
+        if isinstance(self.robot_s, ExternRobot):
             return self.robot_s.status()
         else:
             return None
@@ -318,10 +318,10 @@ class CtrlEntrenamiento:
         self.extra_datasets = {}
         self.queue = SignalQueue()
 
-    def set_train_kwargs(self, train_kwargs):
+    def set_train_kwargs(self, train_kwargs: dict):
         self.train_kwargs = train_kwargs
 
-    def set_sample(self, sample, sample_split):
+    def set_sample(self, sample: torch.tensor, sample_split: dict):
         self.sample = sample
         self.split = list(sample_split.values())
 
@@ -385,7 +385,6 @@ class CtrlEntrenamiento:
                 filename = f'dataset_{timestamp}.pt'
                 data_save_dir = os.path.join(self._dataset_dir(self.robot_reg_s), filename)
                 torch.save(dataset, data_save_dir)
-
 
     def pausar(self):
         self.queue.pause = True

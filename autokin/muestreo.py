@@ -2,6 +2,8 @@ import torch
 from torch.utils.data import (Dataset, TensorDataset,
                               ConcatDataset, random_split)
 
+from autokin.robot import Robot
+
 
 class FKset(Dataset):
     """
@@ -18,7 +20,7 @@ class FKset(Dataset):
     p_uniform_noise (float) : Cantidad de ruido uniforme aplicado a etiquetas pos
     p_normal_noise (float) : Cantidad de ruido normal(m=0,s=1) aplicado a etiquetas pos
     """
-    def __init__(self, robot, q_vecs: torch.Tensor,
+    def __init__(self, robot: Robot, q_vecs: torch.Tensor,
                  q_uniform_noise=0, q_normal_noise=0,
                  p_uniform_noise=0, p_normal_noise=0):
 
