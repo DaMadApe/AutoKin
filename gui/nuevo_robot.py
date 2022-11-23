@@ -51,7 +51,7 @@ class Popup_agregar_robot(Popup):
         boton_aceptar.grid(column=1, row=4, sticky='e')
 
         for child in self.winfo_children():
-            child.grid_configure(padx=5, pady=3)
+            child.grid_configure(padx=8, pady=4)
 
         self.bind('<Return>', self.agregar_robot)
 
@@ -63,9 +63,9 @@ class Popup_agregar_robot(Popup):
         tipo_robot = self.robot_cls_combo.get()
 
         if tipo_robot == "Externo":
-            n_act_entry = Label_Entry(self.param_frame, label="# de actuadores",
-                                  var_type='int', default_val=2,
-                                  restr_positiv=True, non_zero=True)
+            n_act_entry = Label_Entry(self.param_frame, label="n. actuadores",
+                                      var_type='int', default_val=2,
+                                      restr_positiv=True, non_zero=True, width=22)
             n_act_entry.grid(column=0, row=0)
 
             self.arg_getters['n'] = n_act_entry.get
@@ -74,7 +74,8 @@ class Popup_agregar_robot(Popup):
 
             rtb_ref_label = ttk.Label(self.param_frame, text="Clave de robot")
             rtb_ref_label.grid(column=0, row=0)
-            rtb_ref_combo = ttk.Combobox(self.param_frame,state='readonly')
+            rtb_ref_combo = ttk.Combobox(self.param_frame,state='readonly',
+                                         width=20)
             rtb_ref_combo.grid(column=1, row=0)
             rtb_model_list = rtb.models.DH.__all__
             rtb_ref_combo['values'] = rtb_model_list
@@ -89,12 +90,18 @@ class Popup_agregar_robot(Popup):
 
             cable_config_label = ttk.Label(self.param_frame, text="Config. cables")
             cable_config_label.grid(column=0, row=0)
-            cable_config_combo = ttk.Combobox(self.param_frame,state='readonly')
+            cable_config_combo = ttk.Combobox(self.param_frame,state='readonly',
+                                              width=20)
             cable_config_combo.grid(column=1, row=0)
             cable_config_combo['values'] = cable_configs
             cable_config_combo.set(cable_configs[0])
 
             self.arg_getters['config'] = cable_config_combo.get
+
+        for child in self.param_frame.winfo_children():
+            child.grid_configure(padx=8, pady=4)
+
+        self.param_frame.grid_configure(padx=0, pady=0)
 
     def get_robot_kwargs(self) -> dict:
         robot_kwargs = {}
@@ -133,5 +140,5 @@ if __name__ == '__main__':
     geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
     root.geometry(geom)
 
-    Popup_agregar_robot(root)
+    Popup_agregar_robot(root, lambda *x : None)
     root.mainloop()
