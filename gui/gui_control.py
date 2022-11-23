@@ -501,6 +501,8 @@ class TrainThread(Thread):
                                **afit_kwargs)
 
     def get_dataset(self):
+        # HACK: Para que no hayan problemas al guardar el dataset con pickle
+        self.dataset.robot = None
         return self.dataset
 
 
