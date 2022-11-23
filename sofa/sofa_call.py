@@ -122,7 +122,7 @@ if __name__ == "__main__":
     instance = SofaInstance(headless=False)
 
     time.sleep(5)
-    p, q = instance.fkine(q)
+    p = instance.fkine(q)
 
     # Graficar resultado
     fig = plt.figure()
