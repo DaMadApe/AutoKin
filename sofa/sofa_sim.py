@@ -74,7 +74,7 @@ class TrunkController(Sofa.Core.Controller):
         return server
 
     def get_pos(self):
-        return self.trunk.node.effector.mo.position[0]
+        return list(self.trunk.node.effector.mo.position[0])
 
     def get_forces(self):
         forces = self.trunk.node.dofs.force.value
