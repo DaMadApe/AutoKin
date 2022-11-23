@@ -1,6 +1,5 @@
 import torch
 import serial
-import time
 
 from ext_robot.NatNetClient import NatNetClient
 from autokin.utils import alinear_datos
@@ -23,12 +22,9 @@ class ExtInstance:
         self.cam_client.rigidBodyListener = self.recv_body
         self.cam_client.run()
 
-        # self.units = self.send_cam_command('UnitsToMillimeters')
-        # self.frame_rate = self.send_cam_command('FrameRate')
-
         self.q_prev = [0]*4
 
-        self.in_exec = False # Inecesario si se puede iniciar/detener stream
+        self.in_exec = False
         self.p_stack = []
 
     def test_connection(self, frameNumber, *args):
@@ -58,12 +54,11 @@ class ExtInstance:
                                     address=(self.cam_client.serverIPAddress,
                                              self.cam_client.commandPort))
 
-    def send_q_list_esp(self, q):
+    def send_q_list_esp(self, q: torch.tensor):
         for q_i in q:
             self.send_q_esp(q_i)
-            time.sleep(0.5)
 
-    def send_q_esp(self, q): # -> ack # Saber cuando termina ejecución
+    def send_q_esp(self, q: torch.tensor): # -> ack # Saber cuando termina ejecución
         pasos = ['0']*4
         for i, val in enumerate(q):
             pasos[i] = str(int(val - self.q_prev[i]))
@@ -72,20 +67,26 @@ class ExtInstance:
         # print(f'Estado de robot: {self.q_prev}, Mensaje: {msg_pasos}')
         if self.serialESP is not None:
             self.serialESP.write(msg_pasos.encode('ascii'))
-            # self.serialESP.read(4) # Para bloquear hasta que ESP envíe señal de fin
+            # Bloquear ejecución hasta que ESP envíe señal de fin
+            self.serialESP.read(1)
 
-    def fkine(self, q):
+    def fkine(self, q: torch.tensor):
         # self.send_cam_command('StartRecording')
         self.in_exec = True
         self.send_q_list_esp(q)
-        # self.send_cam_command('StopRecording')
-        p = torch.tensor(self.p_stack)
-        q_out, p_out = alinear_datos(q, p)
-
         self.in_exec = False
+        # self.send_cam_command('StopRecording')
+
+        p = torch.tensor(self.p_stack)
         self.p_stack = []
 
-        return q_out, p_out
+        if all(self.status()):
+            q_out, p_out = alinear_datos(q, p)
+            return q_out, p_out
+        else:
+            print('Cliente desconectado: (MCU, Cam) = ', self.status())
+            # HACK: Para que procesos posteriores terminen rápido sin error
+            return torch.zeros(10, q.shape[1]), torch.zeros(10, 3)
 
     def status(self):
         mcu_status = self.serialESP is not None
