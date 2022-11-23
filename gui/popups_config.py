@@ -110,7 +110,7 @@ class Popup_config_ext(Popup):
 
         jog_but = ttk.Button(frame_botones, text="Jog",
                              width=12,
-                             command=lambda: self.jog)
+                             command=self.jog)
         jog_but.grid(column=0, row=2)
 
         aceptar_but = ttk.Button(frame_botones, text="Aceptar",
@@ -169,16 +169,17 @@ class Popup_config_ext(Popup):
         self.callback({'max_dq': max_dq})
 
     def jog(self):
-        self.robot.fkine(torch.zeros(self.robot.n))
+        zero = torch.zeros(1, self.robot.n)
         jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
-        self.robot.fkine(jog_traj)
-        self.robot.fkine(torch.zeros(self.robot.n))
+        traj = torch.concat([zero, jog_traj, zero])
+
+        self.robot.fkine(traj)
 
     def aceptar(self):
         self.robot.fkine(torch.zeros(self.robot.n))
         self.callback({'q_min': [var.get() for var in self.min_vars],
                        'q_max': [var.get() for var in self.max_vars],
-                       'p_scale': float(self.p_scale_entry.get()),
+                       'p_scale': self.p_scale_entry.get(),
                        'max_dq': int(self.max_dq_var.get())})
         self.destroy()
 
@@ -283,11 +284,11 @@ class Popup_config_sofa(Popup):
         frame_botones = ttk.Frame(self)
         frame_botones.grid(column=0, row=2)
 
-        self.check_var = tk.IntVar(value=self.robot.headless)
-        check_tens = ttk.Checkbutton(frame_botones,
+        self.hdls_check = tk.IntVar(value=self.robot.headless)
+        check_hdls = ttk.Checkbutton(frame_botones,
                                      text='Usar interfaz gráfica',
-                                     variable=self.check_var)
-        check_tens.grid(column=0, row=1, columnspan=3, sticky='w')
+                                     variable=self.hdls_check)
+        check_hdls.grid(column=0, row=1, columnspan=3, sticky='w')
 
         jog_but = ttk.Button(frame_botones, text="Jog",
                              width=12,
@@ -347,17 +348,18 @@ class Popup_config_sofa(Popup):
 
     def jog(self):
         if self.robot.running():
-            self.robot.fkine(torch.zeros(self.robot.n))
+            zero = torch.zeros(1, self.robot.n)
             jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
-            self.robot.fkine(jog_traj)
-            self.robot.fkine(torch.zeros(self.robot.n))
+            traj = torch.concat([zero, jog_traj, zero])
+
+            self.robot.fkine(traj)
 
     def aceptar(self):
         self.callback({'q_min': [var.get() for var in self.min_vars],
                        'q_max': [var.get() for var in self.max_vars],
-                       'p_scale': float(self.p_scale_entry.get()),
+                       'p_scale': self.p_scale_entry.get(),
                        'max_dq': float(self.max_dq_var.get()),
-                       'headless': bool(self.check_var.get())})
+                       'headless': bool(self.hdls_check.get())})
         self.robot.stop_instance()
         self.destroy()
 
