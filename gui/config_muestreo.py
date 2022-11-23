@@ -9,17 +9,19 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.gui_utils import Pantalla, Popup, Label_Entry
 from gui.const import samp_args
+from autokin.utils import restringir
 from autokin import trayectorias
 
 
 class PantallaConfigMuestreo(Pantalla):
 
     def __init__(self, parent):
-        self.arg_getters = None
+        self.arg_getters = {}
         self.split_arg_getters = {}
         self.samp_args = samp_args
         self.axis_combos = {}
 
+        self.check_restr = tk.IntVar(value=0)
         self.dataset_check_var = tk.IntVar(value=0)
 
         super().__init__(parent, titulo="Configurar muestreo")
@@ -150,14 +152,20 @@ class PantallaConfigMuestreo(Pantalla):
         for widget in self.frame_configs.winfo_children():
             widget.destroy()
 
+        # Check para restringir trayectoria
+        check_restr = ttk.Checkbutton(self.frame_configs,
+                                      text='Restringir trayectoria',
+                                      variable=self.check_restr,
+                                      command=self.recargar_grafica)
+        check_restr.grid(column=0, row=0, columnspan=2, sticky='w')
+
         self.arg_getters = {}
 
         args = self.samp_args[self.traj_combo.get()]
-
         for i, (arg_name, entry_kwargs) in enumerate(args.items()):
             entry = Label_Entry(self.frame_configs,
                                 width=10, **entry_kwargs)
-            entry.grid(column=0, row=i)
+            entry.grid(column=0, row=i+1)
             entry.entry.bind('<Return>', self.recargar_grafica)
             entry.entry.bind('<FocusOut>', self.recargar_grafica)
             self.arg_getters[arg_name] = entry.get
@@ -190,9 +198,15 @@ class PantallaConfigMuestreo(Pantalla):
         if traj_cls:
             traj_kwargs = self.get_traj_kwargs()
             if not (None in traj_kwargs.values()):
+                # Instanciar trayectoria
                 traj_cls = getattr(trayectorias, traj_cls)
                 trayec = traj_cls(self.n_inputs, **traj_kwargs)
+                # Aplicar restricción a n-esfera
+                if bool(self.check_restr.get()):
+                    trayec = restringir(trayec)
+
                 return trayec
+
         return None
 
     def get_proyec(self) -> list[int]:
