@@ -7,6 +7,7 @@ import torch
 
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin.trayectorias import coprime_sines
+from autokin.utils import restringir
 from gui.gui_utils import Popup, Label_Entry
 
 
@@ -170,7 +171,7 @@ class Popup_config_ext(Popup):
 
     def jog(self):
         zero = torch.zeros(1, self.robot.n)
-        jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
+        jog_traj = restringir(coprime_sines(self.robot.n, 1000, densidad=0))
         traj = torch.concat([zero, jog_traj, zero])
 
         self.robot.fkine(traj)
@@ -349,7 +350,7 @@ class Popup_config_sofa(Popup):
     def jog(self):
         if self.robot.running():
             zero = torch.zeros(1, self.robot.n)
-            jog_traj = coprime_sines(self.robot.n, 1000, densidad=0)
+            jog_traj = restringir(coprime_sines(self.robot.n, 1000, densidad=0))
             traj = torch.concat([zero, jog_traj, zero])
 
             self.robot.fkine(traj)
