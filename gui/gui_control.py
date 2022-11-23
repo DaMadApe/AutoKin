@@ -537,9 +537,14 @@ class CtrlEjecucion:
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
-                                           p_target=target)
+                                           p_target=target,
+                                           eta=0.1)
             _, p = self.robot_s.fkine(q)
             q_prev = q
+
+            # Tomar última posición si se registró más de una
+            if len(p.shape) == 2:
+                p = p[-1]
 
             reg_callback(p.tolist())
 
