@@ -165,10 +165,10 @@ class PantallaSelecPuntos(Pantalla):
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.get_datasets()
             for d_set in datasets.values():
-                q_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
-                q_trans = q_set.transpose()
-                q_trans = q_trans[:,::10] # Mostrar 1 de cada 10 puntos
-                self.ax.scatter(*q_trans, color='royalblue')
+                p_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
+                p_trans = p_set.transpose()
+                p_trans = p_trans[:,::10] # Mostrar 1 de cada 10 puntos
+                self.ax.scatter(*p_trans, color='royalblue')
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
