@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch.utils.data import (Dataset, TensorDataset,
                               ConcatDataset, random_split)
@@ -184,12 +186,12 @@ class EnsembleRegressor(torch.nn.Module):
         """
         Entrenar cada uno de los modelos individualmente
         """
-        print("Ajustando modelos del conjunto")
+        logging.info("Ajustando modelos del conjunto")
 
         for model in self.ensemble:
             model.fit(train_set, **train_kwargs)
 
-        print("Fin del entrenamiento")
+        logging.info("Fin del entrenamiento")
 
     def test(self, test_set, **test_kwargs):
         self.model_scores = []
