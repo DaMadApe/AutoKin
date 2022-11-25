@@ -1,6 +1,7 @@
 from math import floor, ceil
 
 import torch
+from torch.utils.data import random_split
 
 import roboticstoolbox as rtb
 
@@ -54,6 +55,25 @@ def random_robot(min_DH: list[float] = None,
             links.append(rtb.DHLink(d=d, alpha=alpha, a=a, sigma=0))
                          #qlim=np.array([0, 1.5*max_DH[0]])))
     return rtb.DHRobot(links)
+
+
+def rand_split(dataset, proportions: list[float]):
+    """
+    Reparte el conjunto de datos en segmentos aleatoriamente
+    seleccionados, acorde a las proporciones ingresadas.
+
+    args:
+    dataset (torch Dataset): Conjunto de datos a repartir
+    proportions (list[float]): Porcentaje que corresponde a cada partición
+    """
+    if round(sum(proportions), ndigits=2) != 1:
+        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
+    split = [round(prop*len(dataset)) for prop in proportions]
+
+    # HACK: Compensa por algunos valores que no suman la longitud original
+    split[0] += (len(dataset) - sum(split))
+
+    return random_split(dataset, split)
 
 
 def restringir(q: torch.Tensor) -> torch.Tensor:
