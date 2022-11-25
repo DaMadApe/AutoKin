@@ -16,6 +16,7 @@
 
 import socket
 import struct
+import logging
 from threading import Thread
 
 
@@ -34,10 +35,11 @@ class NatNetClient:
     def __init__( self ):
         # Change this value to the IP address of the NatNet server.
         # Dirección en Motive > Data Streaming Pane > Local Interface
-        self.serverIPAddress = "10.86.1.34" # "127.0.0.1" 
+        self.serverIPAddress = "10.86.3.161" # "127.0.0.1" 
 
         # Change this value to the IP address of your local network interface
-        self.localIPAddress =  "127.0.0.1" #"10.86.3.147" # 
+        # En Windows: Ejecutar "cmd /k ipconfig"
+        self.localIPAddress =  "10.86.3.147" # "127.0.0.1" 
 
         # This should match the multicast address listed in Motive's streaming settings.
         self.multicastAddress = "239.255.42.99"
@@ -497,13 +499,13 @@ class NatNetClient:
         # Create the data socket
         self.dataSocket = self.__createDataSocket( self.dataPort )
         if( self.dataSocket is None ):
-            print( "Could not open data channel" )
+            logging.error( "NatNet: Could not open data channel" )
             exit
 
         # Create the command socket
         self.commandSocket = self.__createCommandSocket()
         if( self.commandSocket is None ):
-            print( "Could not open command channel" )
+            logging.error( "NatNet: Could not open command channel" )
             exit
 
         # Create a separate thread for receiving data packets
