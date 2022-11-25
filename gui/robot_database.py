@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import TypeVar, Optional
 
 from autokin.robot import *
 from autokin.modelos import *
@@ -21,52 +22,42 @@ class Reg:
         return cls(**self.kwargs)
 
 
-class SelectionList:
+R = TypeVar('R', bound=Reg)
+
+
+class SelectionList(list[R]):
     """
     Base para la lista de robots y la lista de modelos de cada uno.
     """
     def __init__(self):
-        self._data : list[Reg] = []
-        self._select : int = None
+        self._select : Optional[int] = None
 
-    def __getitem__(self, idx):
-        return self._data[idx]
-
-    def __delitem__(self, idx):
-        del self._data[idx]
-
-    def __len__(self):
-        return len(self._data)
-
-    def agregar(self, nueva_entrada: Reg):
+    def agregar(self, nueva_entrada: R) -> bool:
         for entrada in self:
             if entrada.nombre == nueva_entrada.nombre:
                 return False
 
-        self._data.append(nueva_entrada)
+        self.append(nueva_entrada)
         return True
 
-    def selec(self):
-        if self._select is None:
-            return None
-        else:
-            return self._data[self._select]
+    def selec(self) -> Optional[R]:
+        return None if self._select is None else self[self._select]
 
     def seleccionar(self, idx: int):
         self._select = idx
 
-    def copiar(self, origen: int, nuevo_nombre: str):
+    def copiar(self, origen: int, nuevo_nombre: str) -> bool:
         for entry in self:
             if entry.nombre == nuevo_nombre:
                 return False
 
-        nueva_entrada = deepcopy(self._data[origen])
+        nueva_entrada = deepcopy(self[origen])
         nueva_entrada.nombre = nuevo_nombre
-        self._data.append(nueva_entrada)
+        self.append(nueva_entrada)
         return True
 
     def eliminar(self, idx: int):
-        self._data.pop(idx)
+        self.pop(idx)
         if self._select is not None and idx < self._select:
             self._select -=1
         elif self._select == idx:
@@ -98,4 +89,4 @@ class RoboReg(Reg):
              "Sim. RTB" : RTBrobot.from_name,
              "Sim. SOFA" : SofaRobot}
 
-    modelos: SelectionList = field(default_factory=SelectionList)
+    modelos: SelectionList[ModelReg] = field(default_factory=SelectionList)
