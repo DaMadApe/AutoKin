@@ -94,7 +94,7 @@ class CtrlRobotDB:
 
     """ Robots """
     @property
-    def robots(self) -> SelectionList:
+    def robots(self) -> SelectionList[RoboReg]:
         if self._robots is None:
             if os.path.isfile(self.pickle_path):
                 with open(self.pickle_path, 'rb') as f:
@@ -104,20 +104,26 @@ class CtrlRobotDB:
         return self._robots
 
     @property
-    def robot_reg_s(self) -> Optional[RoboReg]:
+    def robot_reg_s(self) -> RoboReg:
         """
         Registro de datos del robot seleccionado
         """
+        if not self.is_robot_selected():
+            raise RuntimeError('Robot no seleccionado')
         return self.robots.selec()
 
     @property
-    def robot_s(self) -> Optional[Robot]:
+    def robot_s(self) -> Robot:
         """
         Robot seleccionado
         """
         if self._robot_s is None:
+            logging.info(f'Creando nueva instancia de robot')
             self._robot_s = self.robot_reg_s.init_obj()
         return self._robot_s
+
+    def is_robot_selected(self) -> bool:
+        return self.robots.selec() is not None
 
     def seleccionar_robot(self, indice: int):
         self.robots.seleccionar(indice)
@@ -179,22 +185,23 @@ class CtrlRobotDB:
     def config_robot(self, config: dict):
         self.robot_reg_s.kwargs.update(config)
         # Forzar reinstanciación del robot en caso de configurar el seleccionado
-        self._robot_s = None
+        # self._robot_s = None
 
     """ Modelos """
     @property
-    def modelos(self) -> SelectionList:
+    def modelos(self) -> SelectionList[ModelReg]:
+        if self.robots.selec() is None:
+            raise RuntimeError('Intento de acceso a modelos sin robot seleccionado')
         return self.robots.selec().modelos
 
     @property
-    def modelo_reg_s(self) -> Optional[ModelReg]:
+    def modelo_reg_s(self) -> ModelReg:
         """
         Registo de datos del modelo seleccionado
         """
-        if self.robot_reg_s is None:
-            return None
-        else:
-            return self.robot_reg_s.modelos.selec()
+        if not self.is_model_selected():
+            raise RuntimeError('Modelo no seleccionado')
+        return self.robot_reg_s.modelos.selec()
 
     @property
     def modelo_s(self) -> Union[FKModel, FKEnsemble]:
@@ -205,11 +212,16 @@ class CtrlRobotDB:
             model_path = self._model_path(self.robot_reg_s,
                                           self.modelo_reg_s)
             if os.path.isfile(model_path):
+                logging.info(f'Cargando robot en {model_path}')
                 self._modelo_s = torch.load(model_path)
             else:
+                logging.info(f'Creando nueva instancia de modelo')
                 self._modelo_s = self.modelo_reg_s.init_obj()
         return self._modelo_s
-        
+
+    def is_model_selected(self) -> bool:
+        return self.is_robot_selected() and self.robot_reg_s.modelos.selec() is not None
+
     def seleccionar_modelo(self, indice: int):
         self.modelos.seleccionar(indice)
         self._modelo_s = None
@@ -282,7 +294,7 @@ class CtrlRobotDB:
 
         self.tb_proc = mp.Process(target=abrir)
         self.tb_proc.start()
-        time.sleep(1) # Incrementar si no conecta a la primera
+        time.sleep(2) # Incrementar si no conecta a la primera
         webbrowser.open('http://localhost:6006/')
 
     def cerrar_tensorboard(self):
@@ -290,7 +302,7 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
-    def get_datasets(self) -> dict[Dataset]:
+    def get_datasets(self) -> dict[str, Dataset]:
         datasets = {}
         dataset_dir = self._dataset_dir(self.robot_reg_s)
         for filename in sorted(os.listdir(dataset_dir)):
@@ -302,7 +314,7 @@ class CtrlRobotDB:
         """
         Revisar estado de conexión BT, cámaras, etc.
         """
-        if isinstance(self.robot_s, ExternRobot):
+        if self.is_robot_selected() and isinstance(self.robot_s, ExternRobot):
             return self.robot_s.status()
         else:
             return None
