@@ -1,12 +1,13 @@
 import os
+import time
 import shutil
 import pickle
-import time
+import logging
 import webbrowser
 import multiprocessing as mp
-from threading import Thread
 from queue import Queue
-from typing import Union, Optional
+from threading import Thread
+from typing import Optional, Union
 from collections import namedtuple
 
 import numpy as np
@@ -17,6 +18,7 @@ from tensorboard import program
 from autokin.robot import Robot, ExternRobot, ModelRobot
 from autokin.modelos import FKEnsemble, FKModel
 from autokin.muestreo import FKset
+from autokin.utils import rand_split
 from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
@@ -333,11 +335,11 @@ class CtrlEntrenamiento:
     def set_train_kwargs(self, train_kwargs: dict):
         self.train_kwargs = train_kwargs
 
-    def set_sample(self, sample: torch.tensor, sample_split: dict):
+    def set_sample(self, sample: torch.Tensor, sample_split: dict):
         self.sample = sample
         self.split = list(sample_split.values())
 
-    def set_extra_datasets(self, datasets: dict[Dataset]):
+    def set_extra_datasets(self, datasets: dict[str, Dataset]):
         self.extra_datasets = datasets
 
     def entrenar(self, stage_callback, step_callback, end_callback, after_fn):
@@ -353,7 +355,8 @@ class CtrlEntrenamiento:
                                    sample=self.sample,
                                    split=self.split,
                                    train_kwargs=self.train_kwargs,
-                                   log_dir=log_dir)
+                                   log_dir=log_dir,
+                                   prev_datasets=list(self.extra_datasets.values()))
         self.trainer.start()
 
         self.check_queue(stage_callback, step_callback, 
@@ -418,7 +421,7 @@ class TrainThread(Thread):
                  split: list[float],
                  train_kwargs: dict,
                  log_dir,
-                 prev_train_sets: list[Dataset] = None):
+                 prev_datasets: list[Dataset] = None):
         super().__init__(name='training', daemon=True)
         self.queue = queue
         self.modelo = modelo
@@ -428,10 +431,11 @@ class TrainThread(Thread):
         self.train_kwargs = train_kwargs
         self.log_dir = log_dir
 
-        if prev_train_sets is None:
-            self.train_set = []
+        self.prev_datasets = prev_datasets
+        if prev_datasets is None:
+            self.prev_datasets = []
 
-        self.dataset = None
+        self.sampled_dataset = None
         
         self.gui_logger = GUIprogress(step_callback=lambda *x:
                                           self.queue.put(Msg('step', x)),
@@ -467,15 +471,19 @@ class TrainThread(Thread):
     def _ajuste_inicial(self, log_dir):
         # Muestreo
         self.queue.put(Msg('stage', 0))
-        dataset = FKset(self.robot, self.sample)
-        train_set, val_set, test_set = dataset.rand_split(self.split)
 
-        self.dataset = dataset
-        self.train_set = ConcatDataset([self.train_set, train_set])
+        if len(self.sample) > 0:
+            sampled_dataset = FKset(self.robot, self.sample)
+            self.sampled_dataset = sampled_dataset
+        else:
+            self.sampled_dataset = []
+
+        full_dataset = ConcatDataset([self.sampled_dataset, *self.prev_datasets])
+        self.train_set, self.val_set, self.test_set = rand_split(full_dataset, self.split)
 
         # Ajuste
         fit_kwargs = self.train_kwargs['Ajuste inicial']
-
+        # Calcular número de pasos
         steps = fit_kwargs['epochs']
         if issubclass(type(self.modelo), FKEnsemble):
             steps *= len(self.modelo.ensemble)
@@ -484,7 +492,7 @@ class TrainThread(Thread):
         if not self.queue.done:
             le_log = LastEpochLog()
 
-            self.modelo.fit(train_set=train_set, val_set=val_set,
+            self.modelo.fit(train_set=self.train_set, val_set=self.val_set,
                             log_dir=log_dir,
                             loggers=[self.gui_logger, le_log],
                             silent=True,
@@ -514,8 +522,8 @@ class TrainThread(Thread):
 
     def get_dataset(self):
         # HACK: Para que no hayan problemas al guardar el dataset con pickle
-        self.dataset.robot = None
-        return self.dataset
+        self.sampled_dataset.robot = None
+        return self.sampled_dataset
 
 
 class CtrlEjecucion:
