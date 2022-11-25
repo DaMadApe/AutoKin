@@ -108,12 +108,10 @@ class PantallaMenuPrincipal(Pantalla):
                           robot=self.controlador.robot_s)
 
     def actualizar(self, *args):
-        super().actualizar()
-        robot_reg_s = self.controlador.robot_reg_s
-        modelo_reg_s = self.controlador.modelo_reg_s
-
+        super().actualizar()        
         # Actualizar vista de selección de robot y modelo
-        if modelo_reg_s is not None:
+        if self.controlador.is_model_selected():
+            modelo_reg_s = self.controlador.modelo_reg_s
             model_nom = modelo_reg_s.nombre
             model_cls = modelo_reg_s.cls_id
             self.label_modelo.config(text=f"{model_nom}  ({model_cls})")
@@ -124,7 +122,8 @@ class PantallaMenuPrincipal(Pantalla):
             self.boton_entrenar['state'] = 'disabled'
             self.boton_controlar['state'] = 'disabled'
 
-        if robot_reg_s is not None:
+        if self.controlador.is_robot_selected():
+            robot_reg_s = self.controlador.robot_reg_s
             robot_nom = robot_reg_s.nombre
             robot_cls = robot_reg_s.cls_id
             self.label_robot.config(text=f"{robot_nom}  ({robot_cls})")
@@ -149,10 +148,10 @@ class PantallaMenuPrincipal(Pantalla):
                 status_label = ttk.Label(self.frame_status)
                 status_label.grid(column=1, row=i, padx=10, pady=10, sticky='w')
                 if status:
-                    status_label.config(text=" activo ")
+                    status_label.config(text=" activado ")
                     status_label['style'] = 'Green.TLabel'
                 else:
-                    status_label.config(text=" inactivo ")
+                    status_label.config(text=" desactivado ")
                     status_label['style'] = 'Red.TLabel'
         else:
             label = ttk.Label(self.frame_status, text='Sin selección de robot externo')
