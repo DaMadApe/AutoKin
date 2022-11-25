@@ -123,10 +123,17 @@ def suavizar(q: torch.Tensor,
     Para lista de actuación q de forma [mxn], aplica linterp entre puntos consecutivos
     para evitar que el cambio instantáneo de algún actuador exceda dq_max.
     """
-    q = torch.cat([q_prev.unsqueeze(0), q])
+    if len(q_prev.shape) == 1:
+        q_prev = q_prev.unsqueeze(0)
+
+    # q = torch.cat([q_prev, q])
+    q = torch.cat([q_prev, q])
     q_diff = q.diff(dim=0)
 
-    oversteps = (q_diff.abs()/dq_max).round().int().max(dim=1).values
+    # # Tomar los puntos en los que la norma de la diferencia de actuación excede dq_max
+    oversteps = (q_diff.abs()/dq_max).norm(dim=1).round().int()
+    # Tomar los puntos en los que la máxima diferencia de actuación excede dq_max
+    # oversteps = (q_diff.abs()/dq_max).round().int().max(dim=1).values
     total_extra_steps = oversteps.sum().item()
 
     accum_steps = oversteps.cumsum(dim=0)
@@ -171,4 +178,4 @@ if __name__ == "__main__":
     oversteps = (da.abs()/max_da).round().int().max(dim=1).values
     cumsteps = oversteps.cumsum(dim=0)
 
-    print('res', suavizar(a, torch.zeros(2),max_da))
+    print(a, 'res', suavizar(a, torch.zeros(2),max_da))
