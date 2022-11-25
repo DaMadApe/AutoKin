@@ -45,7 +45,7 @@ class DataFitMixin:
         super().__init__()
         self.checkpoint = {}
 
-    def _set_out_bias(self, reference_set=None):
+    def _set_out_bias(self, reference_set):
         """
         Ajustar el bias de salida a los promedios de salida
         de un set de referencia. Acelera convergencia de fit()
@@ -184,7 +184,7 @@ class DataFitMixin:
 
         train_loader = DataLoader(train_set, batch_size=batch_size,
                                   shuffle=True)
-        if val_set is not None:
+        if val_set is not None and len(val_set)>0:
             val_loader = DataLoader(val_set, batch_size=len(val_set))
 
         for epoch in range(epochs):

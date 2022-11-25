@@ -3,6 +3,8 @@ from itertools import combinations
 import tkinter as tk
 from tkinter import ttk
 
+import torch
+
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -136,7 +138,7 @@ class PantallaConfigMuestreo(Pantalla):
             child.grid_configure(padx=10, pady=5)
 
         for child in self.frame_datasets.winfo_children():
-            child.grid_configure(padx=16, pady=8)
+            child.grid_configure(padx=16, pady=6)
  
         # Comportamiento al cambiar de tamaño
         self.columnconfigure(0, weight=1)
@@ -171,7 +173,7 @@ class PantallaConfigMuestreo(Pantalla):
             self.arg_getters[arg_name] = entry.get
 
         for child in self.frame_configs.winfo_children():
-            child.grid_configure(padx=10, pady=8)
+            child.grid_configure(padx=10, pady=6)
 
         self.recargar_grafica()
 
@@ -201,6 +203,10 @@ class PantallaConfigMuestreo(Pantalla):
                 # Instanciar trayectoria
                 traj_cls = getattr(trayectorias, traj_cls)
                 trayec = traj_cls(self.n_inputs, **traj_kwargs)
+                # Terminar en posición cero
+                if len(trayec) > 0:
+                    zero = torch.zeros(1, self.n_inputs)
+                    trayec = torch.concat([trayec, zero])
                 # Aplicar restricción a n-esfera
                 if bool(self.check_restr.get()):
                     trayec = restringir(trayec)

@@ -171,7 +171,7 @@ class ExternRobot(Robot):
                  q_min: list[float] = None,
                  q_max: list[float] = None,
                  p_scale : float = 1,
-                 max_dq: int = 10):
+                 max_dq: int = 100):
         super().__init__(n, out_n=3)
         if q_min is None:
             q_min = [0] * n
@@ -183,6 +183,8 @@ class ExternRobot(Robot):
         self.p_scale = p_scale
         self.max_dq = max_dq
 
+        self.q_prev = torch.zeros(self.n)
+
         self.client = ExtInstance()
 
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -192,13 +194,14 @@ class ExternRobot(Robot):
 
         scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
 
-        q_prev = torch.tensor(self.client.q_prev)[:self.n]
         soft_q = suavizar(q=scaled_q,
-                          q_prev=q_prev,
+                          q_prev=self.q_prev,
                           dq_max=self.max_dq)
 
         q_out, p_out = self.client.fkine(soft_q)
         p_out = self.p_scale * p_out
+
+        self.q_prev = q
 
         return q_out, p_out
 

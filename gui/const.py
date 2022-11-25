@@ -15,7 +15,7 @@ model_args = {
         'mid_layer_size': {
             'label': '# de neuronas/capa',
             'var_type': 'int',
-            'default_val': 3,
+            'default_val': 10,
             'restr_positiv': True,
             'non_zero': True
         },
@@ -181,7 +181,7 @@ samp_args = {
             'var_type': 'int',
             'default_val': 100,
             'restr_positiv': True,
-            'non_zero': True
+            'non_zero': False
         },
         'densidad': {
             'label': 'densidad de ondas',
