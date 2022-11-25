@@ -4,6 +4,7 @@ from tkinter import ttk
 from gui.gui_utils import Pantalla, Popup, Label_Entry, TablaYBotones
 from gui.nuevo_robot import Popup_agregar_robot
 from gui.popups_config import Popup_config_ext, Popup_config_rtb, Popup_config_sofa
+from gui.robot_database import RoboReg
 
 
 class PantallaSelecRobot(Pantalla):
@@ -69,11 +70,17 @@ class PantallaSelecRobot(Pantalla):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-    def agregar_robot_tabla(self, robot):
+    def agregar_robot_tabla(self, robot: RoboReg):
+        # HACK: Evitar inicialización de robot externo para obtener n de actuadores
+        if robot.cls_id == 'Externo':
+            n = robot.kwargs['n']
+        else:
+            n = robot.init_obj().n
+    
         self.tabla.agregar_entrada(robot.nombre,
                                    robot.cls_id,
                                    len(robot.modelos),
-                                   f"q = {robot.init_obj().n}")
+                                   f"q = {n}")
 
     def agregar_robot(self, *args):
         def callback(nombre, robot_args):
