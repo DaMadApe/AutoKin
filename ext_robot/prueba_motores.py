@@ -4,10 +4,13 @@ from ext_robot.client import ExtInstance
 
 inst = ExtInstance()
 for i in range(5):
-    for j in [0, 1, 3]:#range(4):
+    print('Ciclo ', i)
+    for j in range(1, 4):
         q = [0]*4
-        q[j] = 120
+        q[j] = 80
+        print('enviando q')
         inst.send_q_esp(q)
-        time.sleep(3)
+        print('enviado')
+        print('fin espera')
 
 inst.send_q_esp([0]*4)
