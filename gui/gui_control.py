@@ -18,7 +18,7 @@ from tensorboard import program
 from autokin.robot import Robot, ExternRobot, ModelRobot
 from autokin.modelos import FKEnsemble, FKModel
 from autokin.muestreo import FKset
-from autokin.utils import rand_split
+from autokin.utils import RobotExecError, rand_split
 from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
@@ -374,6 +374,11 @@ class CtrlEntrenamiento:
                 self.trainer.join()
                 end_callback() # msg.info['Ajuste inicial']
                 return
+            elif msg.head == 'fail':
+                print('fail called')
+                self.trainer.join()
+                end_callback(fail=True)
+                return
 
         after_fn(100, self.check_queue, 
                  stage_callback, step_callback, end_callback, after_fn)
@@ -447,7 +452,11 @@ class TrainThread(Thread):
             if not self.queue.done:
                 method_name = '_' + etapa.lower().replace(' ', '_')
                 log_dir = os.path.join(self.log_dir, method_name)
-                resultados[etapa] = getattr(self, method_name)(log_dir)
+                resultado = getattr(self, method_name)(log_dir)
+                if resultado == 'fail':
+                    return
+                else:
+                    resultados[etapa] = resultado
                 self.gui_logger.steps = 0
 
         # Agregar dataset generado a resultados
@@ -473,7 +482,13 @@ class TrainThread(Thread):
         self.queue.put(Msg('stage', 0))
 
         if len(self.sample) > 0:
-            sampled_dataset = FKset(self.robot, self.sample)
+            try:
+                sampled_dataset = FKset(self.robot, self.sample)
+            except RobotExecError:
+                print('robor exec catch')
+                self.queue.put(Msg('fail', 0))
+                return 'fail'
+
             self.sampled_dataset = sampled_dataset
         else:
             self.sampled_dataset = []
@@ -512,13 +527,17 @@ class TrainThread(Thread):
             _, result = self.robot.fkine(X)
             return result
 
-        self.modelo.active_fit(train_set=self.train_set,
-                               label_fun=label_fun,
-                               loggers=[self.gui_logger],
-                               log_dir=log_dir,
-                               silent=True,
-                               ext_interrupt=self.queue.interrupt,
-                               **afit_kwargs)
+        try:
+            self.modelo.active_fit(train_set=self.train_set,
+                                label_fun=label_fun,
+                                loggers=[self.gui_logger],
+                                log_dir=log_dir,
+                                silent=True,
+                                ext_interrupt=self.queue.interrupt,
+                                **afit_kwargs)
+        except RobotExecError:
+            self.queue.put(Msg('fail', 0))
+            return 'fail'
 
     def get_dataset(self):
         # HACK: Para que no hayan problemas al guardar el dataset con pickle
@@ -561,6 +580,7 @@ class CtrlEjecucion:
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
                                            p_target=target,
                                            eta=0.1)
+
             _, p = self.robot_s.fkine(q)
             q_prev = q
 

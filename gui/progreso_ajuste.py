@@ -117,13 +117,17 @@ class PantallaProgresoAjuste(Pantalla):
         self.progreso.step(1)
         self.update_idletasks()
 
-    def end_callback(self):
+    def end_callback(self, fail: bool = False):
         self.boton_regresar['state'] = 'disabled'
         if str(self.progreso['mode']) == 'indeterminate':
             self.progreso.stop()
-        label = self.status_labels[-1]
-        label.config(text="Completado")
-        label['style'] = 'Green.TLabel'
+        if fail:
+            tk.messagebox.showerror("Robot error",
+                                    "Error de ejecución en el robot")
+        else:
+            label = self.status_labels[-1]
+            label.config(text="Completado")
+            label['style'] = 'Green.TLabel'
         self.terminado = True
 
     def regresar(self, *args):
