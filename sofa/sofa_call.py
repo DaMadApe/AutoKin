@@ -6,6 +6,9 @@ import subprocess
 
 import numpy as np
 
+from autokin.utils import RobotExecError
+
+
 # Ajustar paths según compu en la que se ejecuta el programa
 if platform.system() == 'Windows':
     SOFA_ROOT = os.path.join('C:', 'Users', 'ralej', 'Downloads', 'SofaSoftRobot')
@@ -61,6 +64,9 @@ class SofaInstance:
                 data.extend(msg)
 
             p_out = np.frombuffer(data).reshape(-1, 3)
+
+        if len(p_out) != len(q):
+            raise RobotExecError('Ejecución de Sofa fue interrumpida')
 
         self.q_prev = q[-1]
 
