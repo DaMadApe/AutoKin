@@ -7,7 +7,7 @@ import torch
 
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin.trayectorias import coprime_sines
-from autokin.utils import restringir
+from autokin.utils import RobotExecError, restringir
 from gui.gui_utils import Popup, Label_Entry
 
 
@@ -130,6 +130,13 @@ class Popup_config_ext(Popup):
 
         frame_step_size.grid_configure(padx=10, pady=5)
 
+    def _fkine(self, q):
+        try:
+            self.robot.fkine(q)
+        except RobotExecError:
+            tk.messagebox.showerror("Robot error",
+                                    "Error de ejecución en el robot")
+
     def min_spin_command(self, idx): 
         val = self.min_vars[idx].get()
         if val > self.max_vars[idx].get():
@@ -151,7 +158,7 @@ class Popup_config_ext(Popup):
         self.robot.q_min[idx] = new_q_i
         self.callback({'q_min': q_min})
 
-        self.robot.fkine(torch.zeros(self.robot.n))
+        self._fkine(torch.zeros(self.robot.n))
 
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
@@ -162,7 +169,7 @@ class Popup_config_ext(Popup):
 
         q = torch.zeros(self.robot.n)
         q[idx] = 1
-        self.robot.fkine(q)
+        self._fkine(q)
 
     def set_max_dq(self):
         max_dq = int(self.max_dq_var.get())
@@ -174,10 +181,10 @@ class Popup_config_ext(Popup):
         jog_traj = restringir(coprime_sines(self.robot.n, 1000, densidad=0))
         traj = torch.concat([zero, jog_traj, zero])
 
-        self.robot.fkine(traj)
+        self._fkine(traj)
 
     def aceptar(self):
-        self.robot.fkine(torch.zeros(self.robot.n))
+        self._fkine(torch.zeros(self.robot.n))
         self.callback({'q_min': [var.get() for var in self.min_vars],
                        'q_max': [var.get() for var in self.max_vars],
                        'p_scale': self.p_scale_entry.get(),
@@ -186,7 +193,7 @@ class Popup_config_ext(Popup):
 
     def cancelar(self):
         self.callback(self.old_config)
-        self.robot.fkine(torch.zeros(self.robot.n))
+        self._fkine(torch.zeros(self.robot.n))
         self.destroy()
 
 
@@ -310,6 +317,14 @@ class Popup_config_sofa(Popup):
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
+    def _fkine(self, q):
+        if self.robot.running():
+            try:
+                self.robot.fkine(q)
+            except RobotExecError:
+                tk.messagebox.showerror("Robot error",
+                                        "Error de ejecución en el robot")
+
     def min_spin_command(self, idx): 
         val = self.min_vars[idx].get()
         if val > self.max_vars[idx].get():
@@ -327,8 +342,7 @@ class Popup_config_sofa(Popup):
         self.robot.q_min[idx] = new_q_i
         self.callback({'q_min': q_min})
 
-        if self.robot.running():
-            self.robot.fkine(torch.zeros(self.robot.n))
+        self._fkine(torch.zeros(self.robot.n))
 
     def set_max(self, idx):
         q_max = self.robot.q_max.tolist()
@@ -337,10 +351,9 @@ class Popup_config_sofa(Popup):
         self.robot.q_max[idx] = new_q_i
         self.callback({'q_max': q_max})
 
-        if self.robot.running():
-            q = torch.zeros(self.robot.n)
-            q[idx] = 1
-            self.robot.fkine(q)
+        q = torch.zeros(self.robot.n)
+        q[idx] = 1
+        self._fkine(q)
 
     def set_max_dq(self):
         max_dq = float(self.max_dq_var.get())
@@ -348,17 +361,15 @@ class Popup_config_sofa(Popup):
         self.callback({'max_dq': max_dq})
 
     def jog(self):
-        if self.robot.running():
-            zero = torch.zeros(1, self.robot.n)
-            jog_traj = restringir(coprime_sines(self.robot.n, 1000, densidad=0))
-            traj = torch.concat([zero, jog_traj, zero])
+        zero = torch.zeros(1, self.robot.n)
+        jog_traj = restringir(coprime_sines(self.robot.n, 1000, densidad=0))
+        traj = torch.concat([zero, jog_traj, zero])
 
-            self.robot.fkine(traj)
+        self._fkine(traj)
 
     def aceptar(self):
         self.callback({'q_min': [var.get() for var in self.min_vars],
                        'q_max': [var.get() for var in self.max_vars],
-                       'p_scale': self.p_scale_entry.get(),
                        'max_dq': float(self.max_dq_var.get()),
                        'headless': bool(self.hdls_check.get())})
         self.robot.stop_instance()
