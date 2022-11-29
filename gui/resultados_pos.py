@@ -45,7 +45,7 @@ class PantallaResultadosPosicion(Pantalla):
 
         self.recargar_tabla()
         self.recargar_grafica()
-        self.iniciar()
+        self.controlador.ejecutar_trayec(self.reg_callback, self.error_callback)
 
     def _errorL2(self, x1, y1, z1, x2, y2, z2):
         return ((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)**0.5
@@ -58,8 +58,9 @@ class PantallaResultadosPosicion(Pantalla):
         self.recargar_tabla()
         self.recargar_grafica()
 
-    def iniciar(self):
-        self.controlador.ejecutar_trayec(self.reg_callback)
+    def error_callback(self):
+        tk.messagebox.showerror("Robot error",
+                                "Error de ejecución en el robot")
 
     def recargar_tabla(self):
         self.tabla.limpiar_tabla()
