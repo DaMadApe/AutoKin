@@ -97,6 +97,8 @@ class Interfaz(tk.Tk):
 
 
 if __name__ == "__main__":
-    
+    import logging
+    logging.getLogger().setLevel(logging.INFO)
+
     gui = Interfaz()
     gui.mainloop()
