@@ -6,6 +6,14 @@ from torch.utils.data import random_split
 import roboticstoolbox as rtb
 
 
+class RobotExecError(Exception):
+    """
+    Excepción levantada cuando hay un error durante la ejecución 
+    de fkine para algún robot que prevenga obtener resultados.
+    """
+    pass
+
+
 def random_robot(min_DH: list[float] = None,
                  max_DH: list[float] = None,
                  p_P: float = 0.5,
