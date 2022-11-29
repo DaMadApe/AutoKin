@@ -47,6 +47,7 @@ class IkineMixin:
             q_update = eta * torch.matmul(pi_jacob, delta_x)
 
             q += q_update
+            # q.clamp(min=0, max=1) # TODO: Probar
 
         return q.detach()
 
