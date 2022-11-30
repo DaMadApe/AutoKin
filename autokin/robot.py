@@ -128,10 +128,10 @@ class SofaRobot(Robot):
         self.config = config
         self._headless = headless
         
-        if q_min is None:
-            q_min = torch.zeros(self.n)
-        if q_max is None:
-            q_max = 15 * torch.ones(self.n)
+        # if q_min is None:
+        q_min = torch.zeros(self.n)
+        # if q_max is None:
+        q_max = 15 * torch.ones(self.n)
         if p_scale is None:
             p_scale = torch.ones(self.out_n)
         if p_offset is None:
@@ -211,10 +211,10 @@ class ExternRobot(Robot):
                  p_offset: torch.Tensor = None,
                  max_dq: float = 0.1):
         super().__init__(n, out_n=3)
-        if q_min is None:
-            q_min = torch.zeros(self.n, dtype=int)
-        if q_max is None:
-            q_max = 100 * torch.ones(self.n, dtype=int)
+        # if q_min is None:
+        q_min = torch.zeros(self.n, dtype=int)
+        # if q_max is None:
+        q_max = 100 * torch.ones(self.n, dtype=int)
         if p_scale is None:
             p_scale = torch.ones(self.out_n)
         if p_offset is None:
