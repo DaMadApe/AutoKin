@@ -2,13 +2,12 @@ from functools import partial
 
 import torch
 import torch.testing as tt
-import numpy as np
 
 from hypothesis import given
 import hypothesis.strategies as some
 
-from autokin.modelos import MLP
-from autokin.muestreo import EnsembleRegressor, FKset
+from autokin.modelos import MLP, MLPEnsemble
+from autokin.muestreo import FKset
 from autokin.robot import RTBrobot
 from autokin.utils import *
 
@@ -70,21 +69,34 @@ def test_ajuste_modelos():
 def test_ajuste_activo():
     robot = RTBrobot(random_robot())
     train_set = FKset.random_sampling(robot, n_samples=100)
-    n_models = 5
 
-    models = [MLP(input_dim=robot.n,
-                  output_dim=3) for _ in range(n_models)]
+    ensemble = MLPEnsemble(n_modelos=5,
+                           input_dim=robot.n,
+                           output_dim=3)
 
-    ensemble = EnsembleRegressor(models)
-
-    before_scores = np.array(ensemble.test(train_set))
+    before_scores = ensemble.test(train_set)
     ensemble.fit(train_set, epochs=10, use_checkpoint=True)
-    mid_scores = np.array(ensemble.test(train_set))
+    mid_scores = ensemble.test(train_set)
     ensemble.fit(train_set, epochs=10, use_checkpoint=True)
-    after_scores = np.array(ensemble.test(train_set))
+    after_scores = ensemble.test(train_set)
 
-    assert np.all(mid_scores < before_scores)
-    assert np.all(after_scores < mid_scores)
+    assert torch.all(mid_scores < before_scores)
+    assert torch.all(after_scores < mid_scores)
+
+
+def test_dset_denorm_p():
+    scale = 0.3
+
+    robot = RTBrobot(random_robot())
+    robot.p_scale = scale * torch.ones(robot.out_n)
+    dataset = FKset.random_sampling(robot, n_samples=10)
+
+    _, pn = dataset[0]
+
+    dataset.apply_p_norm = False
+    _, pdn = dataset[0]
+
+    assert_equal(pn, scale*pdn)
 
 
 """ @given(some.builds(random_robot))
