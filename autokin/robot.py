@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch.autograd.functional import jacobian
 
@@ -22,6 +24,14 @@ class Robot(IkineMixin):
         self.n = n_act # Número de actuadores
         self.out_n = out_n # Número de salidas
 
+        self.q_min: torch.Tensor
+        self.q_max: torch.Tensor
+        self.p_scale: torch.Tensor
+        self.p_offset: torch.Tensor
+
+    def _denorm_q(self, q: torch.Tensor):
+        return q * (self.q_max - self.q_min) + self.q_min
+
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Toma un tensor q [N,M] de N vectores de actuación de M dimensión.
@@ -42,10 +52,24 @@ class RTBrobot(Robot):
     Para usar otra librería robótica con el resto del
     programa, se debe definir una interfaz como esta.
     """
-    def __init__(self, robot: rtb.DHRobot, full_pose=False):
+    def __init__(self,
+                 robot: rtb.DHRobot,
+                 full_pose=False,
+                 p_scale: torch.Tensor = None,
+                 p_offset: torch.Tensor = None):
         self.robot = robot
         self.full_pose = full_pose
         super().__init__(robot.n, out_n=6 if full_pose else 3)
+
+        self.q_min, self.q_max = torch.tensor(self.robot.qlim)
+
+        if p_scale is None:
+            p_scale = torch.ones(self.out_n)
+        if p_offset is None:
+            p_offset = torch.zeros(self.out_n)
+
+        self.p_scale = p_scale
+        self.p_offset = p_offset
 
     @classmethod
     def from_name(cls, name, full_pose=False):
@@ -63,7 +87,7 @@ class RTBrobot(Robot):
         if len(q.shape) == 1:
             q = q.unsqueeze(0)
 
-        denormed_q = self.denorm(q)
+        denormed_q = self._denorm_q(q)
         se3_pose = self.robot.fkine(denormed_q.detach().numpy())
 
         if self.full_pose:
@@ -84,10 +108,6 @@ class RTBrobot(Robot):
 
         return torch.tensor(J).float()
 
-    def denorm(self, q):
-        q_min, q_max = torch.tensor(self.robot.qlim, dtype=torch.float32)
-        return q * (q_max - q_min) + q_min
-
 
 class SofaRobot(Robot):
     """
@@ -96,27 +116,37 @@ class SofaRobot(Robot):
     def __init__(self,
                  config = 'LSL',
                  headless : bool = True,
-                 q_min: list[float] = None,
-                 q_max: list[float] = None,
-                 p_scale: float = 1,
-                 max_dq: float = 1):
+                 q_min: torch.Tensor = None,
+                 q_max: torch.Tensor = None,
+                 p_scale: torch.Tensor = None,
+                 p_offset: torch.Tensor = None,
+                 max_dq: float = 0.1):
         if config not in ['LLLL','LSLS','LSSL', 'LSL', 'SLS', 'LLL', 'LS', 'LL']:
             raise ValueError('Configuración inválida')
-        if q_min is None:
-            q_min = [0] * len(config)
-        if q_max is None:
-            q_max = [10] * len(config)
 
+        super().__init__(n_act=len(config), out_n=3)
         self.config = config
         self._headless = headless
-        self.q_min = torch.tensor(q_min)
-        self.q_max = torch.tensor(q_max)
+        
+        if q_min is None:
+            q_min = torch.zeros(self.n)
+        if q_max is None:
+            q_max = 15 * torch.ones(self.n)
+        if p_scale is None:
+            p_scale = torch.ones(self.out_n)
+        if p_offset is None:
+            p_offset = torch.zeros(self.out_n)
+
+        self.q_min = q_min
+        self.q_max = q_max
         self.p_scale = p_scale
+        self.p_offset = p_offset
         self.max_dq = max_dq
+
+        self.q_prev = torch.zeros(self.n)
 
         self.SofaInstance = SofaInstance(config=config,
                                          headless=headless)
-        super().__init__(n_act=len(config), out_n=3)
 
     @property
     def headless(self):
@@ -134,17 +164,24 @@ class SofaRobot(Robot):
         if len(q.shape) == 1:
             q = q.unsqueeze(0)
 
-        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
+        logging.debug(f"q_in = {q.shape} = {q}")
 
-        soft_q = suavizar(q=scaled_q,
-                          q_prev=torch.tensor(self.SofaInstance.q_prev),
+        soft_q = suavizar(q=q,
+                          q_prev=self.q_prev,
                           dq_max=self.max_dq)
 
-        p_out = self.SofaInstance.fkine(soft_q.numpy())
+        logging.debug(f"q_soft: {soft_q.shape} = {soft_q}")
 
-        p_out = torch.tensor(p_out, dtype=torch.float)
-        p_out = self.p_scale * p_out
-        
+        denormed_q = self._denorm_q(soft_q)
+
+        logging.debug(f"q_denormed: {denormed_q.shape} = {denormed_q}")
+
+
+        p_out = self.SofaInstance.fkine(denormed_q.numpy())
+        p_out = torch.tensor(p_out)
+
+        self.q_prev = soft_q[-1]
+
         return soft_q, p_out
 
     def start_instance(self):
@@ -168,19 +205,25 @@ class ExternRobot(Robot):
     """
     def __init__(self, 
                  n: int,
-                 q_min: list[float] = None,
-                 q_max: list[float] = None,
-                 p_scale : float = 1,
-                 max_dq: int = 100):
+                 q_min: torch.Tensor = None,
+                 q_max: torch.Tensor = None,
+                 p_scale: torch.Tensor = None,
+                 p_offset: torch.Tensor = None,
+                 max_dq: float = 0.1):
         super().__init__(n, out_n=3)
         if q_min is None:
-            q_min = [0] * n
+            q_min = torch.zeros(self.n, dtype=int)
         if q_max is None:
-            q_max = [100] * n
+            q_max = 100 * torch.ones(self.n, dtype=int)
+        if p_scale is None:
+            p_scale = torch.ones(self.out_n)
+        if p_offset is None:
+            p_offset = torch.zeros(self.out_n)
 
-        self.q_min = torch.tensor(q_min)
-        self.q_max = torch.tensor(q_max)
+        self.q_min = q_min
+        self.q_max = q_max
         self.p_scale = p_scale
+        self.p_offset = p_offset
         self.max_dq = max_dq
 
         self.q_prev = torch.zeros(self.n)
@@ -189,21 +232,20 @@ class ExternRobot(Robot):
 
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         # Compatibilidad para vectores individuales
-        if len(q.shape) == 1:
+        if q.ndim == 1:
             q = q.unsqueeze(0)
 
-        scaled_q = (q + self.q_min) * (self.q_max - self.q_min)
-
-        soft_q = suavizar(q=scaled_q,
+        soft_q = suavizar(q=q,
                           q_prev=self.q_prev,
                           dq_max=self.max_dq)
 
-        q_out, p_out = self.client.fkine(soft_q)
-        p_out = self.p_scale * p_out
+        denormed_q = self._denorm_q(soft_q)
 
-        self.q_prev = q
+        p_out = self.client.fkine(denormed_q)
 
-        return q_out, p_out
+        self.q_prev = soft_q[-1]
+
+        return soft_q, p_out
 
     def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
