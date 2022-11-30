@@ -185,9 +185,15 @@ class CtrlRobotDB:
             self._robot_s = None
 
     def config_robot(self, config: dict):
+        logging.info(f"Config robot: {config}")
         self.robot_reg_s.kwargs.update(config)
-        # Forzar reinstanciación del robot en caso de configurar el seleccionado
-        # self._robot_s = None
+
+        if self._robot_s is not None:
+            for key, val in config.items():
+                setattr(self._robot_s, key, val)
+
+    def set_pnorm(self):
+        pass
 
     """ Modelos """
     @property
@@ -304,7 +310,7 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
-    def get_datasets(self) -> dict[str, Dataset]:
+    def get_datasets(self) -> dict[str, FKset]:
         datasets = {}
         dataset_dir = self._dataset_dir(self.robot_reg_s)
         for filename in sorted(os.listdir(dataset_dir)):
@@ -426,7 +432,7 @@ class TrainThread(Thread):
                  split: list[float],
                  train_kwargs: dict,
                  log_dir,
-                 prev_datasets: list[Dataset] = None):
+                 prev_datasets: list[FKset] = None):
         super().__init__(name='training', daemon=True)
         self.queue = queue
         self.modelo = modelo
@@ -439,6 +445,10 @@ class TrainThread(Thread):
         self.prev_datasets = prev_datasets
         if prev_datasets is None:
             self.prev_datasets = []
+
+        for dataset in self.prev_datasets:
+            dataset.p_scale = robot.p_scale
+            dataset.p_offset = robot.p_offset
 
         self.sampled_dataset = None
         
@@ -485,7 +495,7 @@ class TrainThread(Thread):
             try:
                 sampled_dataset = FKset(self.robot, self.sample)
             except RobotExecError:
-                print('robor exec catch')
+                logging.info('RobotExecError durante muestreo')
                 self.queue.put(Msg('fail', 0))
                 return 'fail'
 
