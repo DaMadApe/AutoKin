@@ -20,8 +20,8 @@ class Popup_config_ext(Popup):
         self.max_vars = []
         self.spins = []
 
-        self.old_config = {'q_min': robot.q_min.tolist(),
-                           'q_max': robot.q_max.tolist()}
+        self.old_config = {'q_min': robot.q_min,
+                           'q_max': robot.q_max}
         super().__init__(title="Configurar robot: Externo", parent=parent)
 
     def definir_elementos(self):
@@ -82,32 +82,33 @@ class Popup_config_ext(Popup):
             frame_step_size.columnconfigure(i, weight=1)
 
         # Definir factor de escala para medidas de posición
-        frame_entry = ttk.Frame(self)
-        frame_entry.grid(column=0, row=2, sticky='w')
-
-        self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
-                                         var_type='float', width=16)
-        self.p_scale_entry.grid(column=0, row=0, columnspan=2)
-        self.p_scale_entry.set(self.robot.p_scale)
+        frame_dq = ttk.Frame(self)
+        frame_dq.grid(column=0, row=2, sticky='w')
 
         # Configurar máximo cambio instantáneo de actuadores
-        max_dq_label = ttk.Label(frame_entry, text=f"Máximo dq instantáneo")
-        max_dq_label.grid(column=0, row=1)
+        max_dq_label = ttk.Label(frame_dq, text=f"Máximo dq instantáneo")
+        max_dq_label.grid(column=0, row=0)
 
-        self.max_dq_var = tk.IntVar(value=int(self.robot.max_dq))
-        max_dq_spin = ttk.Spinbox(frame_entry, width=5,
+        self.max_dq_var = tk.DoubleVar(value=self.robot.max_dq)
+        max_dq_spin = ttk.Spinbox(frame_dq, width=5,
                                   from_=1, to=30, increment=1,
                                   textvariable=self.max_dq_var)
-        max_dq_spin.grid(column=1, row=1)
+        max_dq_spin.grid(column=1, row=0)
 
-        set_dq_but = ttk.Button(frame_entry, text="Set",
+        set_dq_but = ttk.Button(frame_dq, text="Set",
                                 width=4,
                                 command=self.set_max_dq)
-        set_dq_but.grid(column=2, row=1)
+        set_dq_but.grid(column=2, row=0)
+
+        # Botón recalibrar p
+        but_recal_p = ttk.Button(self, text="Recalibrar escala de posiciones",
+                                width=42,
+                                command=self.recal_p)
+        but_recal_p.grid(column=0, row=3)
  
         # Botones del fondo
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=0, row=3)
+        frame_botones.grid(column=0, row=4)
 
         jog_but = ttk.Button(frame_botones, text="Jog",
                              width=12,
@@ -124,7 +125,7 @@ class Popup_config_ext(Popup):
                                  command=self.cancelar)
         cancelar_but.grid(column=2, row=2)
 
-        for frame in [self, frame_spins, frame_entry, frame_botones]:
+        for frame in [self, frame_spins, frame_dq, frame_botones]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
@@ -132,10 +133,13 @@ class Popup_config_ext(Popup):
 
     def _fkine(self, q):
         try:
-            self.robot.fkine(q)
+            q, p = self.robot.fkine(q)
         except RobotExecError:
             tk.messagebox.showerror("Robot error",
                                     "Error de ejecución en el robot")
+            return None
+        else:
+            return q, p
 
     def min_spin_command(self, idx): 
         val = self.min_vars[idx].get()
@@ -152,19 +156,15 @@ class Popup_config_ext(Popup):
             spin.config(increment=10**idx)
 
     def set_min(self, idx):
-        q_min = self.robot.q_min.tolist()
-        new_q_i = float(self.min_vars[idx].get())
-        q_min[idx] = new_q_i
-        self.robot.q_min[idx] = new_q_i
+        q_min = self.robot.q_min
+        q_min[idx] = float(self.min_vars[idx].get())
         self.callback({'q_min': q_min})
 
         self._fkine(torch.zeros(self.robot.n))
 
     def set_max(self, idx):
-        q_max = self.robot.q_max.tolist()
-        new_q_i = float(self.max_vars[idx].get())
-        q_max[idx] = new_q_i
-        self.robot.q_max[idx] = new_q_i
+        q_max = self.robot.q_max
+        q_max[idx] = float(self.max_vars[idx].get())
         self.callback({'q_max': q_max})
 
         q = torch.zeros(self.robot.n)
@@ -172,9 +172,29 @@ class Popup_config_ext(Popup):
         self._fkine(q)
 
     def set_max_dq(self):
-        max_dq = int(self.max_dq_var.get())
-        self.robot.max_dq = max_dq
+        max_dq = float(self.max_dq_var.get())
         self.callback({'max_dq': max_dq})
+
+    def recal_p(self):
+        msg = """Recalibrar escala de posiciones? Puede invalidar modelos previamente entrenados."""
+        if tk.messagebox.askokcancel("Recalibrar norma de p", msg):
+            zero = torch.zeros(1, self.robot.n)
+            jog_traj = restringir(coprime_sines(self.robot.n, 300, densidad=0))
+            traj = torch.concat([zero, jog_traj, zero])
+
+            sample = self._fkine(traj)
+            if sample is not None:
+                _, p = sample
+                max_p = p.max(dim=0).values
+                min_p = p.max(dim=0).values
+
+                p_scale = 1/(max_p - min_p)
+                p_offset = -min_p*p_scale
+
+                self.callback({
+                    'p_scale' : p_scale,
+                    'p_offset' : p_offset
+                })
 
     def jog(self):
         zero = torch.zeros(1, self.robot.n)
@@ -184,11 +204,12 @@ class Popup_config_ext(Popup):
         self._fkine(traj)
 
     def aceptar(self):
+        q_min_list = [var.get() for var in self.min_vars]
+        q_max_list = [var.get() for var in self.max_vars]
+        self.callback({'q_min': torch.tensor(q_min_list),
+                       'q_max': torch.tensor(q_max_list),
+                       'max_dq': float(self.max_dq_var.get())})
         self._fkine(torch.zeros(self.robot.n))
-        self.callback({'q_min': [var.get() for var in self.min_vars],
-                       'q_max': [var.get() for var in self.max_vars],
-                       'p_scale': self.p_scale_entry.get(),
-                       'max_dq': int(self.max_dq_var.get())})
         self.destroy()
 
     def cancelar(self):
@@ -216,8 +237,8 @@ class Popup_config_sofa(Popup):
         self.min_vars = []
         self.max_vars = []
 
-        self.old_config = {'q_min': robot.q_min.tolist(),
-                           'q_max': robot.q_max.tolist(),
+        self.old_config = {'q_min': robot.q_min,
+                           'q_max': robot.q_max,
                            'headless': robot.headless}
         super().__init__(title="Configurar robot: Sofa", parent=parent)
 
@@ -243,13 +264,13 @@ class Popup_config_sofa(Popup):
             self.max_vars.append(max_var)
 
             min_spin = ttk.Spinbox(frame_spins, width=5,
-                                   from_=0.0, to=50.0, increment=0.5,
+                                   from_=0.0, to=30.0, increment=0.5,
                                    textvariable=min_var, 
                                    command=partial(self.min_spin_command, i))
             min_spin.grid(column=1, row=i)
 
             max_spin = ttk.Spinbox(frame_spins, width=5,
-                                   from_=0.0, to=50.0, increment=0.5,
+                                   from_=0.0, to=30.0, increment=0.5,
                                    textvariable=max_var, 
                                    command=partial(self.max_spin_command, i))
             max_spin.grid(column=3, row=i)
@@ -265,32 +286,33 @@ class Popup_config_sofa(Popup):
             max_but.grid(column=4, row=i)
 
         # Definir factor de escala para medidas de posición
-        frame_entry = ttk.Frame(self)
-        frame_entry.grid(column=0, row=1, sticky='w')
-
-        self.p_scale_entry = Label_Entry(frame_entry, label="Escala de posiciones", 
-                                         var_type='float', width=16)
-        self.p_scale_entry.grid(column=0, row=0, columnspan=2)
-        self.p_scale_entry.set(self.robot.p_scale)
+        frame_dq = ttk.Frame(self)
+        frame_dq.grid(column=0, row=1, sticky='w')
 
         # Configurar máximo cambio instantáneo de actuadores
-        max_dq_label = ttk.Label(frame_entry, text=f"Máximo dq instantáneo")
-        max_dq_label.grid(column=0, row=1)
+        max_dq_label = ttk.Label(frame_dq, text=f"Máximo dq instantáneo")
+        max_dq_label.grid(column=0, row=0)
 
         self.max_dq_var = tk.DoubleVar(value=float(self.robot.max_dq))
-        max_dq_spin = ttk.Spinbox(frame_entry, width=5,
+        max_dq_spin = ttk.Spinbox(frame_dq, width=5,
                                   from_=0.01, to=50.0, increment=0.5,
                                   textvariable=self.max_dq_var)
-        max_dq_spin.grid(column=1, row=1)
+        max_dq_spin.grid(column=1, row=0)
 
-        set_dq_but = ttk.Button(frame_entry, text="Set",
+        set_dq_but = ttk.Button(frame_dq, text="Set",
                                 width=4,
                                 command=self.set_max_dq)
-        set_dq_but.grid(column=2, row=1)
+        set_dq_but.grid(column=2, row=0)
  
+        # Botón recalibrar p
+        but_recal_p = ttk.Button(self, text="Recalibrar escala de posiciones",
+                                width=42,
+                                command=self.recal_p)
+        but_recal_p.grid(column=0, row=2)
+
         # Botones del fondo
         frame_botones = ttk.Frame(self)
-        frame_botones.grid(column=0, row=2)
+        frame_botones.grid(column=0, row=3)
 
         self.hdls_check = tk.IntVar(value=self.robot.headless)
         check_hdls = ttk.Checkbutton(frame_botones,
@@ -313,17 +335,20 @@ class Popup_config_sofa(Popup):
                                  command=self.cancelar)
         cancelar_but.grid(column=2, row=2)
 
-        for frame in [self, frame_spins, frame_entry, frame_botones]:
+        for frame in [self, frame_spins, frame_dq, frame_botones]:
             for child in frame.winfo_children():
                 child.grid_configure(padx=5, pady=5)
 
     def _fkine(self, q):
         if self.robot.running():
             try:
-                self.robot.fkine(q)
+                q, p = self.robot.fkine(q)
             except RobotExecError:
                 tk.messagebox.showerror("Robot error",
                                         "Error de ejecución en el robot")
+                return None
+            else:
+                return q, p
 
     def min_spin_command(self, idx): 
         val = self.min_vars[idx].get()
@@ -336,19 +361,15 @@ class Popup_config_sofa(Popup):
             self.min_vars[idx].set(val)
 
     def set_min(self, idx):
-        q_min = self.robot.q_min.tolist()
-        new_q_i = float(self.min_vars[idx].get())
-        q_min[idx] = new_q_i
-        self.robot.q_min[idx] = new_q_i
+        q_min = self.robot.q_min
+        q_min[idx] = float(self.min_vars[idx].get())
         self.callback({'q_min': q_min})
 
         self._fkine(torch.zeros(self.robot.n))
 
     def set_max(self, idx):
-        q_max = self.robot.q_max.tolist()
-        new_q_i = float(self.max_vars[idx].get())
-        q_max[idx] = new_q_i
-        self.robot.q_max[idx] = new_q_i
+        q_max = self.robot.q_max
+        q_max[idx] = float(self.max_vars[idx].get())
         self.callback({'q_max': q_max})
 
         q = torch.zeros(self.robot.n)
@@ -357,8 +378,28 @@ class Popup_config_sofa(Popup):
 
     def set_max_dq(self):
         max_dq = float(self.max_dq_var.get())
-        self.robot.max_dq = max_dq
         self.callback({'max_dq': max_dq})
+
+    def recal_p(self):
+        msg = """Recalibrar escala de posiciones? Puede invalidar modelos previamente entrenados."""
+        if tk.messagebox.askokcancel("Recalibrar norma de p", msg):
+            zero = torch.zeros(1, self.robot.n)
+            jog_traj = restringir(coprime_sines(self.robot.n, 300, densidad=0))
+            traj = torch.concat([zero, jog_traj, zero])
+
+            sample = self._fkine(traj)
+            if sample is not None:
+                _, p = sample
+                max_p = p.max(dim=0).values
+                min_p = p.max(dim=0).values
+
+                p_scale = 1/(max_p - min_p)
+                p_offset = -min_p*p_scale
+
+                self.callback({
+                    'p_scale' : p_scale,
+                    'p_offset' : p_offset
+                })
 
     def jog(self):
         zero = torch.zeros(1, self.robot.n)
@@ -368,10 +409,13 @@ class Popup_config_sofa(Popup):
         self._fkine(traj)
 
     def aceptar(self):
-        self.callback({'q_min': [var.get() for var in self.min_vars],
-                       'q_max': [var.get() for var in self.max_vars],
-                       'max_dq': float(self.max_dq_var.get()),
-                       'headless': bool(self.hdls_check.get())})
+        q_min_list = [var.get() for var in self.min_vars]
+        q_max_list = [var.get() for var in self.max_vars]
+        self.callback({
+            'q_min': torch.tensor(q_min_list),
+            'q_max': torch.tensor(q_max_list),
+            'max_dq': float(self.max_dq_var.get()),
+            'headless': bool(self.hdls_check.get())})
         self.robot.stop_instance()
         self.destroy()
 
