@@ -165,6 +165,7 @@ class PantallaSelecPuntos(Pantalla):
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.get_datasets()
             for d_set in datasets.values():
+                d_set.apply_p_norm = False
                 p_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
                 p_trans = p_set.transpose()
                 p_trans = p_trans[:,::10] # Mostrar 1 de cada 10 puntos
