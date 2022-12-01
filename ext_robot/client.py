@@ -25,6 +25,7 @@ class ExtInstance:
         self.p_stack = []
 
         self.body_recv_semaphore = False
+        self.body_pos = None
 
         self.connect_mcu()
         self.connect_cam()
@@ -65,19 +66,29 @@ class ExtInstance:
                    timecode,timecodeSub,timestamp,
                    isRecording,trackedModelsChanged):
         if not self.cam_client_connected:
-            logging.info("NatNet recibiendo datos")
+            logging.info(f"NatNet recibiendo datos, detectando {rigidBodyCount} cuerpos rígidos")
             self.cam_client_connected = True # Brincar if y correr sólo esta línea?
         if not frameNumber % FRAMES_PER_SAMPLE:
             self.body_recv_semaphore = True
+            if self.body_pos is None and rigidBodyCount == 1:
+                logging.warning("Posición de base no recibida, usando referencia absoluta")
+                self.body_pos = (0, 0, 0)
             # logging.debug( "Frame", frameNumber )
         # self.current_frame=frameNumber # para tener esa info en recv_body?
 
     def recv_body(self, id, position, rotation):
         # called once per rigid body per frame
         if self.body_recv_semaphore:
-            # logging.debug(f"Id: {id}, pos: {position}, rot: {rotation}")
+            # logging.debug(f"Id: {id}, pos: {position}") #, rot: {rotation}")
             if self.in_exec: 
-                self.p_stack.append(list(position))
+                if id == 1 and self.body_pos is not None: # Extremo del robot
+                    xr, yr, zr = position
+                    xb, yb, zb = self.body_pos
+                    self.p_stack.append([xr-xb, yr-yb, zr-zb]) 
+                    self.body_pos = position
+                if id == 2: #  and self.body_pos is None: # Base del robot
+                    self.body_pos = position
+
             self.body_recv_semaphore = False
 
     # def send_cam_command(self, command_str):
