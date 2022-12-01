@@ -192,9 +192,6 @@ class CtrlRobotDB:
             for key, val in config.items():
                 setattr(self._robot_s, key, val)
 
-    def set_pnorm(self):
-        pass
-
     """ Modelos """
     @property
     def modelos(self) -> SelectionList[ModelReg]:
