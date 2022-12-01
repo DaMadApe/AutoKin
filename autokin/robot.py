@@ -128,10 +128,10 @@ class SofaRobot(Robot):
         self.config = config
         self._headless = headless
         
-        # if q_min is None:
-        q_min = torch.zeros(self.n)
-        # if q_max is None:
-        q_max = 15 * torch.ones(self.n)
+        if q_min is None:
+            q_min = torch.zeros(self.n)
+        if q_max is None:
+            q_max = 15 * torch.ones(self.n)
         if p_scale is None:
             p_scale = torch.ones(self.out_n)
         if p_offset is None:
@@ -178,7 +178,7 @@ class SofaRobot(Robot):
 
 
         p_out = self.SofaInstance.fkine(denormed_q.numpy())
-        p_out = torch.tensor(p_out)
+        p_out = torch.tensor(p_out, dtype=torch.float)
 
         self.q_prev = soft_q[-1]
 
@@ -210,11 +210,13 @@ class ExternRobot(Robot):
                  p_scale: torch.Tensor = None,
                  p_offset: torch.Tensor = None,
                  max_dq: float = 0.1):
+                 
         super().__init__(n, out_n=3)
-        # if q_min is None:
-        q_min = torch.zeros(self.n, dtype=int)
-        # if q_max is None:
-        q_max = 100 * torch.ones(self.n, dtype=int)
+
+        if q_min is None:
+            q_min = torch.zeros(self.n, dtype=int)
+        if q_max is None:
+            q_max = 100 * torch.ones(self.n, dtype=int)
         if p_scale is None:
             p_scale = torch.ones(self.out_n)
         if p_offset is None:
@@ -241,11 +243,13 @@ class ExternRobot(Robot):
 
         denormed_q = self._denorm_q(soft_q)
 
-        p_out = self.client.fkine(denormed_q)
+        q_out, p_out = self.client.fkine(denormed_q)
+
+        q_out_norm = (q_out - self.q_min)/(self.q_max - self.q_min)
 
         self.q_prev = soft_q[-1]
 
-        return soft_q, p_out
+        return q_out_norm, p_out
 
     def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
