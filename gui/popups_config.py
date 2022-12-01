@@ -1,4 +1,5 @@
 import time
+import logging
 from functools import partial
 import tkinter as tk
 from tkinter import ttk
@@ -9,6 +10,17 @@ from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin.trayectorias import coprime_sines
 from autokin.utils import RobotExecError, restringir
 from gui.gui_utils import Popup, Label_Entry
+
+
+def pos_scale_offset(p_sample: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    max_p = p_sample.max(dim=0).values
+    min_p = p_sample.min(dim=0).values
+    logging.info(f"max_p: {max_p}, min_p: {min_p}")
+
+    p_scale = 1/(max_p - min_p)
+    p_offset = -min_p*p_scale
+
+    return p_scale, p_offset
 
 
 class Popup_config_ext(Popup):
@@ -184,13 +196,7 @@ class Popup_config_ext(Popup):
 
             sample = self._fkine(traj)
             if sample is not None:
-                _, p = sample
-                max_p = p.max(dim=0).values
-                min_p = p.max(dim=0).values
-
-                p_scale = 1/(max_p - min_p)
-                p_offset = -min_p*p_scale
-
+                p_scale, p_offset = pos_scale_offset(sample)
                 self.callback({
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
@@ -389,13 +395,7 @@ class Popup_config_sofa(Popup):
 
             sample = self._fkine(traj)
             if sample is not None:
-                _, p = sample
-                max_p = p.max(dim=0).values
-                min_p = p.max(dim=0).values
-
-                p_scale = 1/(max_p - min_p)
-                p_offset = -min_p*p_scale
-
+                p_scale, p_offset = pos_scale_offset(sample)
                 self.callback({
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
