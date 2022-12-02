@@ -206,7 +206,7 @@ class PantallaConfigMuestreo(Pantalla):
                 # Terminar en posición cero
                 if len(trayec) > 0:
                     zero = torch.zeros(1, self.n_inputs)
-                    trayec = torch.concat([trayec, zero])
+                    trayec = torch.concat([zero, trayec, zero])
                 # Aplicar restricción a n-esfera
                 if bool(self.check_restr.get()):
                     trayec = restringir(trayec)
