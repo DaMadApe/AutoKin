@@ -42,17 +42,6 @@ def test_suavizar():
     assert all([(q_i in q_s) for q_i in q])
 
 
-def test_alinear_datos():
-    # Función de prueba: p = q^2, con 5x puntos  # y padding
-    q_in = linterp(torch.zeros(4), torch.ones(4), 101)
-    p_in = linterp(torch.zeros(4), torch.ones(4), 101) # TODO TODO TODO TODO 501
-
-    q_out, p_out = alinear_datos(q_in, p_in)
-
-    assert len(q_out) == len(p_out)
-    assert_equal(p_out, q_out)
-
-
 def test_ajuste_modelos():
     robot = RTBrobot(random_robot())
     train_set = FKset.random_sampling(robot, n_samples=100)
