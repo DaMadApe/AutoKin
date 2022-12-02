@@ -29,7 +29,7 @@ class Interfaz(tk.Tk):
         self.maxsize(1200,800)
 
         win_width = 800
-        win_height = 450
+        win_height = 600
         x_pos = int(self.winfo_screenwidth()/2 - win_width/2)
         y_pos = int(self.winfo_screenheight()/2 - win_height/2)
         geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
@@ -98,7 +98,7 @@ class Interfaz(tk.Tk):
 
 if __name__ == "__main__":
     import logging
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.WARNING)
 
     gui = Interfaz()
     gui.mainloop()
