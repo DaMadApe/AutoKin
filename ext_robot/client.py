@@ -5,11 +5,10 @@ import time
 import torch
 
 from ext_robot.NatNetClient import NatNetClient
-from autokin.utils import alinear_datos, RobotExecError
+from autokin.utils import RobotExecError
 
 
 PORT = 'COM4'
-FRAMES_PER_SAMPLE = 50
 
 
 class ExtInstance:
@@ -21,7 +20,6 @@ class ExtInstance:
 
         logging.info("Iniciando instancia externa")
 
-        self.in_exec = False
         self.p_stack = []
 
         self.body_recv_semaphore = False
@@ -32,12 +30,12 @@ class ExtInstance:
 
     def connect_mcu(self):
         try:
-            self.serialESP = serial.Serial(PORT, 115200, timeout=5)
+            self.serialESP = serial.Serial(PORT, 115200, timeout=15)
         except serial.serialutil.SerialException:
             logging.info("Falló conexión con uC")
             self.serialESP = None
         else:
-            logging.info("uC conectado en ", PORT)
+            logging.info(f"uC conectado en {PORT}")
 
     def connect_cam(self):
         self.cam_client_connected = False
@@ -66,41 +64,19 @@ class ExtInstance:
                    timecode,timecodeSub,timestamp,
                    isRecording,trackedModelsChanged):
         if not self.cam_client_connected:
-            logging.info(f"NatNet recibiendo datos, detectando {rigidBodyCount} cuerpos rígidos")
+            logging.info(f"NatNet recibiendo datos: {rigidBodyCount} cuerpos rìgidos")
             self.cam_client_connected = True # Brincar if y correr sólo esta línea?
-        if not frameNumber % FRAMES_PER_SAMPLE:
-            self.body_recv_semaphore = True
-            if self.body_pos is None and rigidBodyCount == 1:
-                logging.warning("Posición de base no recibida, usando referencia absoluta")
-                self.body_pos = (0, 0, 0)
-            # logging.debug( "Frame", frameNumber )
-        # self.current_frame=frameNumber # para tener esa info en recv_body?
 
     def recv_body(self, id, position, rotation):
         # called once per rigid body per frame
         if self.body_recv_semaphore:
-            # logging.debug(f"Id: {id}, pos: {position}") #, rot: {rotation}")
-            if self.in_exec: 
-                if id == 1 and self.body_pos is not None: # Extremo del robot
-                    xr, yr, zr = position
-                    xb, yb, zb = self.body_pos
-                    self.p_stack.append([xr-xb, yr-yb, zr-zb]) 
-                    self.body_pos = position
-                if id == 2: #  and self.body_pos is None: # Base del robot
-                    self.body_pos = position
-
-            self.body_recv_semaphore = False
-
-    # def send_cam_command(self, command_str):
-    #     self.cam_client.sendCommand(command=self.cam_client.NAT_REQUEST,
-    #                                 commandStr=command_str,
-    #                                 socket=self.cam_client.commandSocket,
-    #                                 address=(self.cam_client.serverIPAddress,
-    #                                          self.cam_client.commandPort))
-
-    def send_q_list_esp(self, q: torch.Tensor):
-        for q_i in q:
-            self.send_q_esp(q_i)
+            # logging.debug(f"Id: {id}, pos: {position}, rot: {rotation}")
+            if id == 1: # Base del robot
+                self.body_pos = position
+            if id == 2 and self.body_pos is not None:
+                xr, yr, zr = position
+                xb, yb, zb = self.body_pos
+                self.p_stack.append([xr-xb, yr-yb, zr-zb])
 
     def send_q_esp(self, q: torch.Tensor): # -> ack # Saber cuando termina ejecución
         msg_pasos = ','.join(str(int(val)) for val in q)
@@ -119,23 +95,31 @@ class ExtInstance:
             raise RobotExecError("uC desconectado")
 
     def fkine(self, q: torch.Tensor):
-        self.in_exec = True
-        self.send_q_list_esp(q)
-        self.in_exec = False
 
-        p = torch.tensor(self.p_stack)
-        self.p_stack = []
+        p_out = torch.zeros(q.shape[0], 3)
+        
+        for i, q_i in enumerate(q):
+            self.body_recv_semaphore = True
+
+            try:
+                self.send_q_esp(q_i)
+            except serial.serialutil.SerialException:
+                raise RobotExecError
+            
+            while not self.p_stack:
+                pass
+            self.body_recv_semaphore = False
+            logging.debug(f"p_{i} promediado de {len(self.p_stack)} medidas")
+            p_out[i] = torch.mean(torch.tensor(self.p_stack), dim=0)
+            self.p_stack = []
 
         # Revisar si ejecución fue correcta
         mcu_status, cam_status = self.status()
-        if mcu_status and cam_status:
-            logging.info(f"Fin de ejecución: q.shape = {q.shape}, p.shape = {p.shape}")
-        else:
+        if not (mcu_status and cam_status):
             logging.error(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
             raise RobotExecError(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
 
-        q_out, p_out = alinear_datos(q, p)
-        return q_out, p_out
+        return p_out
 
     def status(self):
         mcu_status = self.test_mcu_connection()

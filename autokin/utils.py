@@ -1,5 +1,3 @@
-from math import floor, ceil
-
 import torch
 from torch.utils.data import random_split
 
@@ -158,25 +156,6 @@ def suavizar(q: torch.Tensor,
             q_ext[cur_idx: cur_idx+oversteps[i]+2] = interp_q
 
     return q_ext
-
-
-def alinear_datos(q: torch.Tensor, p: torch.Tensor) -> torch.Tensor:
-    """
-    Tomar dos vectores q [mq x n] y p [mp x 3], con mp >= mq, y producir de salida
-    un par q_out, p_out con mismo número (mq) de puntos alineados temporalmente.
-
-    NOTE: Se asume que no hay padding
-    """
-    prop = (len(p)-1)/(len(q)-1)
-
-    p_out = torch.zeros(q.shape[0], p.shape[1])
-
-    for i, _ in enumerate(q):
-        low = floor(prop*i)
-        top = ceil(prop*i)
-        p_out[i] = torch.lerp(p[low], p[top], weight=prop*i%1)
-
-    return q, p_out
 
 
 if __name__ == "__main__":

@@ -243,13 +243,11 @@ class ExternRobot(Robot):
 
         denormed_q = self._denorm_q(soft_q)
 
-        q_out, p_out = self.client.fkine(denormed_q)
-
-        q_out_norm = (q_out - self.q_min)/(self.q_max - self.q_min)
+        p_out = self.client.fkine(denormed_q)
 
         self.q_prev = soft_q[-1]
 
-        return q_out_norm, p_out
+        return soft_q, p_out
 
     def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
