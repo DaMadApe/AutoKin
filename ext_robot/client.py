@@ -1,6 +1,8 @@
 import logging
-import serial
 import time
+
+import serial
+from serial.tools.list_ports import comports
 
 import torch
 
@@ -51,7 +53,8 @@ class ExtInstance:
 
 
     def test_mcu_connection(self):
-        return self.serialESP is not None and self.serialESP.is_open
+        esp_connected = bool([port for port in comports() if PORT in port])
+        return self.serialESP is not None and esp_connected
 
     def test_cam_connection(self):
         self.cam_client_connected = False
