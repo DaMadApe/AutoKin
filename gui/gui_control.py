@@ -84,14 +84,15 @@ class CtrlRobotDB:
     def _model_log_dir(self, robot: RoboReg, modelo: ModelReg):
         return os.path.join(self._tb_dir(robot), modelo.nombre)
 
-    def guardar(self):
+    def guardar_registros(self):
         # Guardar lista de registros y modelo de torch
         with open(self.pickle_path, 'wb') as f:
             pickle.dump(self._robots, f)
-        
+
+    def guardar_modelo(self):
         if self._modelo_s is not None:
             model_path = self._model_path(self.robot_reg_s,
-                                          self.modelo_reg_s)
+                                            self.modelo_reg_s)
             torch.save(self._modelo_s, model_path)
 
     """ Robots """
@@ -142,7 +143,7 @@ class CtrlRobotDB:
             os.mkdir(self._model_dir(self.robots[-1]))
             os.mkdir(self._dataset_dir(self.robots[-1]))
             os.mkdir(self._tb_dir(self.robots[-1]))
-            self.guardar()
+            self.guardar_registros()
         return agregado
 
     def copiar_robot(self,
@@ -191,6 +192,8 @@ class CtrlRobotDB:
         if self._robot_s is not None:
             for key, val in config.items():
                 setattr(self._robot_s, key, val)
+
+        self.guardar_registros()
 
     """ Modelos """
     @property
@@ -243,7 +246,7 @@ class CtrlRobotDB:
             # Crear directorio para guardar logs
             os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
-            self.guardar()
+            self.guardar_registros()
         return agregado
 
     def copiar_modelo(self, origen: int, nombre: str) -> bool:
@@ -394,8 +397,8 @@ class CtrlEntrenamiento:
         if guardar_entrenamiento:
             # Guardar parámetros usados en el registro del modelo
             self.modelo_reg_s.trains.append(self.train_kwargs)
-            # Guardar todos los registros
-            self.guardar()
+            self.guardar_registros()
+            self.guardar_modelo()
         else:
             # Desechar instancia actual (entrenada) del modelo
             self._modelo_s = None

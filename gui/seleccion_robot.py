@@ -130,7 +130,7 @@ class PantallaSelecRobot(Pantalla):
 
     def en_cierre(self):
         self.controlador.cerrar_tensorboard()
-        self.controlador.guardar()
+        self.controlador.guardar_registros()
 
 
 class Popup_copiar_robot(Popup):
