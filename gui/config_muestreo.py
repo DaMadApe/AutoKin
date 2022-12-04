@@ -228,12 +228,20 @@ class PantallaConfigMuestreo(Pantalla):
         trayec = self.get_trayec()
         ejes_visibles = self.get_proyec()
         if trayec is not None:
-            puntosTranspuesto = trayec.transpose(0 ,1)
-            self.ax.plot(*puntosTranspuesto[ejes_visibles].numpy(),
+            max_points = 5_000
+            if len(trayec) > max_points:
+                step = int((len(trayec)/max_points))
+            else:
+                step = 1
+            q_plot = trayec[::step, ejes_visibles]
+            q_plot = q_plot.transpose(0,1).numpy()
+
+            self.ax.plot(*q_plot,
                          color='lightcoral',
                          linewidth=1.5)
-            self.ax.scatter(*puntosTranspuesto[ejes_visibles].numpy(),
-                            color='red')
+            if len(trayec) <= 1.5*max_points:
+                self.ax.scatter(*q_plot,
+                                color='red')
 
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.extra_datasets
