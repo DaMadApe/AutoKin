@@ -155,11 +155,14 @@ class PantallaConfigMuestreo(Pantalla):
             widget.destroy()
 
         # Check para restringir trayectoria
-        check_restr = ttk.Checkbutton(self.frame_configs,
-                                      text='Restringir trayectoria',
-                                      variable=self.check_restr,
-                                      command=self.recargar_grafica)
-        check_restr.grid(column=0, row=0, columnspan=2, sticky='w')
+        restr_check_but = ttk.Checkbutton(self.frame_configs,
+                                          text='Restringir trayectoria',
+                                          variable=self.check_restr,
+                                          command=self.recargar_grafica)
+        restr_check_but.grid(column=0, row=0, columnspan=2, sticky='w')
+
+        if self.n_inputs > 4:
+            restr_check_but['state'] = 'disabled'
 
         self.arg_getters = {}
 
