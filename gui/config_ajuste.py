@@ -93,15 +93,15 @@ class PantallaConfigAjuste(Pantalla):
 
     def get_train_kwargs(self):
         train_kwargs = {}
-        for etapa, args in self.arg_getters.items():
+        for etapa, args_etapa in self.arg_getters.items():
             # Sólo añadir params de etapas seleccionadas
             if self.check_vars[etapa].get() == 1:
                 train_kwargs[etapa] = {}
-                for arg_name, get_fn in args.items():
+                for arg_name, get_fn in args_etapa.items():
                     arg_value = get_fn()
-                    train_kwargs[etapa][arg_name] = get_fn()
+                    train_kwargs[etapa][arg_name] = arg_value
 
-                    if not bool(arg_value):
+                    if arg_value is None:
                         return None
 
         return train_kwargs
