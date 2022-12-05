@@ -137,6 +137,13 @@ args_etapas = {
             'restr_positiv': True,
             'non_zero': True
         },
+        'batch_size': {
+            'label': 'Batch size',
+            'var_type': 'int',
+            'default_val': 256,
+            'restr_positiv': True,
+            'non_zero': True
+        },
         'lr': {
             'label': 'Learning rate',
             'var_type': 'float',
@@ -144,13 +151,13 @@ args_etapas = {
             'restr_positiv': True,
             'non_zero': True
         },
-        'batch_size': {
-            'label': 'Batch size',
-            'var_type': 'int',
-            'default_val': 256,
+        'weight_decay': {
+            'label': 'Weight decay',
+            'var_type': 'float',
+            'default_val': 0,
             'restr_positiv': True,
-            'non_zero': True
-        }
+            'non_zero': False
+        },
     },
 
     'Ajuste dirigido': {

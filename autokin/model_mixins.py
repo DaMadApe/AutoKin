@@ -1,4 +1,5 @@
 import inspect
+from typing import Callable, Optional, Type
 
 import torch
 import torch.nn as nn
@@ -71,15 +72,15 @@ class DataFitMixin:
         return train_loss
 
     def meta_fit(self,
-                 n_steps=10,
-                 n_datasets=8,
-                 n_samples=100,
-                 n_post=10,
-                 lr=1e-4,
-                 post_lr=1e-4,
-                 n_epochs=1,
-                 n_post_epochs=1,
-                 ext_interrupt=None,
+                 n_steps: int = 10,
+                 n_datasets: int = 8,
+                 n_samples: int = 100,
+                 n_post: int = 10,
+                 lr: float = 1e-4,
+                 post_lr: float = 1e-4,
+                 n_epochs: int = 1,
+                 n_post_epochs: int = 1,
+                 ext_interrupt: Callable = None,
                  **fit_kwargs):
         min_DH = [1, 0, 0, 1]
         max_DH = [10, 2*torch.pi, 2*torch.pi, 10]
@@ -122,19 +123,20 @@ class DataFitMixin:
                      **fit_kwargs)
 
     def fit(self, train_set: Dataset, 
-            val_set:Dataset = None,
-            epochs=10,
-            lr=1e-3,
-            batch_size=32,
-            criterion=nn.MSELoss(),
-            optim=torch.optim.Adam,
-            lr_scheduler=False,
-            silent=False,
-            log_dir=None,
-            use_checkpoint=True,
-            preadjust_bias=True,
+            val_set: Dataset = None,
+            epochs: int = 10,
+            batch_size: int = 32,
+            lr: float = 1e-3,
+            weight_decay: float = 0,
+            criterion = nn.MSELoss(),
+            optim: Type[torch.optim.Optimizer] = torch.optim.Adam,
+            lr_scheduler: bool = False,
+            silent: bool = False,
+            log_dir: str = None,
+            use_checkpoint: bool = True,
+            preadjust_bias: bool = True,
             loggers: list[Logger] = None,
-            ext_interrupt=None):
+            ext_interrupt: Callable = None):
         """
         Rutina de entrenamiento para ajustar a un conjunto de datos
         
@@ -171,7 +173,9 @@ class DataFitMixin:
         if preadjust_bias:
             self._set_out_bias(train_set)
 
-        self.optimizer = optim(self.parameters(), lr=lr)
+        self.optimizer = optim(self.parameters(),
+                               lr=lr,
+                               weight_decay=weight_decay)
         if use_checkpoint and self.checkpoint:
             self.optimizer.load_state_dict(self.checkpoint['optimizer_state_dict'])
 
