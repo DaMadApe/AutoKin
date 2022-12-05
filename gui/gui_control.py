@@ -583,7 +583,9 @@ class CtrlEjecucion:
         self.puntos = puntos
 
     def ejecutar_trayec(self, reg_callback, error_callback):
-        model_robot = ModelRobot(self.modelo_s)
+        model_robot = ModelRobot(self.modelo_s,
+                                 self.robot_s.p_scale,
+                                 self.robot_s.p_offset)
         q_prev = torch.zeros(model_robot.n)
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])

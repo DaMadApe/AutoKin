@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 import torch
 from torch.autograd.functional import jacobian
@@ -6,6 +7,7 @@ from torch.autograd.functional import jacobian
 import roboticstoolbox as rtb
 
 from autokin.robot_mixins import IkineMixin
+from autokin.modelos import FKModel, FKEnsemble
 from autokin.utils import random_robot, suavizar
 from sofa.sofa_call import SofaInstance
 from ext_robot.client import ExtInstance
@@ -265,9 +267,21 @@ class ModelRobot(Robot):
     Interfaz para operar una red neuronal que aproxima
     la cinemática de otro robot.
     """
-    def __init__(self, model):
-        self.model = model
+    def __init__(self, 
+                 model: Union[FKModel, FKEnsemble],
+                 p_scale: torch.Tensor = None,
+                 p_offset: torch.Tensor = None):
+
         super().__init__(model.input_dim, model.output_dim)
+        self.model = model
+
+        if p_scale is None:
+            p_scale = torch.ones(self.out_n)
+        if p_offset is None:
+            p_offset = torch.zeros(self.out_n)
+
+        self.p_scale = p_scale
+        self.p_offset = p_offset
 
     @classmethod
     def load(cls, model_dir):
@@ -278,6 +292,7 @@ class ModelRobot(Robot):
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         with torch.no_grad():
             p = self.model(q)
+            p = (p - self.p_offset) / self.p_scale
         return q, p
 
     def jacob(self, q: torch.Tensor) -> torch.Tensor:
