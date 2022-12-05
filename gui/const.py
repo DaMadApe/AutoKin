@@ -154,7 +154,7 @@ args_etapas = {
         'weight_decay': {
             'label': 'Weight decay',
             'var_type': 'float',
-            'default_val': 0,
+            'default_val': 0.0,
             'restr_positiv': True,
             'non_zero': False
         },
