@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torch.autograd.functional import jacobian
 
@@ -38,16 +40,18 @@ class IkineMixin:
         """
         q = q_start.clone().detach()
         for _ in range(max_iters):
-            delta_x = p_target - self.fkine(q)[1]
+            p_current = self.fkine(q)[1]
+            delta_x = p_target - p_current
+            logging.debug(f"target={p_target}, current={p_current}")
             error = torch.linalg.norm(delta_x)
             if error < max_error:
                 break
 
             pi_jacob = torch.linalg.pinv(self.jacob(q))
             q_update = eta * torch.matmul(pi_jacob, delta_x)
-
+            logging.debug(f"q_update={q_update}")
             q += q_update
-            # q.clamp(min=0, max=1) # TODO: Probar
+            q = q.clamp(min=0, max=1)
 
         return q.detach()
 
