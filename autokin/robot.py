@@ -7,7 +7,6 @@ from torch.autograd.functional import jacobian
 import roboticstoolbox as rtb
 
 from autokin.robot_mixins import IkineMixin
-from autokin.modelos import FKModel, FKEnsemble
 from autokin.utils import random_robot, suavizar
 from sofa.sofa_call import SofaInstance
 from ext_robot.client import ExtInstance
@@ -268,7 +267,7 @@ class ModelRobot(Robot):
     la cinemática de otro robot.
     """
     def __init__(self, 
-                 model: Union[FKModel, FKEnsemble],
+                 model,
                  p_scale: torch.Tensor = None,
                  p_offset: torch.Tensor = None):
 
@@ -284,10 +283,13 @@ class ModelRobot(Robot):
         self.p_offset = p_offset
 
     @classmethod
-    def load(cls, model_dir):
+    def load(cls, 
+             model_dir,
+             p_scale: torch.Tensor = None,
+             p_offset: torch.Tensor = None):
         model = torch.load(model_dir)
         model.eval() # TODO: revisar ubicación de esto
-        return cls(model)
+        return cls(model, p_scale, p_offset)
 
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         with torch.no_grad():
