@@ -10,6 +10,8 @@ class Pantalla(ttk.Frame):
     """
     Clase base para cada pantalla del programa
     """
+    # Controlador se define aquí para reutilizar instancia
+    # entre diferentes pantallas (como singleton)
     controlador = UIController()
 
     def __init__(self, parent, titulo):
@@ -113,7 +115,7 @@ class Label_Entry:
         except:
             return False
 
-    def valid(self, x:str):
+    def valid(self, x):
         valid = True
         if self.var_type == 'float':
             valid &= self._validate_float(x)
@@ -315,7 +317,7 @@ class MockInterfaz(tk.Tk):
         self.maxsize(1200,800)
 
         win_width = 800
-        win_height = 450
+        win_height = 600
         x_pos = int(self.winfo_screenwidth()/2 - win_width/2)
         y_pos = int(self.winfo_screenheight()/2 - win_height/2)
         geom = f'{win_width}x{win_height}+{x_pos}+{y_pos}'
