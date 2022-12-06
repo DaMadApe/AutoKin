@@ -23,14 +23,15 @@ test_trayec = torch.concat([torch.zeros(N_PER_STEP, robot.n),
 test_trayec = restringir(test_trayec)
 
 d_set = FKset(robot, test_trayec)
-robot.stop_instance()
+if isinstance(robot, SofaRobot):
+    robot.stop_instance()
 # d_set.robot = None
 # torch.save(d_set, DS_PATH)
 
 # d_set = torch.load(DS_PATH)
 
-q_set = np.concatenate([d_point[0].unsqueeze(0).numpy() for d_point in d_set])
-p_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
+q_set = d_set[:][0].numpy()
+p_set = d_set[:][1].numpy()
 
 q_diff = np.linalg.norm(np.diff(q_set, axis=0), axis=-1)
 p_diff = np.linalg.norm(np.diff(p_set, axis=0), axis=-1)
