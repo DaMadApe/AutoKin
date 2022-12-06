@@ -196,7 +196,7 @@ class Popup_config_ext(Popup):
 
             sample = self._fkine(traj)
             if sample is not None:
-                p_scale, p_offset = pos_scale_offset(sample)
+                p_scale, p_offset = pos_scale_offset(sample[1])
                 self.callback({
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
@@ -395,7 +395,7 @@ class Popup_config_sofa(Popup):
 
             sample = self._fkine(traj)
             if sample is not None:
-                p_scale, p_offset = pos_scale_offset(sample)
+                p_scale, p_offset = pos_scale_offset(sample[1])
                 self.callback({
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
