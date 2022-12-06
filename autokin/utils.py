@@ -87,20 +87,15 @@ def restringir(q: torch.Tensor) -> torch.Tensor:
     Para una lista de actuación q [mxn], limita cada uno de los m puntos a la
     n-esfera unitaria, y evitar que dos actuadores tensen al máx. simultánemante
     """
-    def _map(u, v, s, t): return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
-                                                + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
-                                                - v**2*s**2*t**2/4)
-
-    maps = [lambda u, v: (_map(u, v, 0, 0), _map(v, u, 0, 0)),
-            lambda u, v, s: (_map(u, v, s, 0), _map(v, s, u, 0), _map(s, u, v, 0)),
-            lambda u, v, s, t: (_map(u, v, s, t), _map(v, s, t, u), _map(s, t, u, v), _map(t, u, v, s))]
-
-    map_fn = maps[q.size()[-1] - 2]
-
-    trans_q = q.clone()
-    for i, point in enumerate(q):
-        trans_q[i,:] = torch.tensor(map_fn(*point[:]))
-
+    def _map(u, v, s=0, t=0): 
+        return u*torch.sqrt(1 - v**2/2 - s**2/2 - t**2/2 
+                              + v**2*s**2/3 + s**2*t**2/3 + t**2*v**2/3
+                              - v**2*s**2*t**2/4)
+    trans_q = torch.zeros_like(q)
+    n = q.shape[-1]
+    for i in range(n):
+        cols = (q[:,(j+i)%n] for j in range(n))
+        trans_q[:,i] = _map(*cols)
     return trans_q
 
 
