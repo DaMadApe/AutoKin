@@ -44,7 +44,7 @@ class PantallaConfigAjuste(Pantalla):
 
             for i, (arg_name, entry_kwargs) in enumerate(args.items()):
                 entry = Label_Entry(frame, **entry_kwargs)
-                entry.grid(column=0, row=i, padx=5, pady=5)
+                entry.grid(column=0, row=i, padx=10, pady=(15,10))
                 self.arg_getters[etapa][arg_name] = entry.get
 
             self.tabs_config.add(frame, text=etapa)
