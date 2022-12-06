@@ -30,6 +30,7 @@ class PantallaConfigMuestreo(Pantalla):
 
     def definir_elementos(self):
         self.n_inputs = self.controlador.robot_s.n
+        self.datasets = self.controlador.get_datasets()
 
         frame_grafica = ttk.Frame(self)
         frame_grafica.grid(column=0, row=0, sticky='nsew')
@@ -228,27 +229,28 @@ class PantallaConfigMuestreo(Pantalla):
         trayec = self.get_trayec()
         ejes_visibles = self.get_proyec()
         if trayec is not None:
-            max_points = 5_000
-            if len(trayec) > max_points:
-                step = int((len(trayec)/max_points))
-            else:
-                step = 1
-            q_plot = trayec[::step, ejes_visibles]
-            q_plot = q_plot.transpose(0,1).numpy()
+            # Limitar puntos mostrados
+            max_points = 5000
+            step = max(1, int(len(trayec)/max_points))
+            q_plot = trayec[::step, ejes_visibles].t().numpy()
+            q_plot = trayec.t().numpy()[ejes_visibles]
 
             self.ax.plot(*q_plot,
                          color='lightcoral',
                          linewidth=1.5)
-            if len(trayec) <= 1.5*max_points:
-                self.ax.scatter(*q_plot,
-                                color='red')
+            self.ax.scatter(*q_plot,
+                            color='red')
 
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.extra_datasets
             for d_set in datasets.values():
-                q_set = np.concatenate([d_point[0].unsqueeze(0).numpy() for d_point in d_set])
-                q_trans = q_set.transpose()
-                self.ax.scatter(*q_trans[ejes_visibles],
+                # Limitar puntos mostrados
+                max_points = 3000
+                step = max(1, int(len(d_set)/max_points))
+                # Convertir tensor a np.array y acomodarlo
+                q_set = d_set[::step][0].numpy().transpose()
+
+                self.ax.scatter(*q_set[ejes_visibles],
                                 color='royalblue')
 
         self.ax.set_xlabel('q1')
@@ -258,13 +260,11 @@ class PantallaConfigMuestreo(Pantalla):
         self.grafica.draw()
 
     def mostrar_datasets(self):
-        dataset_list = self.controlador.get_datasets()
         preselec_datasets = self.controlador.extra_datasets
         def callback(seleccion):
             self.controlador.set_extra_datasets(seleccion)
             self.recargar_grafica()
-        Popup_selec_datasets(self, dataset_list, preselec_datasets, callback)
-        pass
+        Popup_selec_datasets(self, self.datasets, preselec_datasets, callback)
 
     def ejecutar(self):
         trayec = self.get_trayec()
