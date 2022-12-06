@@ -98,7 +98,10 @@ class Interfaz(tk.Tk):
 
 if __name__ == "__main__":
     import logging
-    logging.getLogger().setLevel(logging.WARNING)
+
+    logging.getLogger().setLevel(logging.DEBUG)
+    # Desactivar logger de debug de matplotlib
+    logging.getLogger('matplotlib.font_manager').disabled = True
 
     gui = Interfaz()
     gui.mainloop()
