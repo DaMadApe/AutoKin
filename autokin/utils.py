@@ -1,4 +1,5 @@
 import torch
+from torch.nn.functional import pad
 from torch.utils.data import random_split
 
 import roboticstoolbox as rtb
@@ -129,14 +130,20 @@ def suavizar(q: torch.Tensor,
 
     # q = torch.cat([q_prev, q])
     q = torch.cat([q_prev, q])
-    q_diff = q.diff(dim=0)
+    # Tomar la segunda diferencia de q
+    q_diff = q.diff(n=2, dim=0)
 
-    # # Tomar los puntos en los que la norma de la diferencia de actuación excede dq_max
-    oversteps = (q_diff.abs()/dq_max).norm(dim=1).round().int()
     # Tomar los puntos en los que la máxima diferencia de actuación excede dq_max
     # oversteps = (q_diff.abs()/dq_max).round().int().max(dim=1).values
-    total_extra_steps = oversteps.sum().item()
+    # Tomar los puntos en los que la norma de la diferencia excede dq_max
+    oversteps = (q_diff.abs()/dq_max).norm(dim=1).round().int()
+    # Repetir primer y último valor por diferencia de longitud
+    oversteps = torch.cat([
+                           #oversteps[0].unsqueeze(0), 
+                           oversteps,
+                           oversteps[-1].unsqueeze(0)])
 
+    total_extra_steps = oversteps.sum().item()
     accum_steps = oversteps.cumsum(dim=0)
     accum_steps = torch.cat([torch.zeros(1,dtype=int), accum_steps])
 
