@@ -9,7 +9,7 @@ import torch
 from autokin.robot import ExternRobot, RTBrobot, SofaRobot
 from autokin.trayectorias import coprime_sines
 from autokin.utils import RobotExecError, restringir
-from gui.gui_utils import Popup, Label_Entry
+from gui.gui_utils import Popup
 
 
 def pos_scale_offset(p_sample: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -201,6 +201,8 @@ class Popup_config_ext(Popup):
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
                 })
+                tk.messagebox.showinfo("Fin",
+                    "Fin de calibración de escala de posiciones")
 
     def jog(self):
         zero = torch.zeros(1, self.robot.n)
@@ -400,6 +402,8 @@ class Popup_config_sofa(Popup):
                     'p_scale' : p_scale,
                     'p_offset' : p_offset
                 })
+                tk.messagebox.showinfo("Fin",
+                    "Fin de calibración de escala de posiciones")
 
     def jog(self):
         zero = torch.zeros(1, self.robot.n)
