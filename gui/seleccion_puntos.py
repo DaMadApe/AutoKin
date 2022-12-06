@@ -22,7 +22,7 @@ class PantallaSelecPuntos(Pantalla):
         self.tabla = TablaYBotones(self, botones_abajo=True,
                                    columnas=columnas,
                                    anchos=(30, 50, 50, 50, 50, 50),
-                                   fn_doble_click=self.agregar_punto)
+                                   fn_doble_click=self.modificar_punto)
         self.tabla.grid(column=0, row=0, sticky='nsew')
 
         self.tabla.agregar_boton(text="Agregar punto",
@@ -64,22 +64,6 @@ class PantallaSelecPuntos(Pantalla):
                                           rowspan=3, padx=5, pady=5)
         self.recargar_grafica()
 
-        # # Configuraciones del movimiento
-        # frame_configs = ttk.LabelFrame(self)
-        # frame_configs.grid(column=0, row=2, sticky='nsew')
-
-        # self.config1_entry = Label_Entry(frame_configs,
-        #                                  label="Config 1",
-        #                                  var_type='float',
-        #                                  width=10)
-        # self.config1_entry.grid(column=0, row=0)
-
-        # self.config2_entry = Label_Entry(frame_configs,
-        #                                  label="Config 2",
-        #                                  var_type='float',
-        #                                  width=10)
-        # self.config2_entry.grid(column=0, row=1)
-
         # Check para ver puntos de datasets pasados como referencia
         check_but = ttk.Checkbutton(self,
                                     text="Mostrar puntos de muestras anteriores",
@@ -111,7 +95,16 @@ class PantallaSelecPuntos(Pantalla):
             self.puntos.insert(indice, punto)
             self.recargar_tabla()
             self.recargar_grafica()
-        Popup_agregar_punto(self, callback)
+        Popup_asignar_punto(self, callback)
+
+    def modificar_punto(self, indice):
+        def callback(punto):
+            self.puntos.pop(indice)
+            self.puntos.insert(indice, punto)
+            self.recargar_tabla()
+            self.recargar_grafica()
+        Popup_asignar_punto(self, callback,
+                            punto_prev=self.puntos[indice])
 
     def borrar_punto(self, indice):
         self.puntos.pop(indice)
@@ -164,38 +157,45 @@ class PantallaSelecPuntos(Pantalla):
 
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.get_datasets()
+            max_points = 1000/len(datasets)
             for d_set in datasets.values():
                 d_set.apply_p_norm = False
-                p_set = np.concatenate([d_point[1].unsqueeze(0).numpy() for d_point in d_set])
-                p_trans = p_set.transpose()
-                p_trans = p_trans[:,::10] # Mostrar 1 de cada 10 puntos
-                self.ax.scatter(*p_trans, color='royalblue')
+                # Limitar puntos mostrados
+                step = max(1, int(len(d_set)/max_points))
+                # Convertir tensor a np.array y acomodarlo
+                p_set = d_set[::step][1].numpy().transpose()
+                self.ax.scatter(*p_set, color='royalblue')
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
         self.grafica.draw()
 
 
-class Popup_agregar_punto(Popup):
+class Popup_asignar_punto(Popup):
 
-    def __init__(self, parent, callback):
+    def __init__(self, parent, callback, punto_prev=None):
         self.callback = callback
-        super().__init__(title="Agregar punto", parent=parent)
+        if punto_prev is None:
+            punto_prev = [0., 0., 0., 1., 1.]
+        self.punto_prev = punto_prev
+        super().__init__(title="Asignar punto", parent=parent)
 
     def definir_elementos(self):
+        x_val, y_val, z_val, t_t_val, t_s_val = self.punto_prev
+
         frame_xyz = ttk.Frame(self)
         frame_xyz.grid(column=0, row=0, sticky='ew')
 
         self.x_entry = Label_Entry(frame_xyz, label='x:', width=5,
-                                   var_type='float', default_val=0.0)
+                                   var_type='float', default_val=x_val)
         self.x_entry.grid(column=0, row=0)
 
         self.y_entry = Label_Entry(frame_xyz, label='y:', width=5,
-                                   var_type='float', default_val=0.0)
+                                   var_type='float', default_val=y_val)
         self.y_entry.grid(column=2, row=0)
 
         self.z_entry = Label_Entry(frame_xyz, label='z:', width=5,
-                                   var_type='float', default_val=0.0)
+                                   var_type='float', default_val=z_val)
         self.z_entry.grid(column=4, row=0)
 
         frame_tiempos = ttk.Frame(self)
@@ -203,13 +203,13 @@ class Popup_agregar_punto(Popup):
 
         self.t_t_entry = Label_Entry(frame_tiempos, width=5,
                                      label="Tiempo transición (s):",
-                                     var_type='float', default_val=1.0,
+                                     var_type='float', default_val=t_t_val,
                                      restr_positiv=True, non_zero=True)
         self.t_t_entry.grid(column=0, row=0)
 
         self.t_s_entry = Label_Entry(frame_tiempos, width=5,
                                      label="Tiempo estacionario (s):",
-                                     var_type='float', default_val=1.0,
+                                     var_type='float', default_val=t_s_val,
                                      restr_positiv=True, non_zero=True)
         self.t_s_entry.grid(column=0, row=1)
 
