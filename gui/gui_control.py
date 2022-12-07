@@ -487,24 +487,31 @@ class TrainThread(Thread):
                              ext_interrupt=self.queue.interrupt,
                              **mfit_kwargs)
 
+    def _muestreo_inicial(self):
+        is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
+        try:
+            sampled_dataset = FKset(self.robot, self.sample,
+                                    include_dq=is_prop_selec)
+        except RobotExecError:
+            logging.info('RobotExecError durante muestreo')
+            self.queue.put(Msg('fail', 0))
+            return None
+        else:
+            return sampled_dataset
+
     def _ajuste_inicial(self, log_dir):
         # Muestreo
         self.queue.put(Msg('stage', 0))
 
         if len(self.sample) > 0:
-            try:
-                sampled_dataset = FKset(self.robot, self.sample)
-            except RobotExecError:
-                logging.info('RobotExecError durante muestreo')
-                self.queue.put(Msg('fail', 0))
+            self.sampled_dataset = self._muestreo_inicial()
+            if self.sampled_dataset is None:
                 return 'fail'
-
-            self.sampled_dataset = sampled_dataset
         else:
             self.sampled_dataset = []
 
         full_dataset = ConcatDataset([self.sampled_dataset, *self.prev_datasets])
-        self.train_set, self.val_set, self.test_set = rand_split(full_dataset, self.split)
+        self.train_set, self.val_set = rand_split(full_dataset, self.split)
 
         # Ajuste
         fit_kwargs = self.train_kwargs['Ajuste inicial']
