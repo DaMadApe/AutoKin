@@ -19,7 +19,7 @@ class PantallaConfigMuestreo(Pantalla):
 
     def __init__(self, parent):
         self.arg_getters = {}
-        self.split_arg_getters = {}
+        self.split_arg_getters = []
         self.samp_args = samp_args
         self.axis_combos = {}
 
@@ -91,18 +91,18 @@ class PantallaConfigMuestreo(Pantalla):
         self.frame_split = ttk.LabelFrame(frame_derecha, text="Reparto de datos")
         self.frame_split.grid(column=0, row=1, sticky='nsew')
 
-        default_split = {'train': 0.7,
-                         'val': 0.2,
-                         'test': 0.1}
+        default_split = {'Entrenamiento': 0.8,
+                         'Validación': 0.2}
                     
-        for i, label in enumerate(['train', 'val', 'test']):
+        for i, (label, value) in enumerate(default_split.items()):
             entry = Label_Entry(self.frame_split,
                                 label=label,
+                                width=6,
                                 var_type='float',
-                                default_val=default_split[label],
+                                default_val=value,
                                 restr_positiv=True)
             entry.grid(column=0, row=i)
-            self.split_arg_getters[label] = entry.get
+            self.split_arg_getters.append(entry.get)
 
         # Selección/visualización de datasets previos
         self.frame_datasets = ttk.LabelFrame(frame_derecha, text="Datasets anteriores")
@@ -187,14 +187,14 @@ class PantallaConfigMuestreo(Pantalla):
             traj_kwargs[arg_name] = get_fn()
         return traj_kwargs
 
-    def get_split(self):
-        split = {}
-        for label, get_fn in self.split_arg_getters.items():
+    def get_split(self) -> list[float]:
+        split = []
+        for get_fn in self.split_arg_getters:
             val = get_fn()
-            split[label] = val
+            split.append(val)
             if val is None:
                 return None
-        if round(sum(split.values()), ndigits=2) != 1:
+        if round(sum(split), ndigits=2) != 1:
             return None
         else:
             return split
