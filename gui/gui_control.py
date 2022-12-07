@@ -16,7 +16,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from tensorboard import program
 
 from autokin.robot import Robot, ExternRobot, ModelRobot
-from autokin.modelos import FKEnsemble, FKModel
+from autokin.modelos import FKEnsemble, FKModel #, SelPropEnsemble
 from autokin.muestreo import FKset
 from autokin.utils import RobotExecError, rand_split
 from autokin.loggers import GUIprogress, LastEpochLog
@@ -341,9 +341,9 @@ class CtrlEntrenamiento:
     def set_train_kwargs(self, train_kwargs: dict):
         self.train_kwargs = train_kwargs
 
-    def set_sample(self, sample: torch.Tensor, sample_split: dict):
+    def set_sample(self, sample:torch.Tensor, sample_split:list[float]):
         self.sample = sample
-        self.split = list(sample_split.values())
+        self.split = sample_split
 
     def set_extra_datasets(self, datasets: dict[str, Dataset]):
         self.extra_datasets = datasets
@@ -488,10 +488,10 @@ class TrainThread(Thread):
                              **mfit_kwargs)
 
     def _muestreo_inicial(self):
-        is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
+        # is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
         try:
-            sampled_dataset = FKset(self.robot, self.sample,
-                                    include_dq=is_prop_selec)
+            sampled_dataset = FKset(self.robot, self.sample)
+                                    # include_dq=is_prop_selec)
         except RobotExecError:
             logging.info('RobotExecError durante muestreo')
             self.queue.put(Msg('fail', 0))
@@ -589,11 +589,15 @@ class CtrlEjecucion:
     def set_trayec(self, puntos):
         self.puntos = puntos
 
-    def ejecutar_trayec(self, reg_callback, error_callback):
+    def ejecutar_trayec(self, reg_callback, error_callback,
+                        ajuste_continuo: bool = False):
         model_robot = ModelRobot(self.modelo_s,
                                  self.robot_s.p_scale,
                                  self.robot_s.p_offset)
         q_prev = torch.zeros(model_robot.n)
+
+        q_samples, p_samples = [], []
+
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
             q = model_robot.ikine_pi_jacob(q_start=q_prev,
@@ -602,10 +606,14 @@ class CtrlEjecucion:
                                            )
 
             try:
-                _, p = self.robot_s.fkine(q)
+                q_out, p_out = self.robot_s.fkine(q)
             except RobotExecError:
                 error_callback()
                 return
+
+
+
+            scaled_p = self.robot_s.p_scale * p_out + self.robot_s.p_offset
 
             q_prev = q
 
