@@ -1,6 +1,6 @@
+import time
 import tkinter as tk
 from tkinter import ttk
-import webbrowser
 
 from tensorboard import program
 
@@ -13,6 +13,7 @@ class PantallaProgresoAjuste(Pantalla):
         self.status_labels = []
         self.etapa_actual = 0
         self.max_steps = 0
+        self.p_time = 0
         self.terminado = False
         parent.after(100) # Solución extraña para evitar errores con
                           # callbacks cuando se rehace la pantalla
@@ -83,7 +84,22 @@ class PantallaProgresoAjuste(Pantalla):
             formated += f"{key}: {val:4f}   "
         return formated
 
+    def iniciar_crono(self):
+        self.start = time.time()
+
+    def pausar_crono(self):
+        self.pause_start = time.time()
+
+    def reanudar_crono(self):
+        self.p_time += time.time() - self.pause_start
+
+    def tiempo_trans(self) -> str:
+        trans = time.time() - self.start - self.p_time
+        format = '%M:%S' if trans < 60**2 else '%H:%M:%S'
+        return time.strftime(format, time.gmtime(trans))
+
     def iniciar_entrenamiento(self):
+        self.iniciar_crono()
         self.controlador.entrenar(self.stage_callback,
                                   self.step_callback,
                                   self.end_callback,
@@ -103,7 +119,7 @@ class PantallaProgresoAjuste(Pantalla):
             self.progreso.config(mode='determinate', maximum=self.max_steps+1)
         if self.etapa_actual > 0:
             label = self.status_labels[self.etapa_actual-1]
-            label.config(text="Completado")
+            label.config(text=f"Completado ({self.tiempo_trans()})")
             label['style'] = 'Green.TLabel'
         label = self.status_labels[self.etapa_actual]
         label.config(text="En proceso...")
@@ -112,7 +128,7 @@ class PantallaProgresoAjuste(Pantalla):
         self.etapa_actual += 1
 
     def step_callback(self, progress_info: dict, epoch: int):
-        self.label_prog.config(text=f"Progreso: {epoch+1}/{self.max_steps}")
+        self.label_prog.config(text=f"Progreso: {epoch+1}/{self.max_steps}  ({self.tiempo_trans()})")
         self.label_info.config(text=self._format_prog_info(progress_info))
         self.progreso.step(1)
         self.update_idletasks()
@@ -126,7 +142,7 @@ class PantallaProgresoAjuste(Pantalla):
                                     "Error de ejecución en el robot")
         else:
             label = self.status_labels[-1]
-            label.config(text="Completado")
+            label.config(text=f"Completado ({self.tiempo_trans()})")
             label['style'] = 'Green.TLabel'
         self.terminado = True
 
