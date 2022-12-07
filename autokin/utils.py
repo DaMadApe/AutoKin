@@ -130,19 +130,13 @@ def suavizar(q: torch.Tensor,
 
     # q = torch.cat([q_prev, q])
     q = torch.cat([q_prev, q])
-    # Tomar la segunda diferencia de q
-    q_diff = q.diff(n=2, dim=0)
-
-    # Tomar los puntos en los que la máxima diferencia de actuación excede dq_max
-    # oversteps = (q_diff.abs()/dq_max).round().int().max(dim=1).values
+    # Tomar la norma de la segunda diferencia de q
+    q_diff = q.diff(n=2, dim=0).norm(dim=-1)
     # Tomar los puntos en los que la norma de la diferencia excede dq_max
-    oversteps = (q_diff.abs()/dq_max).norm(dim=1).round().int()
-    # Repetir primer y último valor por diferencia de longitud
-    oversteps = torch.cat([
-                           #oversteps[0].unsqueeze(0), 
-                           oversteps,
-                           oversteps[-1].unsqueeze(0)])
-
+    oversteps = (q_diff/dq_max).round().int()
+    # Agregar 0 al inicio para ajustar dimensiones
+    oversteps = pad(oversteps, (1,0), 'constant', 0)
+    # Arreglos auxiliares para seguir índices luego de insertar interpolaciones
     total_extra_steps = oversteps.sum().item()
     accum_steps = oversteps.cumsum(dim=0)
     accum_steps = torch.cat([torch.zeros(1,dtype=int), accum_steps])
@@ -151,11 +145,14 @@ def suavizar(q: torch.Tensor,
 
     for i in range(len(q)-1):
         cur_idx = i + accum_steps[i].item()
+
         if oversteps[i] == 0:
-            q_ext[cur_idx: cur_idx+2] = q[i:i+2]
+            q_ext[cur_idx] = q[i]
         else:
             interp_q = linterp(q[i], q[i+1], oversteps[i]+2)
-            q_ext[cur_idx: cur_idx+oversteps[i]+2] = interp_q
+            q_ext[cur_idx:cur_idx+oversteps[i]+2] = interp_q
+
+    q_ext[-1] = q[-1]
 
     return q_ext
 
@@ -164,7 +161,12 @@ if __name__ == "__main__":
     a = torch.rand(3,2)
     da = a.diff(dim=0)
     max_da = 0.7
-    oversteps = (da.abs()/max_da).round().int().max(dim=1).values
-    cumsteps = oversteps.cumsum(dim=0)
 
-    print(a, 'res', suavizar(a, torch.zeros(2),max_da))
+    q_diff = a.diff(n=2, dim=0).norm(dim=-1)
+    oversteps = (q_diff/max_da).round().int()
+    oversteps = torch.cat([#oversteps[0].unsqueeze(0), 
+                           oversteps,
+                           oversteps[-1].unsqueeze(0)])
+    print(a)
+    print(oversteps)
+    print(suavizar(a, torch.zeros(2), max_da))
