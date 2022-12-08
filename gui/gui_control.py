@@ -18,7 +18,7 @@ from tensorboard import program
 from autokin.robot import Robot, ExternRobot, ModelRobot
 from autokin.modelos import FKEnsemble, FKModel #, SelPropEnsemble
 from autokin.muestreo import FKset
-from autokin.utils import RobotExecError, rand_split
+from autokin.utils import RobotExecError, rand_split, abrir_tb
 from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
@@ -295,12 +295,7 @@ class CtrlRobotDB:
         else:
             log_dir = base_dir
 
-        def abrir():
-            tb = program.TensorBoard()
-            tb.configure(logdir=log_dir, port=6006)
-            tb.main()
-
-        self.tb_proc = mp.Process(target=abrir)
+        self.tb_proc = mp.Process(target=abrir_tb, args=(log_dir, ))
         self.tb_proc.start()
         time.sleep(2) # Incrementar si no conecta a la primera
         webbrowser.open('http://localhost:6006/')
@@ -636,3 +631,5 @@ class UIController(CtrlRobotDB,
     """
     def __init__(self):
         super().__init__()
+
+

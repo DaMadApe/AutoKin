@@ -2,6 +2,8 @@ import torch
 from torch.nn.functional import pad
 from torch.utils.data import random_split
 
+from tensorboard import program
+
 import roboticstoolbox as rtb
 
 
@@ -11,6 +13,12 @@ class RobotExecError(Exception):
     de fkine para algún robot que prevenga obtener resultados.
     """
     pass
+
+
+def abrir_tb(log_dir):
+    tb = program.TensorBoard()
+    tb.configure(logdir=log_dir, port=6006)
+    tb.main()
 
 
 def random_robot(min_DH: list[float] = None,
