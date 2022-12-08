@@ -179,3 +179,25 @@ class ResNetEnsemble(FKEnsemble):
                           block_width=block_width,
                           activation=activation) for _ in range(n_modelos)]
         super().__init__(modelos)
+
+
+class SelPropEnsemble(EnsembleMixin,
+                      torch.nn.Module):
+    def __init__(self, models : list[FKModel]):
+        super().__init__()
+        self.input_dim = models[0].input_dim
+        for model in models:
+            if model.input_dim != self.input_dim:
+                raise ValueError('Modelos de dimensiones diferentes')
+        self.ensemble = torch.nn.ModuleList(models)
+
+    def forward(self, x: torch.Tensor):
+        # Redefine el forward de los otros ensembles
+        if self.training:
+            q = x[:self.input_dim]
+            dq = x[self.input_dim:]
+            
+
+    def fit(self, train_set, val_set, *args, **kwargs):
+        for sample in train_set:
+            pass
