@@ -6,6 +6,8 @@ from autokin.muestreo import FKset
 from autokin.trayectorias import coprime_sines
 from autokin.utils import restringir
 
+DS_PATH = 'dataset_test_ikine.pt'
+
 robot = SofaRobot(config='LLL',
                   p_scale=torch.tensor([0.0126, 0.0098, 0.0163]),
                   p_offset=torch.tensor([ 1.0626,  0.2171, -2.1753]))
@@ -14,24 +16,36 @@ model = ModelRobot.load('gui/app_data/robots/LLL/modelos/Mod1.pt',
                         p_scale=torch.tensor([0.0126, 0.0098, 0.0163]),
                         p_offset=torch.tensor([ 1.0626,  0.2171, -2.1753]))
 
-q_in = restringir(coprime_sines(3, 1000, 0, 0))
-test_ds = FKset(robot, q_in)
+# Muestreo de prueba
+# q_in = restringir(coprime_sines(3, 100, 0, 0))
+# d_set = FKset(robot, q_in)
+
+# if isinstance(robot, SofaRobot):
+#     robot.stop_instance()
+# d_set.robot = None
+# torch.save(d_set, DS_PATH)
+d_set = torch.load(DS_PATH)
+
+# Valores objetivo (tomar 1 de cada 10)
+q_s = d_set[:][0][::10]
+p_s = d_set[:][1][::10]
 
 pred_q = []
 q_prev = torch.zeros(robot.n)
-for _, p_s in test_ds:
-    q = model.ikine_pi_jacob(q_start=q_prev,
-                             p_target=p_s,
-                             #eta=0.1
-                            )
-
+for i, p_si in enumerate(p_s):
+    print(q_prev)
+    p_target = p_si*robot.p_scale + robot.p_offset
+    q = model.ikine_de(
+        q_start=q_prev,
+        p_target=p_si,
+        #eta=0.1
+    )
+    print(f'q_pred{i} = {q}, q_obj = {q_s[i]}')
     q_prev = q
     pred_q.append(q)
 
-# Valores objetivo
-q_s, p_s = test_ds[:][0].t().numpy(), test_ds[:][1].t().numpy()
 # q predecida, p resultante
-q_m = torch.cat(pred_q)
+q_m = torch.stack(pred_q)
 q_m, p_m = robot.fkine(q_m)
 
 fig = plt.figure()

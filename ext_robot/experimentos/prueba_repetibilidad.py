@@ -53,13 +53,13 @@ test_trayec = torch.concat([torch.zeros(N_PER_STEP, robot.n),
 
 # test_trayec = suavizar(test_trayec)
 
-d_set = FKset(robot, test_trayec)
-if isinstance(robot, SofaRobot):
-    robot.stop_instance()
-d_set.robot = None
-torch.save(d_set, DS_PATH)
+# d_set = FKset(robot, test_trayec)
+# if isinstance(robot, SofaRobot):
+#     robot.stop_instance()
+# d_set.robot = None
+# torch.save(d_set, DS_PATH)
 
-# d_set = torch.load(DS_PATH)
+d_set = torch.load(DS_PATH)
 
 p_set = d_set[:][1].numpy().transpose()
 
@@ -69,3 +69,5 @@ for i, axis in enumerate(p_set):
 
 plt.tight_layout()
 plt.show()
+
+# Rangos 1: [18:73], 

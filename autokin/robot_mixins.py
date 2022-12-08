@@ -3,6 +3,10 @@ import logging
 import torch
 from torch.autograd.functional import jacobian
 
+import numpy as np
+# import nevergrad as ng
+from scipy.optimize import differential_evolution
+
 
 def batch_jacobian(func, batch, create_graph=False, vectorize=False):
     """
@@ -84,41 +88,58 @@ class IkineMixin:
         return q
 
 
-    """
-    import nevergrad as ng
-    def ikine_ngopt(q_start: torch.Tensor, p_target: torch.Tensor,
-                    fkine: Callable, # jacob : Callable,
-                    eta=0.01, max_error=0, max_iters=1000):
+    def ikine_de(self, 
+                 q_start: torch.Tensor,
+                 p_target: torch.Tensor,
+                 eta=0.01, max_error=0, max_iters=1000):
 
-        def error(q):
-            return torch.sum((fkine(q) - p_target)**2)
+        bounds = [(0,1), (0, 1), (0, 1)]
 
-        optim = ng.optimizers.NGOpt(parametrization=len(q_start), budget=100)
-        q = optim.minimize(error)
-    """
-    """ 
-    def ikine_adam(q_start: torch.Tensor, p_target: torch.Tensor,
-                fkine: Callable, # jacob : Callable,
-                max_error=0, max_iters=1000, **adam_kwargs):
+        def error(q: np.array):
+            p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))[1]
 
-        current_p = fkine(q_start)
-        current_q = q_start.detach().clone()
-        current_q.requires_grad = True
+            return torch.norm(p_reached-p_target).item()
 
-        def error(p):
-            return torch.sum((p - p_target)**2)
+        result = differential_evolution(error, bounds)
+        return result
 
-        optim = torch.optim.Adam([current_q], **adam_kwargs)
+    # def ikine_ngopt(self, 
+    #                 q_start: torch.Tensor,
+    #                 p_target: torch.Tensor,
+    #                 eta=0.01, max_error=0, max_iters=1000):
 
-        for _ in range(max_iters):
-            current_p = fkine(current_q)
-            current_error = error(current_p)
+    #     def error(q: torch.Tensor):
+    #         p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))[1]
+            
+    #         return torch.norm(p_reached-p_target).item()
 
-            if current_error < max_error:
-                break
+    #     optim = ng.optimizers.NGOpt(parametrization=len(q_start), budget=100)
+    #     optim.parametrization.register_cheap_constraint(lambda x: torch.all(x<=1))
+    #     q = optim.minimize(error).value
+    #     return torch.tensor(q, dtype=torch.float32)
 
-            optim.zero_grad()
-            current_error.backward()
-            optim.step()
+    # def ikine_adam(q_start: torch.Tensor, p_target: torch.Tensor,
+    #             fkine: Callable, # jacob : Callable,
+    #             max_error=0, max_iters=1000, **adam_kwargs):
 
-        return current_q.detach() """
+    #     current_p = fkine(q_start)
+    #     current_q = q_start.detach().clone()
+    #     current_q.requires_grad = True
+
+    #     def error(p):
+    #         return torch.sum((p - p_target)**2)
+
+    #     optim = torch.optim.Adam([current_q], **adam_kwargs)
+
+    #     for _ in range(max_iters):
+    #         current_p = fkine(current_q)
+    #         current_error = error(current_p)
+
+    #         if current_error < max_error:
+    #             break
+
+    #         optim.zero_grad()
+    #         current_error.backward()
+    #         optim.step()
+
+    #     return current_q.detach()
