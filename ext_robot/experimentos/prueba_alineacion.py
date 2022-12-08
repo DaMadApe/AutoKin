@@ -7,7 +7,7 @@ from autokin.robot import ExternRobot, SofaRobot
 from autokin.muestreo import FKset
 from autokin.utils import restringir
 
-DS_PATH = 'out_dataset.pt'
+DS_PATH = 'align_dataset.pt'
 N_PER_STEP = 100
 
 robot = SofaRobot(config='LSL') #ExternRobot(n=3)
