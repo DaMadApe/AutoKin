@@ -5,6 +5,7 @@ import serial
 from serial.tools.list_ports import comports
 
 import torch
+from torch.nn.functional import pad
 
 from ext_robot.NatNetClient import NatNetClient
 from autokin.utils import RobotExecError
@@ -81,11 +82,12 @@ class ExtInstance:
                 xb, yb, zb = self.body_pos
                 self.p_stack.append([xr-xb, yr-yb, zr-zb])
 
-    def send_q_esp(self, q: torch.Tensor): # -> ack # Saber cuando termina ejecución
-        msg_pasos = ','.join(str(int(val)) for val in q)
-        logging.debug(f"q: {q}, Mensaje: {msg_pasos}")
+    def send_q_esp(self, q: torch.Tensor):
+        q_send = pad(q, (0, 4-len(q))).int().numpy()
+        logging.debug(f"q: {q}, Mensaje: {q_send}")
         if self.serialESP is not None:
-            self.serialESP.write(msg_pasos.encode('ascii'))
+            self.serialESP.write(q_send.tobytes())
+            # self.serialESP.flush()
 
             # Bloquear ejecución hasta que ESP envíe señal de fin
             logging.debug("Esperando confirmación")
