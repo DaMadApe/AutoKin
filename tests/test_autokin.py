@@ -34,7 +34,7 @@ def test_suavizar():
     dq_max = 0.1
 
     q_s = suavizar(q=q, q_prev=q_prev, dq_max=dq_max)
-    q_s_diff = q_s.diff(dim=0)
+    q_s_diff = q_s.diff(n=2, dim=0)
 
     # El resultado nunca excede la diferencia solicitada
     assert torch.all(q_s_diff.abs() <= dq_max)
