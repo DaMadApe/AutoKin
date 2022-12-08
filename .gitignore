@@ -6,4 +6,5 @@ __pycache__
 tb_logs
 models
 sandbox.ipynb
+gui.log
 autokin/experimentos/logs

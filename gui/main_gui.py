@@ -98,8 +98,14 @@ class Interfaz(tk.Tk):
 
 if __name__ == "__main__":
     import logging
+    import sys
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler('gui.log')
+    stream_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
     # Desactivar logger de debug de matplotlib
     logging.getLogger('matplotlib.font_manager').disabled = True
 
