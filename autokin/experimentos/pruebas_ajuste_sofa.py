@@ -8,7 +8,7 @@ from autokin.modelos import MLP
 from autokin.robot import SofaRobot
 from autokin.muestreo import FKset
 from autokin.trayectorias import coprime_sines
-from autokin.utils import restringir
+from autokin.utils import restringir, rand_split
 from autokin.experimentos.experim import ejecutar_experimento
 
 """
@@ -18,22 +18,7 @@ robot_name = 'Trunk_LL'
 exp_name = 'OF'
 n_samples = 10000
 
-robot = SofaRobot(config='LL')
-
-def rand_split(self, proportions: list[float]):
-    """
-    Reparte el conjunto de datos en segmentos aleatoriamente
-    seleccionados, acorde a las proporciones ingresadas.
-
-    args:
-    dataset (torch Dataset): Conjunto de datos a repartir
-    proportions (list[float]): Porcentaje que corresponde a cada partición
-    """
-    if round(sum(proportions), ndigits=2) != 1:
-        raise ValueError('Proporciones ingresadas deben sumar a 1 +-0.01')
-    split = [round(prop*len(self)) for prop in proportions]
-    return random_split(self, split)
-
+robot = SofaRobot(config='LLL')
 
 
 q = coprime_sines(robot.n, n_samples, densidad=6)

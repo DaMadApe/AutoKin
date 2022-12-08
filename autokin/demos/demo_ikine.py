@@ -1,35 +1,11 @@
 import torch
 import matplotlib.pyplot as plt
 
-from robot import ModelRobot, RTBrobot
-from trayectorias import coprime_sines
+from autokin.robot import ModelRobot, RTBrobot
+from autokin.trayectorias import coprime_sines
 
 robot = RTBrobot.from_name('Cobra600')
-model = ModelRobot.load('models/Cobra600_.pt')
-
-
-def ikine_pi_jacob(q_start: torch.Tensor, p_target: torch.Tensor,
-                   fkine, jacob,
-                   eta=0.01, max_error=0, max_iters=1000):
-    q = q_start.clone().detach()
-
-    q_list = q.clone().unsqueeze(0)
-
-    for _ in range(max_iters):
-        delta_x = p_target - fkine(q)
-        error = torch.linalg.norm(delta_x)
-        if error < max_error:
-            break
-
-        pi_jacob = torch.linalg.pinv(jacob(q))
-        q_update = eta * torch.matmul(pi_jacob, delta_x)
-
-        q += q_update
-
-        q_list = torch.cat((q_list, q.unsqueeze(0)))
-
-
-    return q.detach(), q_list
+model = ModelRobot.load('gui/app_data/robots/cobra/modelos/sdf.pt')
 
 
 # q_demo = torch.rand((10, robot.n))
@@ -44,9 +20,7 @@ for i in range(len(p_demo)-1):
     q_target = q_demo[i+1]
     _, p_start = robot.fkine(q_start)
     _, p_target = robot.fkine(q_target)
-    q_inv, q_list = ikine_pi_jacob(q_start, p_target, eta=0.1,
-                                   fkine=model.fkine, 
-                                   jacob=model.jacobian)
+    q_inv, q_list = model.ikine_pi_jacob(q_start, p_target, eta=0.1)
 
     _, p_reached = robot.fkine(q_inv)
     _, p_passed = robot.fkine(q_list)
