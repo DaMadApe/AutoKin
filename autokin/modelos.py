@@ -183,6 +183,11 @@ class ResNetEnsemble(FKEnsemble):
 
 class SelPropEnsemble(EnsembleMixin,
                       torch.nn.Module):
+    """
+    Conjunto de modelos que propagan las muestras selectivamente según
+    signo de la derivada de la entrada. El conjunto se inicializa con
+    2^n_entradas modelos.
+    """
     def __init__(self, models : list[FKModel]):
         super().__init__()
         self.input_dim = models[0].input_dim
@@ -191,13 +196,21 @@ class SelPropEnsemble(EnsembleMixin,
                 raise ValueError('Modelos de dimensiones diferentes')
         self.ensemble = torch.nn.ModuleList(models)
 
+        self.prev_x = torch.zeros(self.input_dim)
+
     def forward(self, x: torch.Tensor):
         # Redefine el forward de los otros ensembles
         if self.training:
-            q = x[:self.input_dim]
-            dq = x[self.input_dim:]
-            
-
-    def fit(self, train_set, val_set, *args, **kwargs):
-        for sample in train_set:
-            pass
+            x = x[:self.input_dim]
+            dx = x[self.input_dim:]
+        else:
+            dx = x - self.prev_x
+            self.prev_x = x
+        # Obtener vector de signos de la derivada
+        sign_dx = (dx.sign()/2 + 0.5).int()
+        # Convertir vector de signos a entero
+        bin_mask = 2 ** torch.arange(self.input_dim)
+        model_idx = sum(sign_dx * bin_mask).item()
+        # Propagar al modelo correspondiente
+        print('propagando a modelo', model_idx)
+        return self.ensemble[model_idx].forward(x)
