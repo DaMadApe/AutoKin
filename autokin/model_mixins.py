@@ -90,7 +90,7 @@ class DataFitMixin:
             # sample_robots.extend(robots_by_n[input_dim])
 
             post_sets = []
-
+    
             for _ in range(n_datasets): # - len(sample_robots)):
                 robot = RTBrobot.random(n=self.input_dim,
                                         min_DH=min_DH,
@@ -127,9 +127,9 @@ class DataFitMixin:
             epochs: int = 10,
             batch_size: int = 32,
             lr: float = 1e-3,
-            weight_decay: float = 0,
+            weight_decay: float = 1e-3,
             criterion = nn.MSELoss(),
-            optim: Type[torch.optim.Optimizer] = torch.optim.Adam,
+            optim: Type[torch.optim.Optimizer] = torch.optim.AdamW,
             lr_scheduler: bool = False,
             silent: bool = False,
             log_dir: str = None,
