@@ -110,6 +110,9 @@ class ExtInstance:
                 self.send_q_esp(q_i)
             except serial.serialutil.SerialException:
                 raise RobotExecError
+            except RobotExecError:
+                logging.error(f"MCU desconectado, muestreo interrumpido en la muestra {i}")
+                return p_out[:i]
             
             while not self.p_stack:
                 pass
@@ -122,7 +125,7 @@ class ExtInstance:
         mcu_status, cam_status = self.status()
         if not (mcu_status and cam_status):
             logging.error(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
-            raise RobotExecError(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
+            # raise RobotExecError(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
 
         return p_out
 

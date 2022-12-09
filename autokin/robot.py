@@ -241,14 +241,15 @@ class ExternRobot(Robot):
         soft_q = suavizar(q=q,
                           q_prev=self.q_prev,
                           dq_max=self.max_dq)
+        self.q_prev = soft_q[-1]
 
         denormed_q = self._denorm_q(soft_q)
 
         p_out = self.client.fkine(denormed_q)
+        # Tomar sólo la porción muestreada
+        q_out = soft_q[:len(p_out)]
 
-        self.q_prev = soft_q[-1]
-
-        return soft_q, p_out
+        return q_out, p_out
 
     def status(self) -> dict:
         mcu_status, cam_status = self.client.status()
