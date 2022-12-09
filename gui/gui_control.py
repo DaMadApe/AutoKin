@@ -23,7 +23,7 @@ from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
 
 
-SAVE_DIR = os.path.join('gui', 'app_data')
+SAVE_DIR = 'app_data'
 
 
 class SignalQueue(Queue):
