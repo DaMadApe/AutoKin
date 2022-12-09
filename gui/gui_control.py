@@ -16,7 +16,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from tensorboard import program
 
 from autokin.robot import Robot, ExternRobot, ModelRobot
-from autokin.modelos import FKEnsemble, FKModel #, SelPropEnsemble
+from autokin.modelos import FKEnsemble, FKModel, SelPropEnsemble
 from autokin.muestreo import FKset
 from autokin.utils import RobotExecError, rand_split, abrir_tb
 from autokin.loggers import GUIprogress, LastEpochLog
@@ -483,10 +483,10 @@ class TrainThread(Thread):
                              **mfit_kwargs)
 
     def _muestreo_inicial(self):
-        # is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
+        is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
         try:
             sampled_dataset = FKset(self.robot, self.sample)
-                                    # include_dq=is_prop_selec)
+            sampled_dataset.include_dq = is_prop_selec
         except RobotExecError:
             logging.info('RobotExecError durante muestreo')
             self.queue.put(Msg('fail', 0))
@@ -595,7 +595,7 @@ class CtrlEjecucion:
 
         for x, y, z, t_t, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
-            q = model_robot.ikine_pi_jacob(q_start=q_prev,
+            q = model_robot.ikine_de(q_start=q_prev,
                                            p_target=target,
                                            #eta=0.1
                                            )
