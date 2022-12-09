@@ -119,7 +119,7 @@ class PantallaProgresoAjuste(Pantalla):
             self.progreso.config(mode='determinate', maximum=self.max_steps+1)
         if self.etapa_actual > 0:
             label = self.status_labels[self.etapa_actual-1]
-            label.config(text=f"Completado ({self.tiempo_trans()})")
+            label.config(text=f"Completado    ({self.tiempo_trans()})")
             label['style'] = 'Green.TLabel'
         label = self.status_labels[self.etapa_actual]
         label.config(text="En proceso...")
@@ -129,6 +129,7 @@ class PantallaProgresoAjuste(Pantalla):
 
     def step_callback(self, progress_info: dict, epoch: int):
         self.label_prog.config(text=f"Progreso: {epoch+1}/{self.max_steps}  ({self.tiempo_trans()})")
+        self.status_labels[self.etapa_actual-1].config(text=f"En proceso... ({self.tiempo_trans()})")
         self.label_info.config(text=self._format_prog_info(progress_info))
         self.progreso.step(1)
         self.update_idletasks()
@@ -142,7 +143,7 @@ class PantallaProgresoAjuste(Pantalla):
                                     "Error de ejecución en el robot")
         else:
             label = self.status_labels[-1]
-            label.config(text=f"Completado ({self.tiempo_trans()})")
+            label.config(text=f"Completado    ({self.tiempo_trans()})")
             label['style'] = 'Green.TLabel'
         self.terminado = True
 
