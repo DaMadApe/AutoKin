@@ -244,6 +244,8 @@ class PantallaConfigMuestreo(Pantalla):
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.extra_datasets
             for d_set in datasets.values():
+                if hasattr(d_set, 'include_dq'): # Compatibilidad con datasets creados antes del cambio
+                    d_set.include_dq = False
                 # Limitar puntos mostrados
                 max_points = 3000
                 step = max(1, int(len(d_set)/max_points))

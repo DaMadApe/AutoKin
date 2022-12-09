@@ -42,6 +42,8 @@ class FKset(Dataset):
         self.p_normal_noise = p_normal_noise
 
         self.apply_p_norm = True
+        self.include_dq = False
+
         self.p_scale = self.robot.p_scale.clone()
         self.p_offset = self.robot.p_offset.clone()
 
@@ -79,15 +81,16 @@ class FKset(Dataset):
     def _generate_labels(self):
         # Hacer cinemática directa
         self.q_vecs, self.p_vecs = self.robot.fkine(self.q_in_vecs)
-
+        # Agregar ruido según configuración
         q_noise = (self.q_uniform_noise*torch.rand(len(self), self.n) +
                    self.q_normal_noise*torch.randn(len(self), self.n))
-
         p_noise = (self.p_uniform_noise*torch.rand(len(self), self.out_n) +
                    self.p_normal_noise*torch.randn(len(self), self.out_n))
-
         self.q_vecs = self.q_vecs + q_noise
         self.p_vecs = self.p_vecs + p_noise
+        # Generar vector de dq para entrenamiento de SelPropEnsemble
+        self.q_diff = self.q_vecs.diff(dim=0)
+        self.q_diff = torch.cat([self.q_diff[0].unsqueeze(0), self.q_diff])
 
     def __len__(self):
         return self.q_vecs.shape[0]
@@ -96,6 +99,9 @@ class FKset(Dataset):
         q, p = self.q_vecs[idx], self.p_vecs[idx]
         if self.apply_p_norm:
             p = p * self.p_scale + self.p_offset
+        # hasattr para compatibilidad con datasets creados antes del cambio
+        if hasattr(self, 'include_dq') and self.include_dq:
+            q = torch.concat(q, self.q_diff[idx])
         return q, p
 
     def rand_split(self, proportions: list[float]):
