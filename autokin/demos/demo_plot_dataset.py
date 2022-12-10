@@ -7,9 +7,9 @@ from matplotlib import pyplot as plt
 Ver el último dataset recolectado para un robot
 """
 
-robot_nom = 'r3c' # 'LSL'
+robot_nom = 's3L'
 
-ds_dir = os.path.join('gui', 'app_data', 'robots', robot_nom, 'datasets')
+ds_dir = os.path.join('app_data', 'robots', robot_nom, 'datasets')
 
 d_set = torch.load(os.path.join(ds_dir, sorted(os.listdir(ds_dir))[-1]))
 
