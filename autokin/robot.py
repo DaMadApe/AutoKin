@@ -262,7 +262,6 @@ class ExternRobot(Robot):
 
 
 class ModelRobot(Robot):
-    # Meter métodos a un mixin?
     """
     Interfaz para operar una red neuronal que aproxima
     la cinemática de otro robot.
@@ -289,11 +288,11 @@ class ModelRobot(Robot):
              p_scale: torch.Tensor = None,
              p_offset: torch.Tensor = None):
         model = torch.load(model_dir)
-        model.eval() # TODO: revisar ubicación de esto
         return cls(model, p_scale, p_offset)
 
     def fkine(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         with torch.no_grad():
+            self.model.eval()
             p = self.model(q)
             p = (p - self.p_offset) / self.p_scale
         return q, p

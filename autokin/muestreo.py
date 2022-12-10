@@ -101,7 +101,7 @@ class FKset(Dataset):
             p = p * self.p_scale + self.p_offset
         # hasattr para compatibilidad con datasets creados antes del cambio
         if hasattr(self, 'include_dq') and self.include_dq:
-            q = torch.concat(q, self.q_diff[idx])
+            q = torch.concat([q, self.q_diff[idx]])
         return q, p
 
     def rand_split(self, proportions: list[float]):

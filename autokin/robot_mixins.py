@@ -55,6 +55,7 @@ class IkineMixin:
             q_update = eta * torch.matmul(pi_jacob, delta_x)
             logging.debug(f"q_update={q_update}")
             q += q_update
+            # Restringir valores de q al intervalo [0,1]
             q = q.clamp(min=0, max=1)
 
         return q.detach()
