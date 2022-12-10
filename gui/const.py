@@ -45,29 +45,6 @@ model_args = {
     }
 }
 
-model_args.update({
-    'MLPEnsemble': {
-        'n_modelos': {
-            'label': '# de modelos',
-            'var_type': 'int',
-            'default_val': 3,
-            'restr_positiv': True,
-            'non_zero': True
-        },
-        **model_args['MLP']
-    },
-    'ResNetEnsemble': {
-        'n_modelos': {
-            'label': '# de modelos',
-            'var_type': 'int',
-            'default_val': 3,
-            'restr_positiv': True,
-            'non_zero': True
-        },
-        **model_args['ResNet']
-    }
-})
-
 # Parámetros para el proceso de entrenamiento
 args_etapas = {
     'Meta ajuste': {
