@@ -138,6 +138,7 @@ class CtrlRobotDB:
         agregado = self.robots.agregar(RoboReg(nombre, cls_id, robot_args))
 
         if agregado:
+            logging.debug(f"Robot agregado: {self.robots[-1]}")
             # Crear directorios
             os.mkdir(self._robot_dir(self.robots[-1]))
             os.mkdir(self._model_dir(self.robots[-1]))
@@ -243,6 +244,7 @@ class CtrlRobotDB:
         agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
         
         if agregado:
+            logging.debug(f"Modelo agregado: {self.modelos[-1]}")
             # Crear directorio para guardar logs
             os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
