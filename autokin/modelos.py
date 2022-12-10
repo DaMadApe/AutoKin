@@ -1,8 +1,10 @@
+import logging
+
 import torch
 from torch import nn
-from torch.autograd.functional import jacobian
 
-from autokin.model_mixins import HparamsMixin, DataFitMixin, EnsembleMixin
+from autokin.model_mixins import *
+
 
 class FKModel(HparamsMixin, # Para almacenar hiperparámetros del modelo
               DataFitMixin, # Para ajustar y probar modelo con datos
@@ -130,9 +132,8 @@ class ELM(FKModel):
     pass
 
 
-class FKEnsemble(
-                 #HparamsMixin,
-                 EnsembleMixin,
+class FKEnsemble(DataFitMixin,
+                 ActiveFitMixin,
                  torch.nn.Module):
     """
     Agrupa un conjunto de modelos, permite entrenarlos en conjunto,
@@ -141,76 +142,65 @@ class FKEnsemble(
     def __init__(self, models : list[FKModel]):
         super().__init__()
         self.input_dim = models[0].input_dim
+        self.output_dim = models[0].output_dim
         for model in models:
             if model.input_dim != self.input_dim:
                 raise ValueError('Modelos de dimensiones diferentes')
         self.ensemble = torch.nn.ModuleList(models)
 
+    @classmethod
+    def from_cls(self_cls, model_cls, n_modelos:int, **model_args):
+        """
+        Para inicialización desde la GUI
+        """
+        return self_cls([model_cls(**model_args) for _ in range(n_modelos)])
 
-class MLPEnsemble(FKEnsemble):
-    def __init__(self,
-                 n_modelos : int,
-                 input_dim : int = 1,
-                 output_dim : int = 1,
-                 depth : int = 1,
-                 mid_layer_size : int = 10,
-                 activation : str = 'tanh'):
-        modelos = [MLP(input_dim=input_dim,
-                       output_dim=output_dim,
-                       depth=depth,
-                       mid_layer_size=mid_layer_size,
-                       activation=activation) for _ in range(n_modelos)]
-        super().__init__(modelos)
-
-
-class ResNetEnsemble(FKEnsemble):
-    def __init__(self,
-                 n_modelos : int,
-                 input_dim : int = 1,
-                 output_dim : int = 1,
-                 depth : int = 3,
-                 block_depth : int = 3,
-                 block_width : int = 10,
-                 activation : str = 'tanh'):
-        modelos = [ResNet(input_dim=input_dim,
-                          output_dim=output_dim,
-                          depth=depth,
-                          block_depth=block_depth,
-                          block_width=block_width,
-                          activation=activation) for _ in range(n_modelos)]
-        super().__init__(modelos)
+    def __getitem__(self, idx):
+        """
+        Facilitar acceso a los modelos individuales desde afuera
+        """
+        return self.ensemble[idx]
+    
+    def forward(self, x):
+        """
+        La propagación del conjunto resulta en 
+        """
+        preds = torch.stack([model(x) for model in self.ensemble])
+        return torch.mean(preds, dim=0)
 
 
-class SelPropEnsemble(EnsembleMixin,
-                      torch.nn.Module):
+class SelPropEnsemble(FKEnsemble):
     """
     Conjunto de modelos que propagan las muestras selectivamente según
     signo de la derivada de la entrada. El conjunto se inicializa con
     2^n_entradas modelos.
     """
     def __init__(self, models : list[FKModel]):
-        super().__init__()
-        self.input_dim = models[0].input_dim
-        for model in models:
-            if model.input_dim != self.input_dim:
-                raise ValueError('Modelos de dimensiones diferentes')
-        self.ensemble = torch.nn.ModuleList(models)
+        super().__init__(models)
+        if len(models) != 2**self.input_dim:
+            raise ValueError('Número de modelos debe ser 2^n_entradas')
 
         self.prev_x = torch.zeros(self.input_dim)
 
     def forward(self, x: torch.Tensor):
         # Redefine el forward de los otros ensembles
+        if x.ndim == 1:
+            x.unsqueeze_(0)
+        logging.debug(f"Forward: x={x}")
         if self.training:
-            x = x[:self.input_dim]
-            dx = x[self.input_dim:]
+            x = x[:, :self.input_dim]
+            dx = x[:, self.input_dim:]
+            logging.debug(f"SP Train: x={x}, dx={dx}")
         else:
-            dx = x - self.prev_x
-            self.prev_x = x
+            ext_x = torch.cat([self.prev_x.unsqueeze(0), x])
+            dx = torch.diff()
+            self.prev_x = x[-1]
+            logging.debug(f"SP Eval: x={x}, dx={dx}")
         # Obtener vector de signos de la derivada
         sign_dx = (dx.sign()/2 + 0.5).int()
         # Convertir vector de signos a entero
         bin_mask = 2 ** torch.arange(self.input_dim)
-        model_idx = sum(sign_dx * bin_mask).item()
+        model_idx = sum(sign_dx * bin_mask.unsqueeze(0)).item()
         # Propagar al modelo correspondiente
-        print('propagando a modelo', model_idx)
+        logging.debug('Propagando a modelo', model_idx)
         return self.ensemble[model_idx].forward(x)

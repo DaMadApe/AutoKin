@@ -1,4 +1,5 @@
 import inspect
+import logging
 from typing import Callable, Optional, Type
 
 import torch
@@ -41,7 +42,9 @@ class HparamsMixin:
 
 
 class DataFitMixin:
-    # TODO(?): Transferir funcionalidad a una clase Trainer
+    """
+    Implementa métodos para entrenar 
+    """
     def __init__(self):
         super().__init__()
         self.checkpoint = {}
@@ -51,15 +54,17 @@ class DataFitMixin:
         Ajustar el bias de salida a los promedios de salida
         de un set de referencia. Acelera convergencia de fit()
         """
-        out_size = reference_set[0][1].size()
-        out_mean = torch.zeros(out_size)
-
+        out_mean = torch.zeros(self.output_dim)
         for _, y in reference_set:
             out_mean += y
 
         out_mean /= len(reference_set)
 
-        self.layers[-1].bias = nn.Parameter(out_mean)
+        if hasattr(self, 'ensemble'):
+            for model in self.ensemble:
+                model.layers[-1].bias = nn.Parameter(out_mean)
+        else:
+            self.layers[-1].bias = nn.Parameter(out_mean)
 
     def _train_step(self, batch):
         X, Y = batch
@@ -107,6 +112,7 @@ class DataFitMixin:
                          epochs=n_epochs,
                          silent=True,
                          use_checkpoint=False,
+                         preadjust_bias=False,
                          **fit_kwargs)
                 post_sets.append(post_set)
 
@@ -166,6 +172,9 @@ class DataFitMixin:
         if log_dir is not None:
             loggers.append(TBLogger(log_dir))
 
+        # Colocar modelo en modo de entrenamiento
+        self.train()
+
         # TODO: Transferir datos y modelo a GPU si está disponible
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.criterion = criterion
@@ -192,7 +201,6 @@ class DataFitMixin:
             val_loader = DataLoader(val_set, batch_size=len(val_set))
 
         for epoch in range(epochs):
-            self.train()
             for batch in train_loader:
                 train_loss = self._train_step(batch)
 
@@ -200,7 +208,7 @@ class DataFitMixin:
 
             # Val step
             if val_set is not None:
-                self.eval()
+                # self.eval()
                 with torch.no_grad():
                     for X, Y in val_loader:
                         pred = self(X)
@@ -239,45 +247,9 @@ class DataFitMixin:
         return test_loss
 
 
-class EnsembleMixin:
+class ActiveFitMixin:
     def __init__(self):
         super().__init__()
-        self.best_model_idx = None
-        self.model_scores = None
-    
-    def __getitem__(self, idx):
-        """
-        Facilitar acceso a los modelos individuales desde afuera
-        """
-        return self.ensemble[idx]
-    
-    def forward(self, x):
-        """
-        Este forward (tal vez) no tiene utilidad para entrenamiento
-        """
-        return torch.stack([model(x) for model in self.ensemble])
-
-    def joint_predict(self, x):
-        """
-        Devuelve la predicción promedio de todos los modelos
-        """
-        with torch.no_grad():
-            self.ensemble.eval()
-            preds = self(x)
-        return torch.mean(preds, dim=0)
-
-    def best_predict(self, x):
-        """
-        Devuelve la predicción del mejor modelo
-        (requiere ejecutar antes self.test con un set de prueba)
-        """
-        if self.best_model_idx is None:
-            raise RuntimeError('No se hizo ensemble.test()')
-        else:
-            with torch.no_grad():
-                self.ensemble[self.best_model_idx].eval()
-                pred = self.ensemble[self.best_model_idx](x)
-            return pred
 
     def query(self,
               candidate_batch: torch.Tensor = None,
@@ -291,8 +263,7 @@ class EnsembleMixin:
             candidate_batch = torch.rand((1000, self.input_dim))
 
         with torch.no_grad():
-            self.ensemble.eval()
-            preds = self(candidate_batch)
+            preds = torch.stack([model(candidate_batch) for model in self.ensemble])
 
         # La desviación estándar de cada muestra es la suma de la
         # varianza entre modelos de cada coordenada.
@@ -307,30 +278,6 @@ class EnsembleMixin:
 
         return query
         # return torch.topk(deviation, n_queries)
-
-    def meta_fit(self, **m_fit_kwargs):
-        """
-        Entrenar cada uno de los modelos individualmente
-        """
-        for model in self.ensemble:
-            model.meta_fit(**m_fit_kwargs)
-
-    def fit(self, train_set, **train_kwargs):
-        """
-        Entrenar cada uno de los modelos individualmente
-        """
-        for model in self.ensemble:
-            model.fit(train_set, **train_kwargs)
-
-    def test(self, test_set, **test_kwargs):
-        self.model_scores = []
-        for model in self.ensemble:
-            score = model.test(test_set, **test_kwargs)
-            self.model_scores.append(score)
-
-        self.best_model_idx = self.model_scores.index(min(self.model_scores))
-
-        return self.model_scores.copy()
 
     def active_fit(self, train_set, label_fun,
                    query_steps : int,
@@ -362,6 +309,7 @@ class EnsembleMixin:
 
             self.fit(train_set,
                      ext_interrupt=ext_interrupt,
+                     preadjust_bias=False,
                      **train_kwargs)
 
             if ext_interrupt is not None and ext_interrupt():

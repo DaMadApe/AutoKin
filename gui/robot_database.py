@@ -1,4 +1,5 @@
 from copy import deepcopy
+from functools import partial
 from dataclasses import dataclass, field
 from typing import TypeVar, Optional
 
@@ -69,10 +70,19 @@ class ModelReg(Reg):
     """
     Registro de modelo 
     """
-    inits = {cls.__name__ : cls for cls in [MLP, 
-                                            ResNet,
-                                            MLPEnsemble,
-                                            ResNetEnsemble]}
+    mod_types = [MLP, ResNet]
+    # Inits para modelos individuales
+    inits = {cls.__name__ : cls for cls in mod_types}
+    # Inits para conjuntos de modelos
+    for cls in mod_types:
+        model_name = cls.__name__ + '_Ensemble'
+        model_init = partial(FKEnsemble.from_cls, cls)
+        inits.update({model_name : model_init})
+    # Inits para conjuntos con propagación selectiva
+    for cls in mod_types:
+        model_name = cls.__name__ + '_SPEnsemble'
+        model_init = partial(SelPropEnsemble.from_cls, cls)
+        inits.update({model_name : model_init})
 
     trains: list = field(default_factory=list)
 

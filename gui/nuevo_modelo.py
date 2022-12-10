@@ -28,9 +28,17 @@ class Popup_agregar_modelo(Popup):
         self.combo_model_cls['values'] = list(self.model_args.keys())
         self.combo_model_cls.bind('<<ComboboxSelected>>', self.definir_panel_hparams)
 
+        # Checkbutton para crear conjunto de modelos
+        self.ensemble_var = tk.IntVar()
+        check_but = ttk.Checkbutton(self,
+                                    text="Conjunto de modelos",
+                                    variable=self.ensemble_var,
+                                    command=self.ensemble_check_fun)
+        check_but.grid(column=0, row=2, columnspan=2, sticky='w')
+
         # Parámetros de modelo
         self.frame_mod_params = ttk.LabelFrame(self, text='Parámetros')
-        self.frame_mod_params.grid(column=0, row=2,
+        self.frame_mod_params.grid(column=0, row=3,
                                    sticky='nsew', columnspan=2)
         # Para que el labelframe no esté vacío y sí aparezca
         place_label = ttk.Label(self.frame_mod_params,
@@ -40,63 +48,77 @@ class Popup_agregar_modelo(Popup):
         # Botones de abajo
         boton_cancelar = ttk.Button(self, text="Cancelar",
                                    command=self.destroy)
-        boton_cancelar.grid(column=0, row=3)
+        boton_cancelar.grid(column=0, row=4)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
                                    command=self.ejecutar)
-        boton_aceptar.grid(column=1, row=3)
+        boton_aceptar.grid(column=1, row=4)
 
         for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
         self.bind('<Return>', self.ejecutar)
 
-    def definir_panel_hparams(self, event):
+    def definir_panel_hparams(self, *args):
         # Producir automáticamente los widgets según el dict
         # de model_params para cada tipo de modelo
         for widget in self.frame_mod_params.winfo_children():
             widget.destroy()
 
         tipo_modelo = self.combo_model_cls.get()
-        args = self.model_args[tipo_modelo]
+        args = self.model_args[tipo_modelo].copy()
         self.arg_getters = {}
         self.entries = {}
+
+        # Añadir parámetro de n_modelos para ensembles
+        if self.ensemble_var.get():
+            args.update({
+                'n_modelos': {
+                    'label': '# de modelos',
+                    'var_type': 'int',
+                    'default_val': 3,
+                    'restr_positiv': True,
+                    'non_zero': True
+                }
+            })
+
+        # Selección de función de activación
+        f_act_label = ttk.Label(self.frame_mod_params, text="Función de activación")
+        f_act_label.grid(column=0, row=0, sticky='w')
+        f_act_combo = ttk.Combobox(self.frame_mod_params,state='readonly',
+                                   width=10)
+        f_act_combo.grid(column=1, row=0)
+        f_act_combo['values'] = ('relu', 'tanh')
+        f_act_combo.set('relu')
 
         # Entradas para parámetros numéricos
         for i, (arg_name, entry_kwargs) in enumerate(args.items()):
             entry = Label_Entry(self.frame_mod_params,
                                 width=10, **entry_kwargs)
-            entry.grid(column=0, row=i)
+            entry.grid(column=0, row=i+1)
             self.entries[arg_name] = entry
             self.arg_getters[arg_name] = entry.get
-
-        # Selección de función de activación
-        f_act_label = ttk.Label(self.frame_mod_params, text="Función de activación")
-        f_act_label.grid(column=0, row=len(args), sticky='w')
-        f_act_combo = ttk.Combobox(self.frame_mod_params,state='readonly',
-                                   width=10)
-        f_act_combo.grid(column=1, row=len(args))
-        f_act_combo['values'] = ('relu', 'tanh')
-        f_act_combo.set('relu')
 
         self.arg_getters['activation'] = f_act_combo.get
 
         # Checkbox de propagación selectiva
-        if 'Ensemble' in tipo_modelo:
-            self.check_var = tk.IntVar()
+        if self.ensemble_var.get():
+            self.sel_prop_var = tk.IntVar()
             check_but = ttk.Checkbutton(self.frame_mod_params,
                                         text="Propagar según signo de dq",
-                                        variable=self.check_var,
-                                        command=self.check_fun)
-            check_but.grid(column=0, row=len(args)+1, sticky='w')
-        else:
-            self.check_var = None
+                                        variable=self.sel_prop_var,
+                                        command=self.sel_prop_check_fun)
+            check_but.grid(column=0, row=len(args)+1, columnspan=2, sticky='w')
 
         for child in self.frame_mod_params.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
-    def check_fun(self):
-        state = 'disabled' if self.check_var.get() else 'normal'
+    def ensemble_check_fun(self):
+        if self.combo_model_cls.get():
+            self.definir_panel_hparams()
+
+    def sel_prop_check_fun(self):
+        state = 'disabled' if self.sel_prop_var.get() else 'normal'
         entry = self.entries['n_modelos']
         entry.entry['state'] = state
 
@@ -104,8 +126,6 @@ class Popup_agregar_modelo(Popup):
         model_kwargs = {}
         for arg_name, get_fn in self.arg_getters.items():
             model_kwargs[arg_name] = get_fn()
-        if self.check_var is not None and self.check_var.get():
-            model_kwargs['n_modelos'] = 0
         return model_kwargs
 
     def ejecutar(self, *args):
@@ -116,9 +136,13 @@ class Popup_agregar_modelo(Popup):
 
                 cls_id = self.combo_model_cls.get()
 
-                if 'Ensemble' in cls_id and model_kwargs['n_modelos']==0:
-                    n_modelos = 2**self.parent.controlador.robot_s.n
-                    model_kwargs['n_modelos'] = n_modelos
+                if self.ensemble_var.get():
+                    if self.sel_prop_var.get():
+                        cls_id += '_SPEnsemble'
+                        n_modelos = 2**self.parent.controlador.robot_s.n
+                        model_kwargs['n_modelos'] = n_modelos
+                    else:
+                        cls_id += '_Ensemble'
 
                 model_kwargs.update(cls_id=cls_id)
                 agregado = self.callback(nombre, model_kwargs)
