@@ -132,6 +132,7 @@ class CtrlRobotDB:
         self.robots.seleccionar(indice)
         self._robot_s = None
         self._modelo_s = None
+        logging.debug(f"Modelo seleccionado: {self.robots[indice]}")
 
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
         cls_id = robot_args.pop('cls_id')
@@ -234,6 +235,7 @@ class CtrlRobotDB:
     def seleccionar_modelo(self, indice: int):
         self.modelos.seleccionar(indice)
         self._modelo_s = None
+        logging.debug(f"Modelo seleccionado: {self.modelos[indice]}")
 
     def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
         model_args.update(input_dim=self.robot_s.n,
