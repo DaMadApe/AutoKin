@@ -29,8 +29,7 @@ class TBLogger(Logger):
 
     def log_step(self, progress_info: dict, epoch: int):
         for key, val in progress_info.items():
-            self.writer.add_scalar(key, val,
-                                   epoch) #+ self.trained_epochs)
+            self.writer.add_scalar(key, val, epoch)
 
     def log_hparams(self, hparams: dict, metrics: dict):
         self.writer.add_hparams(hparams, 
@@ -70,23 +69,6 @@ class GUIprogress(Logger):
 
     def close(self):
         self.close_callback()
-
-
-class TxtLogger(Logger):
-    """
-    Logger para crear archivos de texto .log (ver experimentos/experimento.py)
-    """
-    def __init__(self):
-        pass
-
-    def log_step(self, progress_info: dict, epoch: int):
-        pass
-
-    def log_hparams(self, hparams: dict):
-        pass
-
-    def close(self):
-        pass
 
 
 class LastEpochLog(Logger):
