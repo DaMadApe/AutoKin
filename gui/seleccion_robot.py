@@ -18,15 +18,16 @@ class PantallaSelecRobot(Pantalla):
         columnas = (' nombre',
                     ' tipo',
                     ' # de modelos',
-                    ' # de actuadores')
+                    ' # de actuadores',
+                    ' # de datasets')
         self.tabla = TablaYBotones(self, columnas=columnas,
-                                   anchos=(160, 120, 120, 120),
+                                   anchos=(130, 100, 120, 120, 120),
                                    fn_doble_click=self.controlador.seleccionar_robot)
         self.tabla.grid(column=0, row=0, sticky='nsew',
                         padx=5, pady=5)
 
-        for robot in self.controlador.robots:
-            self.agregar_robot_tabla(robot)
+        for idx,_ in enumerate(self.controlador.robots):
+            self.agregar_robot_tabla(idx)
 
         # Botones de tabla
         self.tabla.agregar_boton(text="Nuevo...",
@@ -70,23 +71,25 @@ class PantallaSelecRobot(Pantalla):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-    def agregar_robot_tabla(self, robot: RoboReg):
+    def agregar_robot_tabla(self, idx: int):
+        robot = self.controlador.robots[idx]
         # HACK: Evitar inicialización de robot externo para obtener n de actuadores
         if robot.cls_id == 'Externo':
             n = robot.kwargs['n']
         else:
             n = robot.init_obj().n
-    
+
         self.tabla.agregar_entrada(robot.nombre,
                                    robot.cls_id,
                                    len(robot.modelos),
-                                   f"q = {n}")
+                                   f"q = {n}",
+                                   self.controlador.count_datasets(idx))
 
     def agregar_robot(self, *args):
         def callback(nombre, robot_args):
             agregado = self.controlador.agregar_robot(nombre, robot_args)
             if agregado:
-                self.agregar_robot_tabla(self.controlador.robots[-1])
+                self.agregar_robot_tabla(-1)
             return agregado
         Popup_agregar_robot(self, callback)
 
@@ -96,7 +99,7 @@ class PantallaSelecRobot(Pantalla):
                                                      copiar_modelos,
                                                      copiar_datasets)
             if agregado:
-                self.agregar_robot_tabla(self.controlador.robots[-1])
+                self.agregar_robot_tabla(-1)
             return agregado
         Popup_copiar_robot(self, callback)
 
@@ -125,8 +128,8 @@ class PantallaSelecRobot(Pantalla):
         super().actualizar()
         self.tabla.limpiar_tabla()
         self.tabla.desactivar_botones()
-        for robot in self.controlador.robots:
-            self.agregar_robot_tabla(robot)
+        for idx,_ in enumerate(self.controlador.robots):
+            self.agregar_robot_tabla(idx)
 
     def en_cierre(self):
         self.controlador.cerrar_tensorboard()

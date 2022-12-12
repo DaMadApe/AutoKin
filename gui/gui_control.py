@@ -317,6 +317,10 @@ class CtrlRobotDB:
             datasets[filename] = torch.load(dataset_path)
         return datasets
 
+    def count_datasets(self, idx: int) -> int:
+        dataset_dir = self._dataset_dir(self.robots[idx])
+        return len(os.listdir(dataset_dir))
+
     def get_ext_status(self) -> Optional[dict]:
         """
         Revisar estado de conexión BT, cámaras, etc.
