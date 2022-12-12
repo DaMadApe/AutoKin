@@ -51,42 +51,28 @@ args_etapas = {
         'n_steps': {
             'label': 'Iteraciones de meta ajuste',
             'var_type': 'int',
-            'default_val': 4,
+            'default_val': 5,
             'restr_positiv': True,
             'non_zero': True
         },
-        'n_datasets': {
-            'label': 'Datasets por iteración',
-            'var_type': 'int',
-            'default_val': 8,
-            'restr_positiv': True,
-            'non_zero': True
-        },
-        'n_samples': {
-            'label': 'Muestras por dataset',
-            'var_type': 'int',
-            'default_val': 100,
-            'restr_positiv': True,
-            'non_zero': True
-        },
-        'n_post': {
-            'label': 'Muestras para ajuste final',
-            'var_type': 'int',
-            'default_val': 10,
-            'restr_positiv': True,
-            'non_zero': True
-        },
-        'n_epochs': {
-            'label': 'Épocas por dataset',
+        'n_epochs_step': {
+            'label': 'Épocas por iteración',
             'var_type': 'int',
             'default_val': 50,
             'restr_positiv': True,
             'non_zero': True
         },
-        'n_post_epochs': {
-            'label': 'Épocas de ajuste final',
+        'n_dh_datasets': {
+            'label': 'Datasets de DH incluídos',
             'var_type': 'int',
             'default_val': 5,
+            'restr_positiv': True,
+            'non_zero': True
+        },
+        'n_dh_samples': {
+            'label': 'Muestras por cada dataset DH',
+            'var_type': 'int',
+            'default_val': 500,
             'restr_positiv': True,
             'non_zero': True
         },
@@ -97,10 +83,10 @@ args_etapas = {
             'restr_positiv': True,
             'non_zero': True
         },
-        'post_lr': {
-            'label': 'Learning rate para ajuste final',
+        'eps': {
+            'label': 'Interpolación a parámetros adaptados',
             'var_type': 'float',
-            'default_val': 1e-5,
+            'default_val': 0.1,
             'restr_positiv': True,
             'non_zero': True
         },

@@ -468,10 +468,16 @@ class TrainThread(Thread):
         if extra_datasets is None:
             self.extra_datasets = []
 
+        for dataset in self.mfit_datasets:
+            dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
+
         for dataset in self.extra_datasets:
             dataset.p_scale = robot.p_scale
             dataset.p_offset = robot.p_offset
             dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
+
+        
+
 
         self.sampled_dataset = None
         
@@ -498,12 +504,10 @@ class TrainThread(Thread):
     def _meta_ajuste(self, log_dir):
         mfit_kwargs = self.train_kwargs['Meta ajuste']
 
-        steps = mfit_kwargs['n_epochs'] * mfit_kwargs['n_datasets']
-        steps += mfit_kwargs['n_post_epochs']
-        steps *= mfit_kwargs['n_steps']
+        steps = mfit_kwargs['n_steps'] * mfit_kwargs['n_epochs_step']
         self.queue.put(Msg('stage', steps))
 
-        self.modelo.meta_fit(datasets=self.mfit_datasets,
+        self.modelo.meta_fit(task_datasets=self.mfit_datasets,
                              log_dir=log_dir,
                              loggers=[self.gui_logger],
                              ext_interrupt=self.queue.interrupt,

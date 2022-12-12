@@ -1,5 +1,7 @@
 import inspect
 import logging
+from copy import deepcopy
+from random import choice
 from typing import Callable, Optional, Type
 
 import torch
@@ -81,56 +83,44 @@ class DataFitMixin:
         return train_loss
 
     def meta_fit(self,
-                 n_steps: int = 10,
-                 n_datasets: int = 8,
-                 n_samples: int = 100,
-                 n_post: int = 10,
+                 task_datasets: list[Dataset],
+                 n_steps: int = 5,
+                 n_epochs_step: int = 1,
+                 n_dh_datasets: int = 5,
+                 n_dh_samples: int = 500,
                  lr: float = 1e-4,
-                 post_lr: float = 1e-4,
-                 n_epochs: int = 1,
-                 n_post_epochs: int = 1,
+                 eps: float = 0.1,
                  ext_interrupt: Callable = None,
                  **fit_kwargs):
-        min_DH = [1, 0, 0, 1]
-        max_DH = [10, 2*torch.pi, 2*torch.pi, 10]
+
+        for _ in range(n_dh_datasets): # - len(sample_robots)):
+            robot = RTBrobot.random(n=self.input_dim,
+                                    min_DH=[1, 0, 0, 1],
+                                    max_DH=[10, 2*torch.pi, 2*torch.pi, 10])
+            robot_samples = FKset.random_sampling(robot, n_dh_samples)
+            task_datasets.append(robot_samples)
 
         for _ in range(n_steps):
-            sample_robots = []
-            # sample_robots.extend(robots_by_n[input_dim])
-
-            post_sets = []
-    
-            for _ in range(n_datasets): # - len(sample_robots)):
-                robot = RTBrobot.random(n=self.input_dim,
-                                        min_DH=min_DH,
-                                        max_DH=max_DH)
-                sample_robots.append(robot)
-
-            for robot in sample_robots:
-                full_set = FKset.random_sampling(robot, n_samples+n_post)
-                train_set, post_set = random_split(full_set, [n_samples,
-                                                              n_post])
-                
-                self.fit(train_set, 
+            # Tomar aleatoriamente una de las tareas (datasets)
+            task_ds = choice(task_datasets)
+            # Copiar modelo en estado actual para calcular params ajustados
+            adjusted = deepcopy(self)
+            # Encontrar params ajustados a la tarea
+            adjusted.fit(task_ds, 
                          lr=lr,
-                         epochs=n_epochs,
+                         epochs=n_epochs_step,
                          silent=True,
                          use_checkpoint=False,
                          preadjust_bias=False,
                          **fit_kwargs)
-                post_sets.append(post_set)
 
-                if ext_interrupt is not None and ext_interrupt():
-                    return
+            # Aplicar actualización a los meta-parámetros
+            with torch.no_grad():
+                for p1, p2 in zip(self.parameters(), adjusted.parameters()):
+                    p1 += eps*(p2-p1)
 
-            post_set = ConcatDataset(post_sets)
-            self.fit(post_set, 
-                     lr=post_lr,
-                     epochs=n_post_epochs,
-                     silent=True,
-                     use_checkpoint=False,
-                     ext_interrupt=ext_interrupt,
-                     **fit_kwargs)
+            if ext_interrupt is not None and ext_interrupt():
+                return
 
     def fit(self, train_set: Dataset, 
             val_set: Dataset = None,
