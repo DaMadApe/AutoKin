@@ -8,17 +8,20 @@ from autokin.muestreo import FKset
 from autokin.trayectorias import coprime_sines
 from autokin.utils import restringir
 
-DS_PATH = 'ext_robot/experimentos/dataset_validacion.pt'
+# DS_PATH = 'ext_robot/experimentos/dataset_validacion.pt'
+DS_PATH = 'dataset_validacion.pt'
 
-nombre_robot = 'r3c'
-nombre_modelo = 'mod1'
+nombre_robot = 's3L' # 'r3c'
+nombre_modelo = 'mlp1' # 'mod1'
 
 model_path = os.path.join('app_data', 'robots', nombre_robot,
                           'modelos', nombre_modelo+'.pt')
 
 model = ModelRobot.load(model_path,
-                        p_scale=torch.tensor([14.0707, 30.3070, 14.3431]),
-                        p_offset=torch.tensor([-0.5610, 5.6922, 0.3297]))
+                        p_scale=torch.tensor([0.0121, 0.0096, 0.0160]),
+                        p_offset=torch.tensor([1.0609, 0.1956, -2.1140]))
+                        # p_scale=torch.tensor([14.0707, 30.3070, 14.3431]),
+                        # p_offset=torch.tensor([-0.5610, 5.6922, 0.3297]))
 
 d_set = torch.load(DS_PATH)
 d_set.apply_p_norm = False
@@ -36,7 +39,18 @@ for i, p_si in enumerate(p_real):
     q = model.ikine_de(
         q_start=q_prev,
         p_target=p_si,
-        #eta=0.1
+        # strategy= 'best1bin',
+        strategy= 'best1exp',
+        # strategy= 'rand1exp',
+        # strategy= 'randtobest1exp',
+        # strategy= 'currenttobest1exp',
+        # strategy= 'best2exp',
+        # strategy= 'rand2exp',
+        # strategy= 'randtobest1bin',
+        # strategy= 'currenttobest1bin',
+        # strategy= 'best2bin',
+        # strategy= 'rand2bin',
+        # strategy= 'rand1bin',
     )
     print(f'q_pred{i} = {q}, q_obj = {q_real[i]}')
     q_prev = q
@@ -59,6 +73,9 @@ ax1.legend(['modelo(q_real)', '', 'p_real', ''])
 ax1.set_xlabel('x')
 ax1.set_ylabel('y')
 ax1.set_zlabel('z')
+# ax1.set_xlim((0, 0.15))
+# ax1.set_ylim((-0.2, -0.05))
+# ax1.set_zlim((-0.05, 0.1))
 
 ax2 = fig.add_subplot(1,2,2, projection='3d')
 ax2.set_title('Parámetros encontrados por ikine vs q_real')
