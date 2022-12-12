@@ -186,21 +186,21 @@ class SelPropEnsemble(FKEnsemble):
         # Redefine el forward de los otros ensembles
         if x.ndim == 1:
             x.unsqueeze_(0)
-        logging.debug(f"Forward: x={x}")
         if self.training:
-            x = x[:, :self.input_dim]
             dx = x[:, self.input_dim:]
-            logging.debug(f"SP Train: x={x}, dx={dx}")
+            x = x[:, :self.input_dim]
         else:
             ext_x = torch.cat([self.prev_x.unsqueeze(0), x])
-            dx = torch.diff()
+            dx = torch.diff(ext_x, dim=0)
             self.prev_x = x[-1]
-            logging.debug(f"SP Eval: x={x}, dx={dx}")
         # Obtener vector de signos de la derivada
         sign_dx = (dx.sign()/2 + 0.5).int()
         # Convertir vector de signos a entero
         bin_mask = 2 ** torch.arange(self.input_dim)
-        model_idx = sum(sign_dx * bin_mask.unsqueeze(0)).item()
+        model_bin_idx = torch.sum(sign_dx * bin_mask.unsqueeze(0), dim=1)
         # Propagar al modelo correspondiente
-        logging.debug('Propagando a modelo', model_idx)
-        return self.ensemble[model_idx].forward(x)
+        prop = torch.zeros(len(x), self.output_dim)
+        for i in range(2**self.input_dim):
+            idx = torch.argwhere(model_bin_idx == i)
+            prop[idx] = self.ensemble[i].forward(x[idx])
+        return prop
