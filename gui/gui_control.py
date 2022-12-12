@@ -224,7 +224,7 @@ class CtrlRobotDB:
             model_path = self._model_path(self.robot_reg_s,
                                           self.modelo_reg_s)
             if os.path.isfile(model_path):
-                logger.info(f'Cargando robot en {model_path}')
+                logger.info(f'Cargando modelo en {model_path}')
                 self._modelo_s = torch.load(model_path)
             else:
                 logger.info(f'Creando nueva instancia de modelo')
@@ -311,9 +311,11 @@ class CtrlRobotDB:
             self.tb_proc.terminate()
             self.tb_proc.join()
 
-    def get_datasets(self) -> dict[str, FKset]:
+    def get_datasets(self, robot:RoboReg=None) -> dict[str, FKset]:
+        if robot is None:
+            robot = self.robot_reg_s
         datasets = {}
-        dataset_dir = self._dataset_dir(self.robot_reg_s)
+        dataset_dir = self._dataset_dir(robot)
         for filename in sorted(os.listdir(dataset_dir)):
             dataset_path = os.path.join(dataset_dir, filename)
             datasets[filename] = torch.load(dataset_path)
@@ -360,6 +362,13 @@ class CtrlEntrenamiento:
         base_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s) 
         log_dir = os.path.join(base_dir, timestamp)
 
+        # Tomar sólo datasets de misma dimensión de entrada 
+        mfit_sets = []
+        for robot in self.robots:
+            datasets = list(self.get_datasets(robot).values())
+            if datasets and datasets[0].n == self.robot_s.n:
+                mfit_sets.extend(datasets)
+
         self.trainer = TrainThread(queue=self.queue,
                                    modelo=self.modelo_s,
                                    robot=self.robot_s,
@@ -367,7 +376,8 @@ class CtrlEntrenamiento:
                                    split=self.split,
                                    train_kwargs=self.train_kwargs,
                                    log_dir=log_dir,
-                                   prev_datasets=list(self.extra_datasets.values()))
+                                   mfit_datasets=list(self.get_datasets().values()),
+                                   extra_datasets=list(self.extra_datasets.values()))
         self.trainer.start()
 
         self.check_queue(stage_callback, step_callback, 
@@ -461,6 +471,7 @@ class TrainThread(Thread):
         for dataset in self.extra_datasets:
             dataset.p_scale = robot.p_scale
             dataset.p_offset = robot.p_offset
+            dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
 
         self.sampled_dataset = None
         
