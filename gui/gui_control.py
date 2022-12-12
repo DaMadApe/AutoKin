@@ -442,7 +442,8 @@ class TrainThread(Thread):
                  split: list[float],
                  train_kwargs: dict,
                  log_dir,
-                 prev_datasets: list[FKset] = None):
+                 mfit_datasets: list[FKset] = None,
+                 extra_datasets: list[FKset] = None):
         super().__init__(name='training', daemon=True)
         self.queue = queue
         self.modelo = modelo
@@ -452,11 +453,12 @@ class TrainThread(Thread):
         self.train_kwargs = train_kwargs
         self.log_dir = log_dir
 
-        self.prev_datasets = prev_datasets
-        if prev_datasets is None:
-            self.prev_datasets = []
+        self.mfit_datasets = mfit_datasets
+        self.extra_datasets = extra_datasets
+        if extra_datasets is None:
+            self.extra_datasets = []
 
-        for dataset in self.prev_datasets:
+        for dataset in self.extra_datasets:
             dataset.p_scale = robot.p_scale
             dataset.p_offset = robot.p_offset
 
@@ -490,14 +492,13 @@ class TrainThread(Thread):
         steps *= mfit_kwargs['n_steps']
         self.queue.put(Msg('stage', steps))
 
-        self.modelo.meta_fit(log_dir=log_dir,
+        self.modelo.meta_fit(datasets=self.mfit_datasets,
+                             log_dir=log_dir,
                              loggers=[self.gui_logger],
                              ext_interrupt=self.queue.interrupt,
                              **mfit_kwargs)
 
     def _muestreo_inicial(self):
-        self.queue.put(Msg('stage', 0))
-
         is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
         try:
             sampled_dataset = FKset(self.robot, self.sample)
@@ -510,6 +511,7 @@ class TrainThread(Thread):
             return sampled_dataset
 
     def _ajuste_inicial(self, log_dir):
+        self.queue.put(Msg('stage', 0))
         if len(self.sample) > 0:
             self.sampled_dataset = self._muestreo_inicial()
             if self.sampled_dataset is None:
@@ -517,7 +519,7 @@ class TrainThread(Thread):
         else:
             self.sampled_dataset = []
 
-        full_dataset = ConcatDataset([self.sampled_dataset, *self.prev_datasets])
+        full_dataset = ConcatDataset([self.sampled_dataset, *self.extra_datasets])
         self.train_set, self.val_set = rand_split(full_dataset, self.split)
 
         # Ajuste
