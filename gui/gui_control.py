@@ -299,7 +299,7 @@ class CtrlRobotDB:
         else:
             log_dir = base_dir
 
-        self.tb_proc = mp.Process(target=abrir_tb, args=(log_dir, ))
+        self.tb_proc = mp.Process(target=abrir_tb, args=(log_dir, ), daemon=True)
         self.tb_proc.start()
         time.sleep(2) # Incrementar si no conecta a la primera
         webbrowser.open('http://localhost:6006/')
