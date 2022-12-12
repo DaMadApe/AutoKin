@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.gui_utils import Pantalla, Label_Entry, Popup, TablaYBotones
+from gui.const import args_etapas
 
 
 class PantallaSelecPuntos(Pantalla):
@@ -14,14 +15,15 @@ class PantallaSelecPuntos(Pantalla):
         self.puntos = []
 
         self.dataset_check_var = tk.IntVar(value=0)
+        self.ajuste_check_var = tk.IntVar(value=0)
 
         super().__init__(parent, titulo="Selección de puntos")
 
     def definir_elementos(self):
-        columnas = ('i', 'x', 'y', 'z', 'tt', 'ts')
+        columnas = ('i', 'x', 'y', 'z', 'ts')
         self.tabla = TablaYBotones(self, botones_abajo=True,
                                    columnas=columnas,
-                                   anchos=(30, 50, 50, 50, 50, 50),
+                                   anchos=(30, 60, 60, 60, 60),
                                    fn_doble_click=self.modificar_punto)
         self.tabla.grid(column=0, row=0, sticky='nsew')
 
@@ -61,7 +63,7 @@ class PantallaSelecPuntos(Pantalla):
         self.fig.tight_layout()
         self.grafica = FigureCanvasTkAgg(self.fig, master=self)
         self.grafica.get_tk_widget().grid(column=1, row=0, sticky='n',
-                                          rowspan=3, padx=5, pady=5)
+                                          rowspan=4, padx=5, pady=5)
         self.recargar_grafica()
 
         # Check para ver puntos de datasets pasados como referencia
@@ -69,16 +71,22 @@ class PantallaSelecPuntos(Pantalla):
                                     text="Mostrar puntos de muestras anteriores",
                                     variable=self.dataset_check_var,
                                     command=self.recargar_grafica)
-        check_but.grid(column=0, row=2)
+        check_but.grid(column=0, row=2, sticky='w')
+
+        # Check para seleccionar ajuste continuo
+        check_but = ttk.Checkbutton(self,
+                                    text="Ajustar a nuevas muestras",
+                                    variable=self.ajuste_check_var)
+        check_but.grid(column=0, row=3, sticky='w')
 
         # Botones
         boton_regresar = ttk.Button(self, text="Regresar",
                                     command=self.parent.regresar)
-        boton_regresar.grid(column=0, row=3, sticky='w')
+        boton_regresar.grid(column=0, row=4, sticky='w')
 
         boton_ejecutar = ttk.Button(self, text="Ejecutar",
                                     command=self.ejecutar)
-        boton_ejecutar.grid(column=1, row=3, sticky='e')
+        boton_ejecutar.grid(column=1, row=4, sticky='e')
 
         # Agregar pad a todos los widgets
         for frame in [self]: #, frame_configs]:
@@ -134,7 +142,8 @@ class PantallaSelecPuntos(Pantalla):
 
     def ejecutar(self):
         if self.puntos:
-            self.controlador.set_trayec(self.puntos)
+            self.controlador.set_trayec(self.puntos,
+                                        bool(self.ajuste_check_var.get()))
             self.parent.avanzar()
 
     def recargar_tabla(self):
@@ -201,17 +210,11 @@ class Popup_asignar_punto(Popup):
         frame_tiempos = ttk.Frame(self)
         frame_tiempos.grid(column=0, row=1)
 
-        self.t_t_entry = Label_Entry(frame_tiempos, width=5,
-                                     label="Tiempo transición (s):",
-                                     var_type='float', default_val=t_t_val,
-                                     restr_positiv=True, non_zero=True)
-        self.t_t_entry.grid(column=0, row=0)
-
         self.t_s_entry = Label_Entry(frame_tiempos, width=5,
                                      label="Tiempo estacionario (s):",
                                      var_type='float', default_val=t_s_val,
                                      restr_positiv=True, non_zero=True)
-        self.t_s_entry.grid(column=0, row=1)
+        self.t_s_entry.grid(column=0, row=0)
 
         boton_aceptar = ttk.Button(self, text="Agregar",
                                    command=self.agregar_punto)
@@ -227,10 +230,9 @@ class Popup_asignar_punto(Popup):
         x = self.x_entry.get()
         y = self.y_entry.get()
         z = self.z_entry.get()
-        t_t = self.t_t_entry.get()
         t_s = self.t_s_entry.get()
 
-        punto = [x, y, z, t_t, t_s]
+        punto = [x, y, z, t_s]
 
         if not (None in punto):
             self.callback(punto)

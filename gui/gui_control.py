@@ -405,7 +405,12 @@ class CtrlEntrenamiento:
         else:
             # Desechar instancia actual (entrenada) del modelo
             self._modelo_s = None
-            # TODO: Desechar logs recolectados de tensorboard
+            # Desechar logs recolectados de tensorboard
+            # log_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s)
+            # list_logs = os.listdir(log_dir)
+            # if len(list_logs) > len(self.modelo_reg_s.trains):
+            #     last_tb_dir = sorted(list_logs)[-1]
+            #     shutil.rmtree(last_tb_dir)
 
         if guardar_dataset:
             dataset = self.trainer.get_dataset()
@@ -481,8 +486,6 @@ class TrainThread(Thread):
         steps = mfit_kwargs['n_epochs'] * mfit_kwargs['n_datasets']
         steps += mfit_kwargs['n_post_epochs']
         steps *= mfit_kwargs['n_steps']
-        if issubclass(type(self.modelo), FKEnsemble):
-            steps *= len(self.modelo.ensemble)
         self.queue.put(Msg('stage', steps))
 
         self.modelo.meta_fit(log_dir=log_dir,
@@ -491,6 +494,8 @@ class TrainThread(Thread):
                              **mfit_kwargs)
 
     def _muestreo_inicial(self):
+        self.queue.put(Msg('stage', 0))
+
         is_prop_selec = isinstance(self.modelo, SelPropEnsemble)
         try:
             sampled_dataset = FKset(self.robot, self.sample)
@@ -503,9 +508,6 @@ class TrainThread(Thread):
             return sampled_dataset
 
     def _ajuste_inicial(self, log_dir):
-        # Muestreo
-        self.queue.put(Msg('stage', 0))
-
         if len(self.sample) > 0:
             self.sampled_dataset = self._muestreo_inicial()
             if self.sampled_dataset is None:
@@ -520,8 +522,6 @@ class TrainThread(Thread):
         fit_kwargs = self.train_kwargs['Ajuste inicial']
         # Calcular número de pasos
         steps = fit_kwargs['epochs']
-        if issubclass(type(self.modelo), FKEnsemble):
-            steps *= len(self.modelo.ensemble)
         self.queue.put(Msg('stage', steps))
 
         if not self.queue.done:
@@ -539,22 +539,23 @@ class TrainThread(Thread):
     def _ajuste_dirigido(self, log_dir):
         afit_kwargs = self.train_kwargs['Ajuste dirigido']
 
-        steps = len(self.modelo.ensemble) * (afit_kwargs['epochs'])
-        steps *= afit_kwargs['query_steps']
+        steps = afit_kwargs['epochs'] * afit_kwargs['query_steps']
         self.queue.put(Msg('stage', steps))
 
         def label_fun(X):
-            _, result = self.robot.fkine(X)
-            return result
+            logger.debug(f"Solicitando muestras: \n{X}")
+            dataset = FKset(self.robot, X)
+            dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
+            return dataset
 
         try:
             self.modelo.active_fit(train_set=self.train_set,
-                                label_fun=label_fun,
-                                loggers=[self.gui_logger],
-                                log_dir=log_dir,
-                                silent=True,
-                                ext_interrupt=self.queue.interrupt,
-                                **afit_kwargs)
+                                   label_fun=label_fun,
+                                   loggers=[self.gui_logger],
+                                   log_dir=log_dir,
+                                   silent=True,
+                                   ext_interrupt=self.queue.interrupt,
+                                   **afit_kwargs)
         except RobotExecError:
             self.queue.put(Msg('fail', 0))
             return 'fail'
@@ -572,6 +573,7 @@ class CtrlEjecucion:
     def __init__(self):
         super().__init__()
         self.puntos = None
+        self.ajuste_continuo = False
 
     def listas_puntos(self):
         return [os.path.splitext(n)[0] for n in os.listdir(self.trayec_dir)]
@@ -589,11 +591,11 @@ class CtrlEjecucion:
         else:
             return None
 
-    def set_trayec(self, puntos):
+    def set_trayec(self, puntos, ajuste_continuo: bool):
         self.puntos = puntos
+        self.ajuste_continuo = ajuste_continuo
 
-    def ejecutar_trayec(self, reg_callback, error_callback,
-                        ajuste_continuo: bool = False):
+    def ejecutar_trayec(self, reg_callback, error_callback):
         model_robot = ModelRobot(self.modelo_s,
                                  self.robot_s.p_scale,
                                  self.robot_s.p_offset)
@@ -601,30 +603,47 @@ class CtrlEjecucion:
 
         q_samples, p_samples = [], []
 
-        for x, y, z, t_t, t_s in self.puntos:
+        sample_sets = []
+
+        for x, y, z, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
             q = model_robot.ikine_de(q_start=q_prev,
-                                           p_target=target,
-                                           #eta=0.1
-                                           )
+                                     p_target=target,
+                                     #eta=0.1
+                                    )
+            # dt para actuación = 100ms
+            q_exec = q.repeat(min(1, int(10*t_s)), 1)
+            q_prev = q
 
             try:
-                q_out, p_out = self.robot_s.fkine(q)
+                dataset = FKset(self.robot_s, q_exec)
             except RobotExecError:
                 error_callback()
                 return
 
+            sample_sets.append(dataset)
 
+            p_reach = dataset[-1][1]
+            reg_callback(p_reach.tolist())
 
-            scaled_p = self.robot_s.p_scale * p_out + self.robot_s.p_offset
-
-            q_prev = q
-
-            # Tomar última posición si se registró más de una
-            if len(p.shape) == 2:
-                p = p[-1]
-
-            reg_callback(p.tolist())
+        if self.ajuste_continuo:
+            # normed_p = self.robot_s.p_scale * p_out + self.robot_s.p_offset
+            is_prop_selec = isinstance(self.modelo_s, SelPropEnsemble)
+            for dataset in sample_sets:
+                dataset.include_dq = is_prop_selec
+            train_set = ConcatDataset(sample_sets)
+            # Dir para registro de tensorboard
+            timestamp = time.strftime('%Y%m%d-%H%M%S')
+            base_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s) 
+            log_dir = os.path.join(base_dir, timestamp, 'ajuste_prog')
+            # Ajuste progresivo
+            self.modelo_s.fit(train_set=train_set,
+                              log_dir=log_dir,
+                              silent=True,
+                              epochs=5,
+                              batch_size=len(dataset),
+                              lr=1e-5,
+                             )
 
 
 class UIController(CtrlRobotDB,
