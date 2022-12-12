@@ -12,10 +12,13 @@ from autokin.utils import RobotExecError, restringir
 from gui.gui_utils import Popup
 
 
+logger = logging.getLogger('autokin')
+
+
 def pos_scale_offset(p_sample: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     max_p = p_sample.max(dim=0).values
     min_p = p_sample.min(dim=0).values
-    logging.info(f"max_p: {max_p}, min_p: {min_p}")
+    logger.info(f"max_p: {max_p}, min_p: {min_p}")
 
     p_scale = 1/(max_p - min_p)
     p_offset = -min_p*p_scale

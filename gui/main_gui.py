@@ -100,14 +100,17 @@ if __name__ == "__main__":
     import logging
     import sys
 
-    logger = logging.getLogger()
+    logger = logging.getLogger('autokin')
     logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler('gui.log')
+
     stream_handler = logging.StreamHandler(sys.stdout)
-    logger.addHandler(file_handler)
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s',
+                                  datefmt='%H:%M:%S')
+    stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
-    # Desactivar logger de debug de matplotlib
-    logging.getLogger('matplotlib.font_manager').disabled = True
+
+    file_handler = logging.FileHandler('gui.log')
+    logger.addHandler(file_handler)
 
     gui = Interfaz()
     gui.mainloop()

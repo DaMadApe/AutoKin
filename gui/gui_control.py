@@ -12,7 +12,7 @@ from collections import namedtuple
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, ConcatDataset
+from torch.utils.data import Dataset, ConcatDataset, TensorDataset
 from tensorboard import program
 
 from autokin.robot import Robot, ExternRobot, ModelRobot
@@ -21,6 +21,8 @@ from autokin.muestreo import FKset
 from autokin.utils import RobotExecError, rand_split, abrir_tb
 from autokin.loggers import GUIprogress, LastEpochLog
 from gui.robot_database import SelectionList, ModelReg, RoboReg
+
+logger = logging.getLogger('autokin')
 
 
 SAVE_DIR = 'app_data'
@@ -121,7 +123,7 @@ class CtrlRobotDB:
         Robot seleccionado
         """
         if self._robot_s is None:
-            logging.info(f'Creando nueva instancia de robot')
+            logger.info(f'Creando nueva instancia de robot')
             self._robot_s = self.robot_reg_s.init_obj()
         return self._robot_s
 
@@ -132,14 +134,14 @@ class CtrlRobotDB:
         self.robots.seleccionar(indice)
         self._robot_s = None
         self._modelo_s = None
-        logging.debug(f"Modelo seleccionado: {self.robots[indice]}")
+        logger.debug(f"Robot seleccionado: {self.robots[indice]}")
 
     def agregar_robot(self, nombre: str, robot_args: dict) -> bool:
         cls_id = robot_args.pop('cls_id')
         agregado = self.robots.agregar(RoboReg(nombre, cls_id, robot_args))
 
         if agregado:
-            logging.debug(f"Robot agregado: {self.robots[-1]}")
+            logger.debug(f"Robot agregado: {self.robots[-1]}")
             # Crear directorios
             os.mkdir(self._robot_dir(self.robots[-1]))
             os.mkdir(self._model_dir(self.robots[-1]))
@@ -188,7 +190,7 @@ class CtrlRobotDB:
             self._robot_s = None
 
     def config_robot(self, config: dict):
-        logging.info(f"Config robot: {config}")
+        logger.info(f"Config robot: {config}")
         self.robot_reg_s.kwargs.update(config)
 
         if self._robot_s is not None:
@@ -222,10 +224,10 @@ class CtrlRobotDB:
             model_path = self._model_path(self.robot_reg_s,
                                           self.modelo_reg_s)
             if os.path.isfile(model_path):
-                logging.info(f'Cargando robot en {model_path}')
+                logger.info(f'Cargando robot en {model_path}')
                 self._modelo_s = torch.load(model_path)
             else:
-                logging.info(f'Creando nueva instancia de modelo')
+                logger.info(f'Creando nueva instancia de modelo')
                 self._modelo_s = self.modelo_reg_s.init_obj()
         return self._modelo_s
 
@@ -235,7 +237,7 @@ class CtrlRobotDB:
     def seleccionar_modelo(self, indice: int):
         self.modelos.seleccionar(indice)
         self._modelo_s = None
-        logging.debug(f"Modelo seleccionado: {self.modelos[indice]}")
+        logger.debug(f"Modelo seleccionado: {self.modelos[indice]}")
 
     def agregar_modelo(self, nombre: str, model_args: dict) -> bool:
         model_args.update(input_dim=self.robot_s.n,
@@ -246,7 +248,7 @@ class CtrlRobotDB:
         agregado = self.modelos.agregar(ModelReg(nombre, cls_id, model_args))
         
         if agregado:
-            logging.debug(f"Modelo agregado: {self.modelos[-1]}")
+            logger.debug(f"Modelo agregado: {self.modelos[-1]}")
             # Crear directorio para guardar logs
             os.mkdir(self._model_log_dir(self.robot_reg_s,
                                          self.modelos[-1]))
@@ -501,7 +503,7 @@ class TrainThread(Thread):
             sampled_dataset = FKset(self.robot, self.sample)
             sampled_dataset.include_dq = is_prop_selec
         except RobotExecError:
-            logging.info('RobotExecError durante muestreo')
+            logger.info('RobotExecError durante muestreo')
             self.queue.put(Msg('fail', 0))
             return None
         else:

@@ -12,6 +12,7 @@ from autokin.utils import RobotExecError
 
 
 PORT = 'COM4'
+logger = logging.getLogger('autokin')
 
 
 class ExtInstance:
@@ -21,7 +22,7 @@ class ExtInstance:
     """
     def __init__(self):
 
-        logging.info("Iniciando instancia externa")
+        logger.info("Iniciando instancia externa")
 
         self.p_stack = []
 
@@ -35,10 +36,10 @@ class ExtInstance:
         try:
             self.serialESP = serial.Serial(PORT, 115200, timeout=15)
         except serial.serialutil.SerialException:
-            logging.info("Falló conexión con uC")
+            logger.info("Falló conexión con uC")
             self.serialESP = None
         else:
-            logging.info(f"uC conectado en {PORT}")
+            logger.info(f"uC conectado en {PORT}")
 
     def connect_cam(self):
         self.cam_client_connected = False
@@ -48,9 +49,9 @@ class ExtInstance:
         try:
             self.cam_client.run()
         except OSError:
-            logging.info("Falló conexión de NatNet")
+            logger.info("Falló conexión de NatNet")
         else:
-            logging.info("Sockets de NatNet conectados")
+            logger.info("Sockets de NatNet conectados")
 
 
     def test_mcu_connection(self):
@@ -68,13 +69,13 @@ class ExtInstance:
                    timecode,timecodeSub,timestamp,
                    isRecording,trackedModelsChanged):
         if not self.cam_client_connected:
-            logging.info(f"NatNet recibiendo datos: {rigidBodyCount} cuerpos rìgidos")
+            logger.info(f"NatNet recibiendo datos: {rigidBodyCount} cuerpos rìgidos")
             self.cam_client_connected = True # Brincar if y correr sólo esta línea?
 
     def recv_body(self, id, position, rotation):
         # called once per rigid body per frame
         if self.body_recv_semaphore:
-            # logging.debug(f"Id: {id}, pos: {position}, rot: {rotation}")
+            # logger.debug(f"Id: {id}, pos: {position}, rot: {rotation}")
             if id == 1: # Base del robot
                 self.body_pos = position
             if id == 2 and self.body_pos is not None:
@@ -84,18 +85,18 @@ class ExtInstance:
 
     def send_q_esp(self, q: torch.Tensor):
         q_send = pad(q, (0, 4-len(q))).int().numpy()
-        logging.debug(f"q: {q}, Mensaje: {q_send}")
+        logger.debug(f"q: {q}, Mensaje: {q_send}")
         if self.serialESP is not None:
             self.serialESP.write(q_send.tobytes())
             # self.serialESP.flush()
 
             # Bloquear ejecución hasta que ESP envíe señal de fin
-            logging.debug("Esperando confirmación")
+            logger.debug("Esperando confirmación")
             ack = self.serialESP.read(1)
             if len(ack) == 0: # Si pasa timeout de serial.read
-                logging.error("No se recibió confirmación de ejecución del uC")
+                logger.error("No se recibió confirmación de ejecución del uC")
                 raise RobotExecError("No se recibió confirmación de ejecución del uC")
-            logging.debug("Confirmado")
+            logger.debug("Confirmado")
         else:
             raise RobotExecError("uC desconectado")
 
@@ -111,20 +112,20 @@ class ExtInstance:
             except serial.serialutil.SerialException:
                 raise RobotExecError
             except RobotExecError:
-                logging.error(f"MCU desconectado, muestreo interrumpido en la muestra {i}")
+                logger.error(f"MCU desconectado, muestreo interrumpido en la muestra {i}")
                 return p_out[:i]
             
             while not self.p_stack:
                 pass
             self.body_recv_semaphore = False
-            logging.debug(f"p_{i} promediado de {len(self.p_stack)} medidas")
+            logger.debug(f"p_{i} promediado de {len(self.p_stack)} medidas")
             p_out[i] = torch.mean(torch.tensor(self.p_stack), dim=0)
             self.p_stack = []
 
         # Revisar si ejecución fue correcta
         mcu_status, cam_status = self.status()
         if not (mcu_status and cam_status):
-            logging.error(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
+            logger.error(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
             # raise RobotExecError(f"Cliente desconectado (MCU: {mcu_status}, Cam: {cam_status})")
 
         return p_out
@@ -135,16 +136,16 @@ class ExtInstance:
 
         # Intentar reconexión de sistemas si se desconectaron
         if not mcu_status:
-            logging.info("uC desconectado, reintentando")
+            logger.info("uC desconectado, reintentando")
             self.connect_mcu()
             mcu_status = self.test_mcu_connection()
-            logging.info(f"Conexión uC: {mcu_status}")
+            logger.info(f"Conexión uC: {mcu_status}")
 
         if not cam_status:
-            logging.info("NatNet desconectado, reintentando")
+            logger.info("NatNet desconectado, reintentando")
             self.connect_cam()
             cam_status = self.test_cam_connection()
-            logging.info(f"Conexión Cam: {mcu_status}")
+            logger.info(f"Conexión Cam: {mcu_status}")
 
         return (mcu_status, cam_status)
 

@@ -12,6 +12,9 @@ from sofa.sofa_call import SofaInstance
 from ext_robot.client import ExtInstance
 
 
+logger = logging.getLogger('autokin')
+
+
 class Robot(IkineMixin):
     """
     Clase base para definir un robot que interactúe con
@@ -165,18 +168,11 @@ class SofaRobot(Robot):
         if len(q.shape) == 1:
             q = q.unsqueeze(0)
 
-        logging.debug(f"q_in = {q.shape} = {q}")
-
         soft_q = suavizar(q=q,
                           q_prev=self.q_prev,
                           dq_max=self.max_dq)
 
-        logging.debug(f"q_soft: {soft_q.shape} = {soft_q}")
-
         denormed_q = self._denorm_q(soft_q)
-
-        logging.debug(f"q_denormed: {denormed_q.shape} = {denormed_q}")
-
 
         p_out = self.SofaInstance.fkine(denormed_q.numpy())
         p_out = torch.tensor(p_out, dtype=torch.float)

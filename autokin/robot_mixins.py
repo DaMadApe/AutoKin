@@ -8,6 +8,9 @@ import numpy as np
 from scipy.optimize import differential_evolution
 
 
+logger = logging.getLogger('autokin')
+
+
 def batch_jacobian(func, batch, create_graph=False, vectorize=False):
     """
     Función para calcular el jacobiano para cada muestra de un batch
@@ -46,14 +49,14 @@ class IkineMixin:
         for _ in range(max_iters):
             p_current = self.fkine(q)[1]
             delta_x = p_target - p_current
-            logging.debug(f"target={p_target}, current={p_current}")
+            logger.debug(f"target={p_target}, current={p_current}")
             error = torch.linalg.norm(delta_x)
             if error < max_error:
                 break
 
             pi_jacob = torch.linalg.pinv(self.jacob(q))
             q_update = eta * torch.matmul(pi_jacob, delta_x)
-            logging.debug(f"q_update={q_update}")
+            logger.debug(f"q_update={q_update}")
             q += q_update
             # Restringir valores de q al intervalo [0,1]
             q = q.clamp(min=0, max=1)
@@ -97,11 +100,13 @@ class IkineMixin:
         bounds = [(0,1)] * self.n
 
         def error(q: np.array):
-            p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))[1]
-
+            _, p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))
+            logger.debug(f'p_reached = {p_reached}')
+            error = torch.norm(p_reached-p_target).item()
+            logger.debug(f'error = {error}')
             return torch.norm(p_reached-p_target).item()
 
-        result = differential_evolution(error, bounds)
+        result = differential_evolution(error, bounds,)
         return torch.tensor(result.x, dtype=torch.float32)
 
     # def ikine_ngopt(self, 
