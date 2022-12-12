@@ -91,13 +91,12 @@ class IkineMixin:
 
         return q
 
-
     def ikine_de(self, 
                  q_start: torch.Tensor,
                  p_target: torch.Tensor,
-                 eta=0.01, max_error=0, max_iters=1000):
-
-        bounds = [(0,1)] * self.n
+                 strategy: str,
+                 max_error=0,
+                 max_iters=50):
 
         def error(q: np.array):
             _, p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))
@@ -106,7 +105,14 @@ class IkineMixin:
             logger.debug(f'error = {error}')
             return torch.norm(p_reached-p_target).item()
 
-        result = differential_evolution(error, bounds,)
+        result = differential_evolution(error,
+                                        bounds=[(0,1)]*self.n,
+                                        strategy=strategy,
+                                        maxiter=max_iters,
+                                        atol=max_error,
+                                        updating='immediate',
+                                        disp=logger.level==logging.DEBUG,
+                                        )
         return torch.tensor(result.x, dtype=torch.float32)
 
     # def ikine_ngopt(self, 
