@@ -12,6 +12,10 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from autokin.loggers import Logger, TqdmDisplay, TBLogger
 from autokin.robot import RTBrobot
 from autokin.muestreo import FKset
+from autokin.utils import suavizar
+
+
+logger = logging.getLogger('autokin')
 
 
 class HparamsMixin:
@@ -260,7 +264,7 @@ class ActiveFitMixin:
         de las predicciones del grupo de modelos.
         """
         if candidate_batch is None:
-            candidate_batch = torch.rand((1000, self.input_dim))
+            candidate_batch = torch.rand((100*n_queries, self.input_dim))
 
         with torch.no_grad():
             preds = torch.stack([model(candidate_batch) for model in self.ensemble])
@@ -278,6 +282,18 @@ class ActiveFitMixin:
 
         return query
         # return torch.topk(deviation, n_queries)
+
+    def query_trayec(self, query: torch.Tensor, n_rep: int = 5) -> torch.Tensor:
+        """
+        Función para conectar muestras solicitadas por interpolación lineal.
+        """
+        trayec = torch.cat([torch.zeros(1,self.input_dim),
+                            *[q.repeat(n_rep,1) for q in query],
+                            torch.zeros(1,self.input_dim),])
+        trayec = suavizar(trayec,
+                          q_prev = torch.zeros(self.input_dim),
+                          dq_max=0.05)
+        return trayec
 
     def active_fit(self, train_set, label_fun,
                    query_steps : int,
@@ -302,9 +318,10 @@ class ActiveFitMixin:
 
             query = self.query(candidate_batch=candidate_batch,
                                n_queries=n_queries)
+            query_trayec = self.query_trayec(query)
+            logger.debug(f"Query: {query}, trayec.shape: {query_trayec.shape}")
 
-            labels = label_fun(query)
-            new_queries = TensorDataset(query, labels)
+            new_queries = label_fun(query_trayec)
             train_set = ConcatDataset([train_set, new_queries])
 
             self.fit(train_set,
