@@ -254,7 +254,8 @@ class Popup_config_sofa(Popup):
         super().__init__(title="Configurar robot: Sofa", parent=parent)
 
         self.robot.headless = False
-        self.robot.start_instance()
+        if not self.robot.running():
+            self.robot.start_instance()
         time.sleep(2)
         self.lift()
 
