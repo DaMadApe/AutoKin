@@ -93,7 +93,7 @@ class DataFitMixin:
                  ext_interrupt: Callable = None,
                  **fit_kwargs):
 
-        for _ in range(n_dh_datasets): # - len(sample_robots)):
+        for _ in range(n_dh_datasets):
             robot = RTBrobot.random(n=self.input_dim,
                                     min_DH=[1, 0, 0, 1],
                                     max_DH=[10, 2*torch.pi, 2*torch.pi, 10])
@@ -165,6 +165,11 @@ class DataFitMixin:
             loggers.append(TqdmDisplay(epochs))
         if log_dir is not None:
             loggers.append(TBLogger(log_dir))
+
+        # Asegurar normalización de las muestras
+        for dset in (train_set, val_set):
+            if hasattr(dset, 'apply_p_norm'):
+                dset.apply_p_norm = True
 
         # Colocar modelo en modo de entrenamiento
         self.train()
@@ -282,7 +287,7 @@ class ActiveFitMixin:
                             torch.zeros(1,self.input_dim),])
         trayec = suavizar(trayec,
                           q_prev = torch.zeros(self.input_dim),
-                          dq_max=0.05)
+                          dq_max=0.03)
         return trayec
 
     def active_fit(self, train_set, label_fun,
