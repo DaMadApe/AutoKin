@@ -15,7 +15,7 @@ import torch
 from torch.utils.data import Dataset, ConcatDataset, TensorDataset
 from tensorboard import program
 
-from autokin.robot import Robot, ExternRobot, ModelRobot
+from autokin.robot import Robot, ExternRobot, ModelRobot, SofaRobot
 from autokin.modelos import FKEnsemble, FKModel, SelPropEnsemble
 from autokin.muestreo import FKset
 from autokin.utils import RobotExecError, rand_split, abrir_tb
@@ -619,49 +619,55 @@ class CtrlEjecucion:
                                  self.robot_s.p_scale,
                                  self.robot_s.p_offset)
         q_prev = torch.zeros(model_robot.n)
-
-        q_samples, p_samples = [], []
-
         sample_sets = []
+        q_exec = []
 
         for x, y, z, t_s in self.puntos:
             target = torch.Tensor([x,y,z])
             q = model_robot.ikine_de(q_start=q_prev,
                                      p_target=target,
-                                     #eta=0.1
+                                     strategy= 'rand1exp',
                                     )
-            # dt para actuación = 100ms
-            q_exec = q.repeat(min(1, int(10*t_s)), 1)
+            # dt para actuación de robot externo = 100ms
+            q_exec.append(q.repeat(min(1, int(10*t_s)), 1))
             q_prev = q
 
+        q_exec.append(torch.zeros(model_robot.n))
+
+        for q in q_exec:
             try:
-                dataset = FKset(self.robot_s, q_exec)
+                dataset = FKset(self.robot_s, q)
             except RobotExecError:
                 error_callback()
                 return
-
             sample_sets.append(dataset)
 
+            dataset.apply_p_norm = False
             p_reach = dataset[-1][1]
             reg_callback(p_reach.tolist())
+            
+            # Aplicar el tiempo estacionario para Sofa
+            if isinstance(self.robot_s, SofaRobot):
+                time.sleep(len(q)/10)
 
         if self.ajuste_continuo:
             # normed_p = self.robot_s.p_scale * p_out + self.robot_s.p_offset
             is_prop_selec = isinstance(self.modelo_s, SelPropEnsemble)
             for dataset in sample_sets:
                 dataset.include_dq = is_prop_selec
+                dataset.apply_p_norm = True
             train_set = ConcatDataset(sample_sets)
             # Dir para registro de tensorboard
             timestamp = time.strftime('%Y%m%d-%H%M%S')
             base_dir = self._model_log_dir(self.robot_reg_s, self.modelo_reg_s) 
             log_dir = os.path.join(base_dir, timestamp, 'ajuste_prog')
-            # Ajuste progresivo
+            # Ajuste continuo
             self.modelo_s.fit(train_set=train_set,
                               log_dir=log_dir,
                               silent=True,
-                              epochs=5,
+                              epochs=3,
                               batch_size=len(dataset),
-                              lr=1e-5,
+                              lr=1e-7,
                              )
 
 
