@@ -152,7 +152,7 @@ class PantallaSelecPuntos(Pantalla):
         self.tabla.limpiar_tabla()
         for i, point in enumerate(self.puntos):
             punto_trunco = tuple((round(x, ndigits=4) for x in point))
-            self.tabla.agregar_entrada(str(i), *punto_trunco)
+            self.tabla.agregar_entrada(str(i+1), *punto_trunco)
 
         self.tabla.desactivar_botones()
 
@@ -185,12 +185,12 @@ class Popup_asignar_punto(Popup):
     def __init__(self, parent, callback, punto_prev=None):
         self.callback = callback
         if punto_prev is None:
-            punto_prev = [0., 0., 0., 1., 1.]
+            punto_prev = [0., 0., 0., 1.]
         self.punto_prev = punto_prev
         super().__init__(title="Asignar punto", parent=parent)
 
     def definir_elementos(self):
-        x_val, y_val, z_val, t_t_val, t_s_val = self.punto_prev
+        x_val, y_val, z_val, t_s_val = self.punto_prev
 
         frame_xyz = ttk.Frame(self)
         frame_xyz.grid(column=0, row=0, sticky='ew')
