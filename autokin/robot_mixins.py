@@ -32,8 +32,12 @@ class IkineMixin:
     def __init__(self):
         super().__init__()
     
-    def ikine_pi_jacob(self, q_start: torch.Tensor, p_target: torch.Tensor,
-                       eta=0.01, max_error=0, max_iters=1000):
+    def ikine_pi_jacob(self,
+                       q_start: torch.Tensor,
+                       p_target: torch.Tensor,
+                       eta=0.01,
+                       max_error=0,
+                       max_iters=1000) -> torch.Tensor:
         """
         Método de pseudoinverso de jacobiano
         q_start (Tensor) : Configuración inicial del robot
@@ -64,8 +68,12 @@ class IkineMixin:
         return q.detach()
 
 
-    def ikine_trans_jacob(self, q_start: torch.Tensor, p_target: torch.Tensor,
-                          eta=0.01, max_error=0, max_iters=1000):
+    def ikine_trans_jacob(self,
+                          q_start: torch.Tensor,
+                          p_target: torch.Tensor,
+                          eta=0.01,
+                          max_error=0,
+                          max_iters=1000) -> torch.Tensor:
         """
         Método de transpuesta de jacobiano
         q_start (Tensor) : Configuración inicial del robot
@@ -96,7 +104,7 @@ class IkineMixin:
                  p_target: torch.Tensor,
                  strategy: str,
                  max_error=0,
-                 max_iters=50):
+                 max_iters=50) -> torch.Tensor:
 
         def error(q: np.array):
             _, p_reached = self.fkine(torch.tensor(q, dtype=torch.float32))
