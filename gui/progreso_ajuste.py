@@ -151,7 +151,8 @@ class PantallaProgresoAjuste(Pantalla):
         self.controlador.pausar()
         if tk.messagebox.askokcancel("Regresar",
                                      "Cancelar entrenamiento?"):
-            self.controlador.detener(guardar=False)
+            self.controlador.detener(guardar_entrenamiento=False,
+                                     guardar_dataset=False)
             # self.update_idletasks()
             self.parent.regresar()
         else:
