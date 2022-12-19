@@ -626,10 +626,10 @@ class CtrlEjecucion:
             target = torch.Tensor([x,y,z])
             q = model_robot.ikine_de(q_start=q_prev,
                                      p_target=target,
-                                     strategy= 'rand1exp',
+                                     strategy='best1exp',
                                     )
             # dt para actuación de robot externo = 100ms
-            q_exec.append(q.repeat(min(1, int(10*t_s)), 1))
+            q_exec.append(q.repeat(max(1, int(10*t_s)), 1))
             q_prev = q
 
         q_exec.append(torch.zeros(model_robot.n))

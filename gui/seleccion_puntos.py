@@ -128,8 +128,8 @@ class PantallaSelecPuntos(Pantalla):
         self.listas['values'] = self.controlador.listas_puntos() 
 
     def guardar_puntos(self):
-        if self.puntos:
-            nombre = self.listas.get()
+        nombre = self.listas.get()
+        if self.puntos and nombre:
             self.controlador.guardar_puntos(nombre, self.puntos)
             self.cargar_listas()
 
@@ -166,13 +166,14 @@ class PantallaSelecPuntos(Pantalla):
 
         if bool(self.dataset_check_var.get()):
             datasets = self.controlador.get_datasets()
-            max_points = 1000/len(datasets)
-            for d_set in datasets.values():
-                d_set.apply_p_norm = False
-                # Limitar puntos mostrados
-                step = max(1, int(len(d_set)/max_points))
-                # Convertir tensor a np.array y acomodarlo
-                p_set = d_set[::step][1].numpy().transpose()
+            if datasets:
+                max_points = 1000/len(datasets)
+                for d_set in datasets.values():
+                    d_set.apply_p_norm = False
+                    # Limitar puntos mostrados
+                    step = max(1, int(len(d_set)/max_points))
+                    # Convertir tensor a np.array y acomodarlo
+                    p_set = d_set[::step][1].numpy().transpose()
                 self.ax.scatter(*p_set, color='royalblue')
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')

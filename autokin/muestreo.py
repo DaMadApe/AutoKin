@@ -90,7 +90,10 @@ class FKset(Dataset):
         self.p_vecs = self.p_vecs + p_noise
         # Generar vector de dq para entrenamiento de SelPropEnsemble
         self.q_diff = self.q_vecs.diff(dim=0)
-        self.q_diff = torch.cat([self.q_diff[0].unsqueeze(0), self.q_diff])
+        if len(self.q_diff): # Para casos de len(q)==1
+            self.q_diff = torch.cat([self.q_diff[0].unsqueeze(0), self.q_diff])
+        else:
+            self.q_diff = torch.zeros(1, self.q_vecs.shape[-1])
 
     def __len__(self):
         return self.q_vecs.shape[0]

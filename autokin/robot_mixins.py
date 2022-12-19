@@ -111,8 +111,7 @@ class IkineMixin:
             logger.debug(f'p_reached = {p_reached}')
             error = torch.norm(p_reached-p_target).item()
             logger.debug(f'error = {error}')
-            return torch.norm(p_reached-p_target).item()
-
+            return error
         result = differential_evolution(error,
                                         bounds=[(0,1)]*self.n,
                                         strategy=strategy,
