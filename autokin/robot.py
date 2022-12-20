@@ -76,9 +76,9 @@ class RTBrobot(Robot):
         self.p_offset = p_offset
 
     @classmethod
-    def from_name(cls, name, full_pose=False):
+    def from_name(cls, name, **rtb_kwargs):
         robot = getattr(rtb.models.DH, name)()
-        return cls(robot, full_pose)
+        return cls(robot, **rtb_kwargs)
 
     @classmethod
     def random(cls, full_pose=False, *args, **kwargs):

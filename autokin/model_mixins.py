@@ -6,7 +6,7 @@ from typing import Callable, Optional, Type
 
 import torch
 import torch.nn as nn
-from torch.utils.data import (Dataset, DataLoader,
+from torch.utils.data import (Dataset, DataLoader, Subset,
                               TensorDataset, ConcatDataset,
                               random_split)
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -87,7 +87,7 @@ class DataFitMixin:
                  n_steps: int = 5,
                  n_epochs_step: int = 1,
                  n_dh_datasets: int = 5,
-                 n_dh_samples: int = 500,
+                 n_samples_task: int = 500,
                  lr: float = 1e-4,
                  eps: float = 0.1,
                  ext_interrupt: Callable = None,
@@ -97,21 +97,25 @@ class DataFitMixin:
             robot = RTBrobot.random(n=self.input_dim,
                                     min_DH=[1, 0, 0, 1],
                                     max_DH=[10, 2*torch.pi, 2*torch.pi, 10])
-            robot_samples = FKset.random_sampling(robot, n_dh_samples)
+            robot_samples = FKset.random_sampling(robot, n_samples_task)
             task_datasets.append(robot_samples)
 
         for _ in range(n_steps):
             # Tomar aleatoriamente una de las tareas (datasets)
             task_ds = choice(task_datasets)
+            # Tomar sólo el número solicitado de muestras por dataset
+            task_ds = Subset(task_ds, range(n_samples_task))
             # Copiar modelo en estado actual para calcular params ajustados
             adjusted = deepcopy(self)
             # Encontrar params ajustados a la tarea
             adjusted.fit(task_ds, 
                          lr=lr,
+                         batch_size=1024,
                          epochs=n_epochs_step,
                          silent=True,
                          use_checkpoint=False,
                          preadjust_bias=False,
+                         ext_interrupt=ext_interrupt,
                          **fit_kwargs)
 
             # Aplicar actualización a los meta-parámetros

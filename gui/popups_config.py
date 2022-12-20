@@ -231,13 +231,33 @@ class Popup_config_ext(Popup):
 
 class Popup_config_rtb(Popup):
     def __init__(self, parent, callback, robot: RTBrobot):
-        pass
-    #     self.callback = callback
-    #     self.robot = robot
-    #     super().__init__(title="Configurar robot: RTB", parent=parent)
+        self.callback = callback
+        self.robot = robot
+        super().__init__(title="Configurar robot: RTB", parent=parent)
 
-    # def definir_elementos(self):
-        # pass
+    def definir_elementos(self):
+        # Botón recalibrar p
+        but_recal_p = ttk.Button(self, text="Recalibrar escala de posiciones",
+                                width=36,
+                                command=self.recal_p)
+        but_recal_p.grid(column=0, row=0, padx=5, pady=5)
+
+    def recal_p(self):
+        msg = """Recalibrar escala de posiciones? Puede invalidar modelos previamente entrenados."""
+        if tk.messagebox.askokcancel("Recalibrar norma de p", msg):
+            zero = torch.zeros(1, self.robot.n)
+            jog_traj = coprime_sines(self.robot.n, 300, densidad=0)
+            traj = torch.concat([zero, jog_traj, zero])
+
+            sample = self.robot.fkine(traj)
+            if sample is not None:
+                p_scale, p_offset = pos_scale_offset(sample[1])
+                self.callback({
+                    'p_scale' : p_scale,
+                    'p_offset' : p_offset
+                })
+                tk.messagebox.showinfo("Fin",
+                    "Fin de calibración de escala de posiciones")
 
 
 class Popup_config_sofa(Popup):

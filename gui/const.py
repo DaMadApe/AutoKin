@@ -67,10 +67,10 @@ args_etapas = {
             'var_type': 'int',
             'default_val': 5,
             'restr_positiv': True,
-            'non_zero': True
+            'non_zero': False,
         },
-        'n_dh_samples': {
-            'label': 'Muestras por cada dataset DH',
+        'n_samples_task': {
+            'label': 'Muestras por cada dataset',
             'var_type': 'int',
             'default_val': 500,
             'restr_positiv': True,

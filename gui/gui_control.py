@@ -408,6 +408,8 @@ class CtrlEntrenamiento:
         self.queue.done = True
         self.queue.pause = False
         self.trainer.join()
+        # Regresar robot a home
+        self.robot_s.fkine(torch.zeros(self.robot_s.n))
 
         if guardar_entrenamiento:
             # Guardar parámetros usados en el registro del modelo
@@ -469,9 +471,11 @@ class TrainThread(Thread):
             self.extra_datasets = []
 
         for dataset in self.mfit_datasets:
+            dataset.apply_p_norm = True
             dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
 
         for dataset in self.extra_datasets:
+            dataset.apply_p_norm = True
             dataset.p_scale = robot.p_scale
             dataset.p_offset = robot.p_offset
             dataset.include_dq = isinstance(self.modelo, SelPropEnsemble)
